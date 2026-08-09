@@ -1,0 +1,392 @@
+---
+title: "Recursive Matrix Inversion"
+subtitle: "Build the inverse while Schur-complement elimination unwinds"
+description: "Derive a recursive block inverse, implement simultaneous LU factorisation and inversion, and separate dense recursion from true selected inversion."
+author: "Power Systems Foundation contributors"
+date: "2026-08-09"
+categories: [Linear algebra, Numerical methods, Selective inversion, Python]
+reading-time: 16
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+draft: false
+---
+
+## What you will learn
+
+After working through this tutorial, you should be able to:
+
+- derive an inverse update from a scalar pivot and its Schur complement;
+- explain why the inverse of the trailing Schur complement is reused during unwinding;
+- implement a recursion that returns $\mathbf{L}$, $\mathbf{U}$, and $\mathbf{A}^{-1}$ together;
+- verify the factors and inverse independently;
+- state the pivot conditions required by the unpivoted algorithm; and
+- distinguish a full recursive inverse from a sparse selected inverse.
+
+The [recursive LU tutorial](recursive-lu-decomposition.qmd) introduces Schur-complement elimination. The [inversion-from-LU tutorial](inversion-from-lu.qmd) obtains an inverse after the factors are known. Here the factorisation and inverse are assembled in the same recursion.
+
+## 1. The recursive question
+
+Suppose a matrix is partitioned around its first scalar pivot:
+
+$$
+\mathbf{A}
+=
+\begin{bmatrix}
+\alpha & \mathbf{r}^{\mathsf T} \\
+\mathbf{c} & \mathbf{B}
+\end{bmatrix},
+$$ {#eq-rinv-partition}
+
+where $\alpha\ne0$, $\mathbf{r},\mathbf{c}\in\mathbb{C}^{n-1}$, and $\mathbf{B}\in\mathbb{C}^{(n-1)\times(n-1)}$. No symmetry is assumed; the superscript $\mathsf T$ only indicates that $\mathbf{r}^{\mathsf T}$ is a row.
+
+Eliminating the first column introduces the multiplier vector and Schur complement
+
+$$
+\boldsymbol{\ell}=\frac{\mathbf{c}}{\alpha},
+\qquad
+\mathbf{S}=\mathbf{B}-\boldsymbol{\ell}\mathbf{r}^{\mathsf T}.
+$$ {#eq-rinv-schur}
+
+These quantities give the one-step factorisation
+
+$$
+\mathbf{A}
+=
+\underbrace{
+\begin{bmatrix}
+1 & \mathbf{0}^{\mathsf T} \\
+\boldsymbol{\ell} & \mathbf{I}
+\end{bmatrix}}_{\mathbf{L}_0}
+\underbrace{
+\begin{bmatrix}
+\alpha & \mathbf{r}^{\mathsf T} \\
+\mathbf{0} & \mathbf{S}
+\end{bmatrix}}_{\mathbf{U}_0}.
+$$ {#eq-rinv-one-step-lu}
+
+Both factorisation and inversion have now reduced to a problem of order $n-1$: factor and invert $\mathbf{S}$.
+
+## 2. Derive the inverse blocks
+
+Let
+
+$$
+\mathbf{W}=\mathbf{S}^{-1}.
+$$ {#eq-rinv-schur-inverse}
+
+The two block-triangular factors in @eq-rinv-one-step-lu have inverses
+
+$$
+\mathbf{L}_0^{-1}
+=
+\begin{bmatrix}
+1 & \mathbf{0}^{\mathsf T} \\
+-\boldsymbol{\ell} & \mathbf{I}
+\end{bmatrix},
+\qquad
+\mathbf{U}_0^{-1}
+=
+\begin{bmatrix}
+\alpha^{-1} & -\alpha^{-1}\mathbf{r}^{\mathsf T}\mathbf{W} \\
+\mathbf{0} & \mathbf{W}
+\end{bmatrix}.
+$$
+
+Because $\mathbf{A}^{-1}=\mathbf{U}_0^{-1}\mathbf{L}_0^{-1}$, block multiplication gives
+
+$$
+\boxed{
+\mathbf{A}^{-1}
+=
+\begin{bmatrix}
+\dfrac{1+\mathbf{r}^{\mathsf T}\mathbf{W}\boldsymbol{\ell}}{\alpha}
+&
+-\dfrac{\mathbf{r}^{\mathsf T}\mathbf{W}}{\alpha}
+\\[1.1em]
+-\mathbf{W}\boldsymbol{\ell}
+&
+\mathbf{W}
+\end{bmatrix}.}
+$$ {#eq-rinv-block-inverse}
+
+Two details prevent common derivation errors:
+
+- $\mathbf{W}$ is $\mathbf{S}^{-1}$, not $\mathbf{B}^{-1}$; elimination changed the trailing problem.
+- The factor $1/\alpha$ is already present in $\boldsymbol{\ell}=\mathbf{c}/\alpha$, so the lower-left block is $-\mathbf{W}\boldsymbol{\ell}$.
+
+@eq-rinv-block-inverse is the entire inverse update. Once the smaller inverse $\mathbf{W}$ is available, matrix-vector products construct the new first row and column while $\mathbf{W}$ becomes the bottom-right block unchanged.
+
+## 3. How the recursion runs
+
+At each level, the algorithm:
+
+1. reads the pivot $\alpha$ and border vectors $\mathbf{r}^{\mathsf T}$ and $\mathbf{c}$;
+2. forms $\boldsymbol{\ell}$ and the Schur complement $\mathbf{S}$;
+3. recursively computes $\mathbf{L}_S$, $\mathbf{U}_S$, and $\mathbf{W}=\mathbf{S}^{-1}$;
+4. embeds $\mathbf{L}_S$ and $\mathbf{U}_S$ in the larger LU factors; and
+5. uses @eq-rinv-block-inverse to assemble the larger inverse.
+
+For a $1\times1$ matrix $[\alpha]$, the base case is
+
+$$
+\mathbf{L}=[1],
+\qquad
+\mathbf{U}=[\alpha],
+\qquad
+\mathbf{A}^{-1}=[1/\alpha].
+$$ {#eq-rinv-base-case}
+
+Elimination happens while the calls descend. Inverse assembly happens in the opposite direction as those calls return.
+
+## 4. Python implementation
+
+The implementation below follows the derivation but adds input validation, support for real or complex data, and a scale-aware small-pivot check. It is an educational dense algorithm, not a replacement for a pivoted linear-algebra library.
+
+```{python}
+#| label: lst-rinv-implementation
+#| code-summary: "Show simultaneous recursive LU factorisation and inversion"
+
+import numpy as np
+
+
+def recursive_lu_inverse(
+    matrix: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Return unpivoted L, U, and the dense inverse of a square matrix."""
+    values = np.asarray(matrix)
+
+    if values.ndim != 2 or values.shape[0] != values.shape[1]:
+        raise ValueError("matrix must be square")
+    if values.shape[0] == 0:
+        raise ValueError("matrix must not be empty")
+    if not np.issubdtype(values.dtype, np.number):
+        raise TypeError("matrix entries must be numeric")
+
+    dtype = np.result_type(values.dtype, np.float64)
+    a = np.array(values, dtype=dtype, copy=True)
+    if not np.all(np.isfinite(a)):
+        raise ValueError("matrix entries must be finite")
+
+    real_dtype = np.empty((), dtype=dtype).real.dtype
+    machine_epsilon = np.finfo(real_dtype).eps
+
+    def recurse(block: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        n = block.shape[0]
+        pivot = block[0, 0]
+        scale = np.linalg.norm(block, ord=np.inf)
+
+        if abs(pivot) <= machine_epsilon * n * scale:
+            raise np.linalg.LinAlgError(
+                "unpivoted recursion rejected a zero or numerically small pivot"
+            )
+
+        if n == 1:
+            lower = np.ones((1, 1), dtype=dtype)
+            upper = block.copy()
+            inverse = np.array([[1 / pivot]], dtype=dtype)
+            return lower, upper, inverse
+
+        row = block[0, 1:].copy()
+        column = block[1:, 0].copy()
+        lower_column = column / pivot
+        schur = block[1:, 1:] - np.outer(lower_column, row)
+
+        lower_schur, upper_schur, inverse_schur = recurse(schur)
+
+        # Cache the row product because it is used in two inverse blocks.
+        row_times_inverse = row @ inverse_schur
+
+        inverse = np.empty((n, n), dtype=dtype)
+        inverse[0, 0] = (1 + row_times_inverse @ lower_column) / pivot
+        inverse[0, 1:] = -row_times_inverse / pivot
+        inverse[1:, 0] = -(inverse_schur @ lower_column)
+        inverse[1:, 1:] = inverse_schur
+
+        lower = np.eye(n, dtype=dtype)
+        lower[1:, 0] = lower_column
+        lower[1:, 1:] = lower_schur
+
+        upper = np.zeros((n, n), dtype=dtype)
+        upper[0, 0] = pivot
+        upper[0, 1:] = row
+        upper[1:, 1:] = upper_schur
+
+        return lower, upper, inverse
+
+    return recurse(a)
+```
+
+The implementation above is independently derived from @eq-rinv-block-inverse. For comparison, the related prototype [`recursive_inv_diag.py`](https://github.com/Plusero/selective-inversion/blob/3326ba80dca2df05faca9aaf936b6933e73916ee/modules/recursive_inv_diag.py) implements the same dense mathematical recursion. The version here makes its numerical and data-type assumptions explicit.
+
+## 5. Trace a nonsymmetric example
+
+Consider
+
+$$
+\mathbf{A}
+=
+\begin{bmatrix}
+4 & 1 & 2 \\
+3 & 5 & 1 \\
+1 & 1 & 3
+\end{bmatrix}.
+$$
+
+The first multiplier vector and Schur complement are
+
+$$
+\boldsymbol{\ell}
+=
+\begin{bmatrix}3/4\\1/4\end{bmatrix},
+\qquad
+\mathbf{S}
+=
+\begin{bmatrix}
+17/4 & -1/2 \\
+3/4 & 5/2
+\end{bmatrix}.
+$$
+
+The recursion treats this $2\times2$ Schur complement in exactly the same way.
+
+```{python}
+#| label: lst-rinv-worked-example
+
+a = np.array(
+    [
+        [4.0, 1.0, 2.0],
+        [3.0, 5.0, 1.0],
+        [1.0, 1.0, 3.0],
+    ]
+)
+
+lower, upper, a_inverse = recursive_lu_inverse(a)
+
+np.set_printoptions(precision=6, suppress=True)
+print("L =\n", lower)
+print("\nU =\n", upper)
+print("\nA^{-1} =\n", a_inverse)
+```
+
+For this example, the exact inverse is
+
+$$
+\mathbf{A}^{-1}
+=
+\frac{1}{44}
+\begin{bmatrix}
+14 & -1 & -9 \\
+-8 & 10 & 2 \\
+-2 & -3 & 17
+\end{bmatrix}.
+$$
+
+The nonsymmetric input demonstrates that neither the factorisation nor @eq-rinv-block-inverse relies on symmetry.
+
+## 6. Verify three separate claims
+
+The routine claims that it reconstructed the input as $\mathbf{L}\mathbf{U}$ and that its returned matrix is both a left and right inverse. Test all three statements:
+
+```{python}
+#| label: lst-rinv-verification
+
+identity = np.eye(a.shape[0])
+
+factor_residual = (
+    np.linalg.norm(a - lower @ upper, ord=np.inf)
+    / np.linalg.norm(a, ord=np.inf)
+)
+inverse_scale = np.linalg.norm(a, ord=np.inf) * np.linalg.norm(
+    a_inverse, ord=np.inf
+)
+right_inverse_residual = (
+    np.linalg.norm(identity - a @ a_inverse, ord=np.inf) / inverse_scale
+)
+left_inverse_residual = (
+    np.linalg.norm(identity - a_inverse @ a, ord=np.inf) / inverse_scale
+)
+
+reference = np.linalg.solve(a, identity)
+relative_difference = (
+    np.linalg.norm(a_inverse - reference, ord=np.inf)
+    / np.linalg.norm(reference, ord=np.inf)
+)
+
+print(f"relative LU residual:     {factor_residual:.3e}")
+print(f"scaled right-inverse residual: {right_inverse_residual:.3e}")
+print(f"scaled left-inverse residual:  {left_inverse_residual:.3e}")
+print(f"difference from NumPy solve: {relative_difference:.3e}")
+```
+
+For this small, well-behaved example, the values should be near floating-point roundoff. Agreement with `numpy.linalg.solve` is a useful cross-check, but the residuals directly test the mathematical properties that the result must satisfy.
+
+As an experiment, change `a[0, 2]`, predict how the first Schur complement will change, and then rerun the factor and inverse residuals.
+
+## 7. Why nonsingular is not sufficient here
+
+This scalar, unpivoted recursion requires every pivot encountered in the nested Schur complements to be nonzero. Equivalently, all leading principal minors of $\mathbf{A}$ must be nonzero. The condition is stronger than nonsingularity of the full matrix.
+
+For example,
+
+$$
+\begin{bmatrix}
+0 & 1 \\
+1 & 0
+\end{bmatrix}
+$$
+
+is its own inverse, but the first pivot is zero. The rows or columns must be permuted before the recursion can proceed.
+
+```{python}
+#| label: lst-rinv-pivot-failure
+
+needs_pivoting = np.array([[0.0, 1.0], [1.0, 0.0]])
+
+try:
+    recursive_lu_inverse(needs_pivoting)
+except np.linalg.LinAlgError as error:
+    print(error)
+```
+
+The scale-aware threshold catches an obviously unsafe pivot, but it is only a rejection heuristic, not a general singularity test. Passing it neither controls element growth nor makes unpivoted LU backward stable. Production factorisations select pivots, track permutations, and use tuned numerical kernels [@golub2013]. Permutations must then also be applied when the inverse is assembled.
+
+## 8. Full inverse versus selected inverse
+
+Despite the referenced prototype's filename, its current recursion computes and stores the **full dense inverse**. The implementation above does the same. Taking `np.diag(a_inverse)` afterward does not make the preceding calculation selective.
+
+The reason selection is subtle is visible in the top-left update:
+
+$$
+(\mathbf{A}^{-1})_{11}
+=
+\frac{1+\mathbf{r}^{\mathsf T}\mathbf{W}\boldsymbol{\ell}}{\alpha}.
+$$
+
+Even one diagonal entry can depend on off-diagonal entries of $\mathbf{W}$. For sparse symmetric matrices, selected-inversion algorithms use the elimination structure and filled factor pattern to determine which inverse entries must be propagated [@lin2011selinv]. The selected set must include the dependency closure required by those updates; an arbitrary output mask is not sufficient.
+
+This distinction matters for large sparse networks: $\mathbf{A}$, $\mathbf{L}$, and $\mathbf{U}$ may be sparse while $\mathbf{A}^{-1}$ is generally dense. The scalar teaching code also creates new arrays at every recursion level and has recursion depth $n$. Because active calls retain Schur complements of decreasing order, its peak temporary storage grows as $\Theta(n^3)$, in addition to the $O(n^2)$ returned matrices. Its $O(n^3)$ arithmetic, allocation overhead, and lack of pivoting make it unsuitable for large operational models.
+
+If the goal is only to solve $\mathbf{A}\mathbf{x}=\mathbf{b}$, reuse the LU factors for forward and backward substitution instead of forming $\mathbf{A}^{-1}$. Compute a full or selected inverse only when the inverse entries themselves are required.
+
+## 9. Power-system connection
+
+If a referenced or grounded network admittance matrix $\mathbf{Y}$ is nonsingular, its inverse $\mathbf{Z}=\mathbf{Y}^{-1}$ is the bus-impedance matrix. Recursive elimination exposes how eliminating one bus changes the remaining network through a Schur complement, while the inverse update reconstructs the voltage-response couplings involving that bus.
+
+An unreduced Y-bus can be singular because the voltage-angle or grounding reference has not been fixed. Apply the method only after constructing an appropriate nonsingular system. For state estimation, selected entries such as the diagonal of an inverse gain matrix can describe marginal uncertainty; the [weighted least-squares tutorial](weighted-least-squares-state-estimation.qmd) introduces that setting.
+
+## 10. Takeaways
+
+- A scalar elimination step reduces inversion to the inverse of a trailing Schur complement.
+- The smaller inverse occupies the bottom-right block and determines the new first row, column, and diagonal entry.
+- Schur complements are formed on descent; $\mathbf{L}$, $\mathbf{U}$, and inverse blocks are assembled as the recursion unwinds.
+- Factor and inverse residuals validate different parts of the result.
+- Nonsingularity alone does not guarantee that an unpivoted recursion can proceed.
+- Computing a full inverse and then extracting its diagonal is not selected inversion.
+- Practical sparse implementations require pivoting or suitable structure, sparsity-aware propagation, and efficient blocked kernels.
+
+## References {.unnumbered}
+
+::: {#refs}
+:::
