@@ -1,0 +1,362 @@
+---
+title: "Why Three-Phase Four-Wire Systems Are Common at Low Voltage"
+subtitle: "One supply for mixed loads, a neutral for unbalance, and the practical caveats"
+description: "Learn why low-voltage distribution often uses three phase conductors and a neutral to supply both three-phase and single-phase loads safely and efficiently."
+author: "Power Systems Foundation contributors"
+date: "2026-08-09"
+date-modified: "2026-08-09"
+categories: [Three-phase systems, Low-voltage systems, Distribution systems, Python]
+reading-time: 16
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+draft: false
+---
+
+## What you will learn
+
+After working through this tutorial, you should be able to:
+
+- explain why one three-phase four-wire supply provides two useful voltage levels;
+- distinguish the roles of the three line conductors, neutral, and protective earth;
+- calculate neutral current from unequal phase currents;
+- explain how a neutral stabilises phase-to-neutral voltages for unbalanced loads;
+- show why triplen harmonics can add in the neutral even when the load is balanced; and
+- identify when a three-wire or single-phase circuit is more appropriate.
+
+## Prerequisites
+
+You should be comfortable with RMS phasors, complex impedance, and Kirchhoff's laws. [Why Power Systems Use Three Phases](why-three-phase-power-systems.qmd) develops the benefits of three phases, while the [star--delta tutorial](star-delta-three-phase-systems.qmd) derives the line-to-phase relationships used here.
+
+## 1. The short answer
+
+A low-voltage distribution system must often serve a diverse load mix:
+
+- many small, unequal, single-phase loads such as lighting, receptacles, and household appliances; and
+- larger three-phase loads such as motors, pumps, lifts, heating equipment, and power-electronic converters.
+
+A **three-phase four-wire** system serves both groups from the same transformer secondary and feeder. Its circuit conductors are
+
+$$
+L_1,\quad L_2,\quad L_3,\quad N,
+$$
+
+where $L_1$, $L_2$, and $L_3$ are the line conductors and $N$ is the neutral. A single-phase load can connect from one line to neutral, while a three-phase load can connect to all three lines. A line-to-line single-phase load can also use two lines when its voltage rating and local rules permit.
+
+The neutral provides a return path for the part of the phase currents that does not cancel. It also holds the load neutral point close to the source neutral potential, so unequal single-phase loads continue to receive approximately their intended phase-to-neutral voltage.
+
+::: {.callout-note}
+## “Low voltage” is context dependent
+
+Voltage classifications and nominal service voltages vary by jurisdiction. This tutorial uses a nominal $400/230\ \mathrm{V}$ system as a familiar example drawn from IEC standard-voltage values, not as a universal definition or design prescription [@iec60038].
+:::
+
+## 2. One source provides two useful voltage levels
+
+Consider a star-connected transformer secondary with the star point brought out as the neutral. For a balanced positive-sequence source, let
+
+$$
+\begin{aligned}
+\underline V_{L_1N}&=V_{\mathrm{ph}}\angle0^\circ,\\
+\underline V_{L_2N}&=V_{\mathrm{ph}}\angle-120^\circ,\\
+\underline V_{L_3N}&=V_{\mathrm{ph}}\angle120^\circ.
+\end{aligned}
+$$ {#eq-lv4w-phase-voltages}
+
+A line-to-line voltage is a phasor difference. For example,
+
+$$
+\underline V_{L_1L_2}
+=\underline V_{L_1N}-\underline V_{L_2N}.
+$$
+
+Its magnitude is
+
+$$
+\boxed{V_{\mathrm{LL}}=\sqrt{3}V_{\mathrm{LN}}}.
+$$ {#eq-lv4w-voltage-ratio}
+
+Thus a nominal $230\ \mathrm{V}$ line-to-neutral system provides about $400\ \mathrm{V}$ line-to-line:
+
+$$
+\sqrt{3}\times230\ \mathrm{V}\approx398\ \mathrm{V}.
+$$
+
+| Connection | Typical use | Voltage applied to the load |
+|---|---|---:|
+| $L_1$--$N$, $L_2$--$N$, or $L_3$--$N$ | Small single-phase load | $V_{\mathrm{LN}}$ |
+| Any two line conductors | Line-to-line single-phase load | $V_{\mathrm{LL}}$ |
+| $L_1$--$L_2$--$L_3$ | Three-phase load | $V_{\mathrm{LL}}$ between lines |
+
+: Load connections available from a three-phase four-wire source {#tbl-lv4w-connections}
+
+This dual-voltage capability is a major reason the arrangement is economical: separate transformer secondaries and distribution networks are not required for every load class.
+
+## 3. Why retain all three phases?
+
+The neutral explains the fourth wire, but the first three conductors retain the usual three-phase advantages [@grainger1994]:
+
+- a balanced three-phase load receives constant total instantaneous power;
+- three-phase machines naturally produce a rotating magnetic field;
+- balanced power transfer uses the conductors effectively; and
+- for a balanced load, the three phase currents sum to zero, so no fundamental-frequency neutral current is required.
+
+For a balanced load with line-to-line voltage $V_{\mathrm{LL}}$, line current $I_{\mathrm L}$, and power-factor angle $\phi$,
+
+$$
+P_{3\phi}=\sqrt{3}V_{\mathrm{LL}}I_{\mathrm L}\cos\phi.
+$$ {#eq-lv4w-three-phase-power}
+
+Supplying a larger load at the higher line-to-line voltage generally reduces current relative to delivering the same power at the lower line-to-neutral voltage. Lower current can reduce conductor loss and voltage drop, subject to the actual conductor sizes, connection, efficiency, and power factor.
+
+The system does not require every load to be three phase. Many single-phase branch circuits can be distributed across $L_1$, $L_2$, and $L_3$. Their diversity and approximate balancing let the upstream three-phase infrastructure serve them efficiently.
+
+## 4. What the neutral actually does
+
+Define the phase currents as flowing from the source into the loads. Kirchhoff's current law gives the physical neutral return current as the opposite of their instantaneous sum. In phasor form at one frequency,
+
+$$
+\underline I_N
+=-\left(\underline I_{L_1}+\underline I_{L_2}+\underline I_{L_3}\right).
+$$ {#eq-lv4w-neutral-current}
+
+### 4.1 Balanced loads need no neutral current
+
+If the three fundamental-frequency currents have equal magnitudes and are separated by $120^\circ$,
+
+$$
+\underline I_{L_1}+\underline I_{L_2}+\underline I_{L_3}=0,
+$$
+
+so $\underline I_N=0$. The neutral may be present but carries no current in this ideal balanced case.
+
+### 4.2 Unequal single-phase loads do need a return
+
+In practice, customers switch loads independently. The three phase currents therefore differ in magnitude and power factor, and their phasor sum is generally nonzero. The neutral carries this residual current back to the source.
+
+The neutral does more than close the current path. A low-impedance neutral connection fixes the load star point near the source neutral. Each phase-to-neutral load then sees approximately its source phase voltage even when the impedances are unequal.
+
+If the neutral opens, an unbalanced group of phase-to-neutral impedances becomes a floating-star load. Its star point shifts, redistributing the three load voltages. One load voltage can rise while another falls even though the source line-to-line voltages remain unchanged.
+
+## 5. Worked example: unequal loads with and without a neutral
+
+Use a balanced $230\ \mathrm{V}$ line-to-neutral source and three unequal impedances:
+
+$$
+\underline Z_1=15\ \Omega,\qquad
+\underline Z_2=25+\mathrm j8\ \Omega,\qquad
+\underline Z_3=60-\mathrm j10\ \Omega.
+$$
+
+With an ideal neutral, each impedance receives $230\ \mathrm{V}$. Without the neutral, the floating load-neutral displacement is
+
+$$
+\underline V_{nN}
+=\frac{
+\underline Y_1\underline V_{L_1N}
++\underline Y_2\underline V_{L_2N}
++\underline Y_3\underline V_{L_3N}
+}{\underline Y_1+\underline Y_2+\underline Y_3},
+$$ {#eq-lv4w-neutral-displacement}
+
+where $\underline Y_k=1/\underline Z_k$. The voltage across load $k$ is then $\underline V_{L_kn}=\underline V_{L_kN}-\underline V_{nN}$.
+
+```{python}
+#| label: lst-lv-four-wire-unbalance
+#| code-summary: "Compare unequal phase loads with a solid and an open neutral"
+
+import numpy as np
+
+
+def polar(magnitude: float, angle_deg: float) -> complex:
+    """Construct an RMS phasor from magnitude and angle in degrees."""
+    return magnitude * np.exp(1j * np.deg2rad(angle_deg))
+
+
+voltage_ln = 230.0  # V RMS
+source_voltages = np.array(
+    [polar(voltage_ln, 0.0),
+     polar(voltage_ln, -120.0),
+     polar(voltage_ln, 120.0)]
+)
+load_impedances = np.array([15.0 + 0j, 25.0 + 8j, 60.0 - 10j])  # ohm
+
+# Four-wire case: an ideal neutral fixes the load star point at N.
+currents_with_neutral = source_voltages / load_impedances
+neutral_return_current = -currents_with_neutral.sum()
+
+# Open-neutral case: solve the floating star-point voltage from KCL.
+load_admittances = 1.0 / load_impedances
+neutral_displacement = np.sum(
+    load_admittances * source_voltages
+) / np.sum(load_admittances)
+floating_load_voltages = source_voltages - neutral_displacement
+floating_currents = floating_load_voltages / load_impedances
+
+np.testing.assert_allclose(np.abs(source_voltages), voltage_ln)
+np.testing.assert_allclose(floating_currents.sum(), 0.0, atol=1e-12)
+
+print(
+    "Phase-current magnitudes with neutral (A) =",
+    np.round(np.abs(currents_with_neutral), 3),
+)
+print(
+    "Neutral-current magnitude (A) =",
+    f"{abs(neutral_return_current):.3f}",
+)
+print(
+    "Floating-neutral displacement (V) =",
+    f"{abs(neutral_displacement):.3f}",
+)
+print(
+    "Load-voltage magnitudes with neutral (V) =",
+    np.round(np.abs(source_voltages), 3),
+)
+print(
+    "Load-voltage magnitudes without neutral (V) =",
+    np.round(np.abs(floating_load_voltages), 3),
+)
+```
+
+With the neutral connected, the unequal currents produce neutral current but all three load voltages remain at $230\ \mathrm{V}$. Opening the neutral forces the three phase currents to sum to zero by shifting the load star point. The most lightly and heavily loaded phases can then experience very different voltages.
+
+Change one entry in `load_impedances` and predict whether the neutral current and floating-star voltage spread will increase or decrease before rerunning the cell.
+
+::: {.callout-warning}
+## A broken neutral can create damaging overvoltage
+
+An open neutral in an unbalanced multi-phase circuit is not equivalent to simply turning the loads off. The loads can become connected in an unintended series network across line-to-line voltages. Diagnosis and work on such circuits require the applicable safety procedures and qualified personnel.
+:::
+
+## 6. Why balanced nonlinear loads can still load the neutral
+
+Neutral-current cancellation must be checked frequency by frequency. Many electronic loads draw nonsinusoidal current. Their phase currents contain a fundamental component plus harmonics.
+
+For the $h$th harmonic, the $120^\circ$ fundamental phase displacement becomes $h\times120^\circ$. For the third harmonic,
+
+$$
+3\times120^\circ=360^\circ.
+$$
+
+The three third-harmonic currents are therefore in phase, not $120^\circ$ apart. The same is true for other **triplen harmonics** such as the ninth and fifteenth. Equal triplen components add arithmetically in the neutral [@grainger1994; @schneider2026neutral]:
+
+$$
+|\underline I_{N,3}|=3|\underline I_3|.
+$$ {#eq-lv4w-third-harmonic-neutral}
+
+```{python}
+#| label: lst-lv-four-wire-triplen
+#| code-summary: "Show fundamental cancellation and third-harmonic addition"
+
+import numpy as np
+
+fundamental_rms = 30.0  # A per phase
+third_harmonic_rms = 8.0  # A per phase
+phase_angles = np.deg2rad(np.array([0.0, -120.0, 120.0]))
+
+fundamental_currents = fundamental_rms * np.exp(1j * phase_angles)
+third_harmonic_currents = third_harmonic_rms * np.exp(
+    1j * 3.0 * phase_angles
+)
+
+neutral_fundamental = -fundamental_currents.sum()
+neutral_third = -third_harmonic_currents.sum()
+phase_total_rms = np.sqrt(fundamental_rms**2 + third_harmonic_rms**2)
+neutral_total_rms = np.sqrt(
+    abs(neutral_fundamental)**2 + abs(neutral_third)**2
+)
+
+np.testing.assert_allclose(neutral_fundamental, 0.0, atol=1e-12)
+np.testing.assert_allclose(abs(neutral_third), 3.0 * third_harmonic_rms)
+
+print(f"RMS current in each phase conductor = {phase_total_rms:.2f} A")
+print(f"Neutral fundamental current = {abs(neutral_fundamental):.2e} A")
+print(f"Neutral third-harmonic current = {abs(neutral_third):.2f} A")
+print(f"Total neutral RMS current = {neutral_total_rms:.2f} A")
+```
+
+In this balanced example, the $30\ \mathrm{A}$ fundamental components cancel perfectly, but the three $8\ \mathrm{A}$ third-harmonic components produce $24\ \mathrm{A}$ in the neutral. Fundamental and harmonic phasors at different frequencies must not be added directly; their orthogonal RMS contributions combine by root-sum-square.
+
+Neutral sizing, derating, and harmonic mitigation must therefore be based on the load spectrum and applicable installation rules, not only on fundamental-frequency balance. Schneider Electric's installation guide gives worked sizing examples and explicitly accounts for triplen-harmonic neutral current [@schneider2026neutral].
+
+## 7. Neutral is not the same as protective earth
+
+The neutral and protective conductor have different operational purposes:
+
+| Conductor | Normal role |
+|---|---|
+| Neutral $N$ | Carries load unbalance and zero-sequence or triplen current; provides the phase-to-neutral voltage reference |
+| Protective conductor $PE$ | Bonds exposed conductive parts and provides a fault-current path; it should not normally carry load current |
+
+: Neutral and protective-conductor roles {#tbl-lv4w-neutral-pe}
+
+In many grounded systems, the transformer neutral is connected to earth at a defined point. This establishes a voltage reference and supports fault detection and automatic disconnection. The protective conductor connects equipment enclosures to the grounding and bonding system. Standardised TT, TN, and IT arrangements implement these functions differently [@schneider2026earthing].
+
+Calling a supply “four wire” normally counts $L_1$, $L_2$, $L_3$, and $N$. A downstream installation may also have a separate protective conductor and therefore contain five conductors. Some earthing arrangements combine or separate neutral and protective functions at different locations, but those arrangements, conductor colours, bonding points, and disconnection rules are jurisdiction specific.
+
+::: {.callout-important}
+Never assume that neutral and protective earth are interchangeable because they are connected somewhere upstream. A neutral can carry normal load current and develop a voltage drop; a protective conductor has a distinct safety function.
+:::
+
+## 8. Why four wires are especially useful at low voltage
+
+Low-voltage networks are close to end users and therefore encounter the greatest mixture and variability of loads. Four-wire distribution is especially useful because it:
+
+1. supplies small single-phase loads without a separate local transformer for each load;
+2. supplies larger three-phase loads from the same network;
+3. offers both line-to-neutral and line-to-line voltage levels;
+4. tolerates normal phase-load diversity by carrying the residual current; and
+5. maintains the phase-to-neutral voltage reference when loads are unbalanced.
+
+By contrast, medium- and high-voltage lines primarily transfer bulk three-phase power between substations. Their loads are more nearly balanced at the circuit level, phase-to-neutral utilisation loads are uncommon, and grounding can be provided at transformer or generator neutral points. A continuous neutral conductor along every span would then add cost without the same utilisation benefit. This is why many such circuits are three-wire even though their terminal equipment may have grounded star points.
+
+## 9. Choose the connection for the load
+
+Three-phase four-wire is common, not universal. For an accessible industry-oriented comparison of three-wire and four-wire supplies, including their different load applications, see YT Electric [@ytelect2022threephase].
+
+| Situation | Often suitable arrangement | Main reason |
+|---|---|---|
+| Mixed building or neighbourhood loads | Three-phase four-wire | Serves unequal single-phase and three-phase loads together |
+| Balanced three-phase motor feeder | Three-phase three-wire, plus protective conductor as required | The motor does not need a functional neutral |
+| Small isolated load | Single phase | Simpler equipment and wiring |
+| Bulk medium- or high-voltage transfer | Three-phase three-wire | Little need for distributed phase-to-neutral utilisation |
+
+: Connection choice depends on the load and network role {#tbl-lv4w-choice}
+
+The final design must also consider voltage drop, fault level, protection, earthing, conductor ampacity, harmonics, switching, reliability, and local standards.
+
+## 10. Common misconceptions
+
+### “The neutral current is always zero in three phase”
+
+Only a balanced set at a particular frequency sums to zero. Unequal single-phase loads create fundamental neutral current; triplen harmonics can add even when the load is otherwise balanced.
+
+### “The neutral is just another earth wire”
+
+No. The neutral is a normal current-carrying circuit conductor. Protective earth has a separate safety role.
+
+### “Four-wire means every load uses all four wires”
+
+No. A phase-to-neutral branch normally uses one line and neutral. A balanced three-phase motor normally uses the three lines and no neutral. The feeder provides the connection options.
+
+### “Adding a neutral makes an unbalanced load balanced”
+
+The neutral does not equalise the phase currents. It carries their non-cancelling sum and prevents that imbalance from severely shifting the phase-to-neutral voltages. Operators still distribute single-phase loads across phases to limit current unbalance and voltage drop.
+
+## 11. Takeaways
+
+- A three-phase four-wire source can supply both line-to-neutral single-phase loads and line-to-line or three-phase loads.
+- A star-connected source provides $V_{\mathrm{LL}}=\sqrt{3}V_{\mathrm{LN}}$, giving two useful voltage levels from one winding set.
+- Balanced fundamental currents cancel, but unequal phase loads produce neutral current.
+- The neutral stabilises phase-to-neutral voltages; losing it can create severe overvoltage and undervoltage across unequal loads.
+- Triplen harmonic currents are in phase across the three lines and add in the neutral.
+- Neutral and protective earth have different functions and must not be treated as interchangeable.
+- Four-wire distribution is especially valuable near diverse low-voltage loads; balanced three-phase and bulk-transfer circuits may not need a neutral.
+
+Continue with [zero-sequence current](zero-sequence-current.qmd) to describe non-cancelling phase currents systematically, or revisit [star and delta connections](star-delta-three-phase-systems.qmd) for the complete balanced and floating-neutral derivations.
+
+## References {.unnumbered}
+
+::: {#refs}
+:::
