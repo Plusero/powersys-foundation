@@ -1,0 +1,352 @@
+---
+title: "Why P–|V| and Q–θ Are Weakly Coupled"
+subtitle: "The transmission-grid approximation behind decoupled power flow"
+description: "Derive why active power responds mainly to voltage angle and reactive power mainly to voltage magnitude in high-voltage transmission networks."
+author: "Power Systems Foundation contributors"
+date: "2026-08-09"
+categories: [Power flow, Network analysis, Voltage control, Python]
+reading-time: 16
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+draft: false
+---
+
+## What you will learn
+
+After working through this tutorial, you should be able to:
+
+- distinguish the **direct** couplings $P$--$\theta$ and $Q$--$|V|$ from the weaker **cross-couplings** $P$--$|V|$ and $Q$--$\theta$;
+- derive the four sensitivities from the exact AC branch equations;
+- identify the assumptions that make the cross-couplings small;
+- connect the approximation to decoupled and fast-decoupled power flow; and
+- recognise networks and operating points for which the approximation is unreliable.
+
+The [Newton--Raphson power-flow tutorial](newton-raphson-power-flow.qmd) introduces the four Jacobian blocks. Here we explain the physical and mathematical reason that two of those blocks are often much smaller than the other two.
+
+## 1. Clarify the coupling statement
+
+The phrase “$P$--$V$ and $Q$--$\theta$ coupling” can be read in two ways. In this tutorial, $V$ means **voltage magnitude** $|V|$, and the intended statement is:
+
+> In a normally loaded, predominantly inductive transmission network, $P$--$|V|$ and $Q$--$\theta$ are weak **cross-couplings**. The dominant pairings are $P$--$\theta$ and $Q$--$|V|$.
+
+The local power-flow linearisation makes the four pairings explicit:
+
+$$
+\begin{bmatrix}
+\Delta \mathbf P \\
+\Delta \mathbf Q
+\end{bmatrix}
+=
+\begin{bmatrix}
+\underbrace{\dfrac{\partial \mathbf P}{\partial\boldsymbol\theta}}_{\mathbf H} &
+\underbrace{\dfrac{\partial \mathbf P}{\partial\mathbf{|V|}}}_{\mathbf N} \\
+\underbrace{\dfrac{\partial \mathbf Q}{\partial\boldsymbol\theta}}_{\mathbf M} &
+\underbrace{\dfrac{\partial \mathbf Q}{\partial\mathbf{|V|}}}_{\mathbf L}
+\end{bmatrix}
+\begin{bmatrix}
+\Delta\boldsymbol\theta \\
+\Delta\mathbf{|V|}
+\end{bmatrix}.
+$$ {#eq-cpl-jacobian}
+
+| State perturbation | Dominant response | Weaker cross-response |
+|---|---|---|
+| Angle $\Delta\theta$ | Active power $\Delta P$ through $\mathbf H$ | Reactive power $\Delta Q$ through $\mathbf M$ |
+| Magnitude $\Delta|V|$ | Reactive power $\Delta Q$ through $\mathbf L$ | Active power $\Delta P$ through $\mathbf N$ |
+
+: Direct and cross-couplings in the power-flow Jacobian {#tbl-cpl-map}
+
+“Weak” is a local, approximate statement—not a physical law. It depends on the network parameters, operating point, chosen state variables, and per-unit scaling.
+
+## 2. Start from one AC branch
+
+Consider a branch from bus $i$ to bus $j$ with no off-nominal transformer or line charging. Let
+
+$$
+z=r+\mathrm{j}x,
+\qquad
+y=\frac{1}{z}=g-\mathrm{j}b,
+\qquad
+g=\frac{r}{r^2+x^2},
+\qquad
+b=\frac{x}{r^2+x^2}>0,
+$$ {#eq-cpl-admittance}
+
+and define
+
+$$
+V_i=|V_i|e^{\mathrm{j}\theta_i},
+\qquad
+V_j=|V_j|e^{\mathrm{j}\theta_j},
+\qquad
+\delta=\theta_i-\theta_j.
+$$ {#eq-cpl-phasors}
+
+Using $I_{ij}=y(V_i-V_j)$ and $S_{ij}=V_iI_{ij}^{*}$ gives the exact sending-end powers
+
+$$
+P_{ij}
+=g|V_i|^2
+-|V_i||V_j|\left(g\cos\delta-b\sin\delta\right),
+$$ {#eq-cpl-branch-p}
+
+$$
+Q_{ij}
+=b|V_i|^2
+-|V_i||V_j|\left(b\cos\delta+g\sin\delta\right).
+$$ {#eq-cpl-branch-q}
+
+These equations use positive power from bus $i$ into the branch. Other sign conventions alter some signs but not the relative coupling argument. Bus-level power equations are obtained by summing the contributions of all incident branches and shunts [@grainger1994].
+
+## 3. Differentiate before approximating
+
+Differentiate @eq-cpl-branch-p and @eq-cpl-branch-q with respect to the angle difference $\delta$ and sending-end magnitude $|V_i|$:
+
+$$
+\frac{\partial(P_{ij},Q_{ij})}{\partial(\delta,|V_i|)}
+=
+\begin{bmatrix}
+|V_i||V_j|(g\sin\delta+b\cos\delta) &
+2g|V_i|-|V_j|(g\cos\delta-b\sin\delta) \\
+|V_i||V_j|(-g\cos\delta+b\sin\delta) &
+2b|V_i|-|V_j|(b\cos\delta+g\sin\delta)
+\end{bmatrix}.
+$$ {#eq-cpl-branch-sensitivities}
+
+Now apply the customary transmission-network operating assumptions:
+
+1. **Reactance dominates resistance:** $x\gg r$, so $g/b=r/x\ll1$.
+2. **Neighbouring angles are close:** $|\delta|\ll1$ rad, so $\sin\delta\approx\delta$ and $\cos\delta\approx1$.
+3. **Voltage magnitudes are near nominal and one another:** $|V_i|\approx|V_j|\approx1$ p.u.
+
+At the idealised flat point $|V_i|=|V_j|=1$ and $\delta=0$, @eq-cpl-branch-sensitivities becomes
+
+$$
+\left.
+\frac{\partial(P_{ij},Q_{ij})}{\partial(\delta,|V_i|)}
+\right|_{\mathrm{flat}}
+=
+\begin{bmatrix}
+b & g \\
+-g & b
+\end{bmatrix}.
+$$ {#eq-cpl-flat-sensitivities}
+
+The direct terms have magnitude $b$, whereas the cross terms have magnitude $g$. Their ratio is therefore
+
+$$
+\frac{g}{b}=\frac{r}{x}.
+$$ {#eq-cpl-rx-ratio}
+
+This is the first reason for weak coupling: a high-voltage overhead line is usually much more inductive than resistive.
+
+### The lossless intuition
+
+Set $r=0$, so $g=0$ and $b=1/x$. Expanding around a small $\delta$ gives
+
+$$
+P_{ij}
+\approx
+\frac{|V_i||V_j|}{x}\,\delta,
+$$ {#eq-cpl-lossless-p}
+
+$$
+Q_{ij}
+\approx
+\frac{|V_i|(|V_i|-|V_j|)}{x}
++\frac{|V_i||V_j|}{2x}\,\delta^2.
+$$ {#eq-cpl-lossless-q}
+
+The leading active-power term is **linear in angle difference**. Its magnitude dependence multiplies the already-small $\delta$. Conversely, the leading reactive-power term is **linear in voltage-magnitude difference**, while its angle dependence begins at second order. Thus
+
+$$
+\frac{\partial P_{ij}}{\partial |V_i|}=O(\delta/x),
+\qquad
+\frac{\partial Q_{ij}}{\partial\delta}=O(\delta/x),
+$$ {#eq-cpl-cross-order}
+
+while $\partial P_{ij}/\partial\delta$ and $\partial Q_{ij}/\partial|V_i|$ remain $O(1/x)$ near the flat point. Consequently, the cross-to-direct ratios are $O(\delta)$. With nonzero resistance, those ratios acquire an additional contribution of order $r/x$.
+
+::: {.callout-note}
+Angles in radians and voltage magnitudes in per unit provide the customary comparison, but Jacobian entries change if the state coordinates are rescaled. The robust statement is that the cross terms **vanish at the lossless flat point** and remain small in a neighbourhood of it—not that one raw derivative must always be smaller under every coordinate convention.
+:::
+
+## 4. See the same structure in the bus Jacobian
+
+The [Y-bus matrix tutorial](y-bus-matrix.qmd) shows how branch models combine into the network admittance matrix. Let its entry be $Y_{ik}=G_{ik}+\mathrm{j}B_{ik}$ and let $\delta_{ik}=\theta_i-\theta_k$. For $i\ne k$, differentiating the standard bus-injection equations gives
+
+$$
+\begin{aligned}
+H_{ik}
+&=\frac{\partial P_i}{\partial\theta_k}
+=|V_i||V_k|\left(G_{ik}\sin\delta_{ik}-B_{ik}\cos\delta_{ik}\right),\\
+N_{ik}
+&=\frac{\partial P_i}{\partial|V_k|}
+=|V_i|\left(G_{ik}\cos\delta_{ik}+B_{ik}\sin\delta_{ik}\right),\\
+M_{ik}
+&=\frac{\partial Q_i}{\partial\theta_k}
+=-|V_i||V_k|\left(G_{ik}\cos\delta_{ik}+B_{ik}\sin\delta_{ik}\right),\\
+L_{ik}
+&=\frac{\partial Q_i}{\partial|V_k|}
+=|V_i|\left(G_{ik}\sin\delta_{ik}-B_{ik}\cos\delta_{ik}\right).
+\end{aligned}
+$$ {#eq-cpl-bus-blocks}
+
+When $|G_{ik}|\ll|B_{ik}|$ and $|\delta_{ik}|\ll1$, these entries reduce to
+
+$$
+H_{ik}\approx-|V_i||V_k|B_{ik},
+\qquad
+L_{ik}\approx-|V_i|B_{ik},
+$$ {#eq-cpl-strong-blocks}
+
+$$
+N_{ik}\approx |V_i|(G_{ik}+B_{ik}\delta_{ik}),
+\qquad
+M_{ik}\approx-|V_i||V_k|(G_{ik}+B_{ik}\delta_{ik}).
+$$ {#eq-cpl-weak-blocks}
+
+The diagonal entries collect the incident-branch and shunt contributions, but retain the same broad pattern. After removing the slack-angle row and column and retaining the appropriate PV- and PQ-bus equations, the Jacobian is therefore approximately block diagonal:
+
+$$
+\begin{bmatrix}
+\mathbf H & \mathbf N\\
+\mathbf M & \mathbf L
+\end{bmatrix}
+\approx
+\begin{bmatrix}
+\mathbf H & \mathbf 0\\
+\mathbf 0 & \mathbf L
+\end{bmatrix}.
+$$ {#eq-cpl-block-diagonal}
+
+This approximation concerns **coupling**, not solvability. Small $\mathbf N$ and $\mathbf M$ do not guarantee that $\mathbf H$, $\mathbf L$, or the full Jacobian are well conditioned. [When Is the Power-Flow Jacobian Invertible?](power-flow-jacobian-invertibility.qmd) develops that distinction in detail.
+
+## 5. A numerical sensitivity check
+
+Use @eq-cpl-branch-sensitivities with $x=0.2$ p.u. and $|V_i|=|V_j|=1$ p.u. Define two local cross-to-direct ratios:
+
+$$
+\rho_{P|V|}
+=\left|
+\frac{\partial P_{ij}/\partial|V_i|}
+{\partial P_{ij}/\partial\delta}
+\right|,
+\qquad
+\rho_{Q\theta}
+=\left|
+\frac{\partial Q_{ij}/\partial\delta}
+{\partial Q_{ij}/\partial|V_i|}
+\right|.
+$$ {#eq-cpl-ratios}
+
+| Case | $r/x$ | $\delta$ | $\rho_{P|V|}$ | $\rho_{Q\theta}$ |
+|---|---:|---:|---:|---:|
+| Lossless, flat | 0.0 | $0^\circ$ | 0.000 | 0.000 |
+| Transmission-like, flat | 0.1 | $0^\circ$ | 0.100 | 0.100 |
+| Transmission-like, normal angle | 0.1 | $5^\circ$ | 0.187 | 0.013 |
+| Transmission-like, large angle | 0.1 | $25^\circ$ | 0.561 | 0.316 |
+| Distribution-like | 1.0 | $3^\circ$ | 1.003 | 0.997 |
+
+: Exact branch cross-to-direct sensitivity ratios {#tbl-cpl-sensitivity}
+
+The $Q$--$\theta$ ratio at $5^\circ$ is especially small because its conductance and angle contributions happen to oppose one another. That cancellation is operating-point dependent; the important pattern is that large $r/x$ or large $|\delta|$ removes the basis for assuming weak coupling.
+
+The following Python code reproduces the table from the exact derivatives rather than the small-angle approximation.
+
+```{python}
+#| label: lst-cpl-sensitivity-ratios
+#| code-summary: "Reproduce the branch sensitivity ratios"
+
+from math import cos, radians, sin
+
+
+def coupling_ratios(r_over_x: float, delta_deg: float, x: float = 0.2):
+    """Return the P-|V| and Q-theta cross-to-direct sensitivity ratios."""
+    r = r_over_x * x
+    g = r / (r**2 + x**2)
+    b = x / (r**2 + x**2)
+    delta = radians(delta_deg)
+
+    p_delta = g * sin(delta) + b * cos(delta)
+    p_magnitude = 2 * g - (g * cos(delta) - b * sin(delta))
+    q_delta = -g * cos(delta) + b * sin(delta)
+    q_magnitude = 2 * b - (b * cos(delta) + g * sin(delta))
+
+    return abs(p_magnitude / p_delta), abs(q_delta / q_magnitude)
+
+
+cases = [
+    ("Lossless, flat", 0.0, 0.0),
+    ("Transmission, flat", 0.1, 0.0),
+    ("Transmission, 5 deg", 0.1, 5.0),
+    ("Transmission, 25 deg", 0.1, 25.0),
+    ("Distribution-like", 1.0, 3.0),
+]
+
+for name, r_over_x, delta_deg in cases:
+    rho_pv, rho_qtheta = coupling_ratios(r_over_x, delta_deg)
+    print(f"{name:24s}  rho_PV={rho_pv:5.3f}  rho_Qtheta={rho_qtheta:5.3f}")
+```
+
+## 6. From weak coupling to faster algorithms
+
+Let $\Delta\mathbf P=\mathbf P^{\mathrm{spec}}-\mathbf P^{\mathrm{calc}}$ and $\Delta\mathbf Q=\mathbf Q^{\mathrm{spec}}-\mathbf Q^{\mathrm{calc}}$ denote the injection mismatches that the state correction must remove. Neglecting the two cross blocks in @eq-cpl-jacobian then produces the **decoupled Newton** steps
+
+$$
+\mathbf H\,\Delta\boldsymbol\theta\approx\Delta\mathbf P,
+\qquad
+\mathbf L\,\Delta\mathbf{|V|}\approx\Delta\mathbf Q.
+$$ {#eq-cpl-decoupled-newton}
+
+The fast-decoupled load-flow method goes further. It uses $|V|\approx1$, $\cos\delta\approx1$, $\sin\delta\approx0$, and $g\approx0$ to replace the changing Jacobian blocks with fixed, susceptance-based matrices:
+
+$$
+\mathbf B'\,\Delta\boldsymbol\theta
+\approx\frac{\Delta\mathbf P}{\mathbf{|V|}},
+\qquad
+\mathbf B''\,\Delta\mathbf{|V|}
+\approx\frac{\Delta\mathbf Q}{\mathbf{|V|}}.
+$$ {#eq-cpl-fast-decoupled}
+
+The divisions in @eq-cpl-fast-decoupled are elementwise. Precise construction of $\mathbf B'$ and $\mathbf B''$ depends on the adopted sign convention and on which shunts, taps, and branch resistances are retained. Because the matrices are fixed, their sparse factors can be reused from one iteration to the next—the computational benefit described in [Recursive LU Decomposition](recursive-lu-decomposition.qmd). The classic fast-decoupled formulation exploits this structure [@stott1974], although later analysis emphasises that effective decoupling is more subtle than simply deleting two Jacobian blocks [@monticelli1990].
+
+### Why the same pairing appears in control
+
+The sensitivities also explain common control assignments:
+
+- changing active-power injection mainly changes phase angles and real-power transfers;
+- generator excitation, shunt compensation, and tap-changing transformers mainly influence reactive power and voltage magnitude;
+- phase-shifting transformers mainly steer active-power flow.
+
+These are dominant tendencies, not exclusive channels. A tap change can alter active losses, an active-power transfer can move voltages, and converter controls can intentionally create different couplings.
+
+## 7. When does the approximation fail?
+
+| Condition | Why the cross-coupling grows | Practical consequence |
+|---|---|---|
+| Distribution feeder with high $r/x$ | Conductance $g$ is comparable to susceptance $b$ | $P$ strongly affects voltage, and decoupled transmission approximations may converge poorly |
+| Large angle differences | $\sin\delta$ is no longer small | The angle-dependent terms in $\mathbf N$ and $\mathbf M$ become material |
+| Low or widely separated voltage magnitudes | The flat-voltage scaling is inaccurate | Fixed fast-decoupled matrices misrepresent the current operating point |
+| Heavy loading or proximity to voltage collapse | Jacobian blocks can become ill conditioned | A small cross block does not rescue a nearly singular direct block |
+| Off-nominal taps, phase shifters, series compensation, or strong shunts | The simple branch model and symmetry no longer apply | Build sensitivities from the actual device model |
+| Voltage-dependent loads, reactive limits, or fast converter controls | The injection model and active control mode change | Recompute the full Jacobian and enforce mode switches consistently |
+
+: Important limits of the weak-coupling approximation {#tbl-cpl-limits}
+
+For these cases, the full Newton formulation [@tinney1967] is generally the safer reference model. Even then, convergence must be assessed from mismatches, state updates, limits, and Jacobian conditioning—not from the coupling heuristic alone.
+
+## 8. Takeaways
+
+- $P$--$\theta$ and $Q$--$|V|$ are the dominant transmission-network couplings; $P$--$|V|$ and $Q$--$\theta$ are the cross-couplings.
+- At a lossless flat start, the cross sensitivities vanish exactly.
+- Away from that point, their leading size is governed by $r/x$ and by the branch angle difference.
+- Weak coupling motivates decoupled Newton power flow, fixed susceptance matrices in fast-decoupled power flow, and the usual active-power/angle and reactive-power/voltage control intuition.
+- The approximation should be checked—not assumed—for resistive, stressed, strongly controlled, or device-rich networks.
+
+## References {.unnumbered}
+
+::: {#refs}
+:::

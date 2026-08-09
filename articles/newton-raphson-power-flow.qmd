@@ -1,11 +1,15 @@
 ---
 title: "Newton–Raphson Power Flow"
 subtitle: "From network equations to an iterative algorithm"
-description: "Derive the AC power-flow equations and understand how Newton's method solves them."
+description: "Derive the AC power-flow equations, implement Newton's method in Python, and inspect its convergence."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
-categories: [Power flow, Network analysis, Numerical methods]
-reading-time: 12
+categories: [Power flow, Network analysis, Numerical methods, Python]
+reading-time: 18
+jupyter: python3
+execute:
+  echo: true
+  warning: false
 draft: false
 ---
 
@@ -141,7 +145,118 @@ until the iteration limit is reached
 
 A flat start commonly sets non-slack angles to zero and unknown magnitudes to $1$ p.u. This is convenient, but it is not universally reliable. Heavily loaded systems, poor scaling, binding reactive-power limits, or an initial point far from the feasible region can lead to slow convergence or divergence.
 
-## 6. Practical checks
+## 6. Work it through in Python
+
+Consider a three-bus system with the following specifications. Positive $P$ and $Q$ denote injection into the network, so the PQ-bus load appears with negative signs.
+
+| Bus | Type | Specified quantities |
+|---:|---|---|
+| 1 | Slack | $|V_1|=1.04$, $\theta_1=0$ |
+| 2 | PV | $P_2=0.50$, $|V_2|=1.01$ |
+| 3 | PQ | $P_3=-0.60$, $Q_3=-0.25$ |
+
+: Three-bus power-flow specification {#tbl-nr-three-bus}
+
+The unknown state is $\mathbf x=[\theta_2,\theta_3,|V_3|]^{\mathsf T}$. The first cell stamps a series-only Y-bus matrix and defines the retained calculated injections in the same order as the state equations.
+
+```{python}
+#| label: lst-nr-three-bus-model
+#| code-summary: "Build the three-bus network and retained injection functions"
+
+import numpy as np
+
+np.set_printoptions(precision=6, suppress=True)
+
+lines = [
+    (0, 1, 0.02 + 0.06j),
+    (0, 2, 0.08 + 0.24j),
+    (1, 2, 0.06 + 0.18j),
+]
+
+y_bus = np.zeros((3, 3), dtype=complex)
+for from_bus, to_bus, impedance in lines:
+    admittance = 1.0 / impedance
+    y_bus[from_bus, from_bus] += admittance
+    y_bus[to_bus, to_bus] += admittance
+    y_bus[from_bus, to_bus] -= admittance
+    y_bus[to_bus, from_bus] -= admittance
+
+
+def voltage_from_state(state: np.ndarray) -> np.ndarray:
+    """Map [theta_2, theta_3, |V_3|] to complex bus voltages."""
+    angles = np.array([0.0, state[0], state[1]])
+    magnitudes = np.array([1.04, 1.01, state[2]])
+    return magnitudes * np.exp(1j * angles)
+
+
+def bus_power(state: np.ndarray) -> np.ndarray:
+    """Return positive complex-power injections at all buses."""
+    voltage = voltage_from_state(state)
+    return voltage * (y_bus @ voltage).conjugate()
+
+
+def retained_injections(state: np.ndarray) -> np.ndarray:
+    power = bus_power(state)
+    return np.array([power.real[1], power.real[2], power.imag[2]])
+
+
+specified = np.array([0.50, -0.60, -0.25])
+```
+
+To keep the example focused on the Newton loop, the next cell forms the Jacobian by centred finite differences. A production solver should use verified analytic derivatives or automatic differentiation and exploit sparsity.
+
+```{python}
+#| label: lst-nr-three-bus-solve
+#| code-summary: "Solve the three-bus AC power flow with Newton's method"
+
+def finite_difference_jacobian(function, state, step=1e-6):
+    jacobian = np.empty((state.size, state.size))
+    for column in range(state.size):
+        perturbation = np.zeros_like(state)
+        perturbation[column] = step
+        jacobian[:, column] = (
+            function(state + perturbation) - function(state - perturbation)
+        ) / (2.0 * step)
+    return jacobian
+
+
+state = np.array([0.0, 0.0, 1.0])
+tolerance = 1e-10
+
+print("iteration  maximum mismatch")
+for iteration in range(12):
+    mismatch = specified - retained_injections(state)
+    maximum_mismatch = np.linalg.norm(mismatch, ord=np.inf)
+    print(f"{iteration:9d}  {maximum_mismatch:16.3e}")
+
+    if maximum_mismatch < tolerance:
+        break
+
+    jacobian = finite_difference_jacobian(retained_injections, state)
+    correction = np.linalg.solve(jacobian, mismatch)
+    state += correction
+else:
+    raise RuntimeError("Newton iteration did not converge")
+
+voltage = voltage_from_state(state)
+power = bus_power(state)
+
+print("\nconverged bus state")
+for bus, (phasor, injection) in enumerate(zip(voltage, power), start=1):
+    print(
+        f"bus {bus}: |V|={abs(phasor):.5f} p.u., "
+        f"theta={np.rad2deg(np.angle(phasor)):+.4f} deg, "
+        f"P={injection.real:+.5f}, Q={injection.imag:+.5f} p.u."
+    )
+```
+
+The iteration starts from the flat profile, drives the retained mismatch below the tolerance, and leaves the slack-bus and PV-bus reactive injections as calculated outputs. This is the numerical counterpart of the bus-type bookkeeping in @tbl-bus-types.
+
+::: {.callout-tip}
+Change the PQ load, the initial voltage, or a line impedance and rerun the cell. Watching the mismatch history and solved voltages change is a quick way to develop intuition about loading, initialisation, and network strength.
+:::
+
+## 7. Practical checks
 
 Before trusting a solution, verify that:
 
@@ -157,4 +272,3 @@ The Newton--Raphson formulation remains a foundation for modern network analysis
 
 ::: {#refs}
 :::
-

@@ -9,7 +9,7 @@ project:
 
 website:
   title: "Power Systems Foundation"
-  description: "Open, practical tutorials for understanding and analysing electric power systems."
+  description: "Open power-system tutorials with rigorous derivations and executable Python examples."
   site-url: "https://plusero.github.io/powersys-foundation/"
   repo-url: "https://github.com/Plusero/powersys-foundation"
   repo-actions: [edit, issue]

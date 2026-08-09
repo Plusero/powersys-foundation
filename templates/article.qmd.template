@@ -4,8 +4,12 @@ subtitle: "A concise description of the tutorial"
 description: "One sentence used in search results and article listings."
 author: "Your name"
 date: today
-categories: [Topic]
+categories: [Topic, Python]
 reading-time: 10
+jupyter: python3
+execute:
+  echo: true
+  warning: false
 draft: true
 ---
 
@@ -37,7 +41,21 @@ Equation @eq-example is a minimal cross-reference example.
 
 ## 3. Worked example
 
-Use a small, reproducible example and state units and base quantities explicitly.
+Use a small, reproducible example and state units and base quantities explicitly. Every tutorial must include at least one executable Python cell. Rename the listing label so it is unique across the site.
+
+```{python}
+#| label: lst-topic-worked-example
+#| code-summary: "Run the worked example"
+
+import numpy as np
+
+inputs = np.array([1.0, 2.0, 3.0])
+result = inputs**2
+
+print("result =", result)
+```
+
+Explain what the output means physically, not only what the code does. Invite the reader to change one or two inputs and predict the result before rerunning the cell.
 
 ## 4. Takeaways
 
@@ -49,4 +67,3 @@ Use a small, reproducible example and state units and base quantities explicitly
 
 ::: {#refs}
 :::
-

@@ -15,5 +15,4 @@ listing:
 toc: false
 ---
 
-Browse the collection or filter it by topic. Each tutorial aims to state its assumptions, define its notation, derive the key results, and leave the reader with a practical way to apply them.
-
+Browse the collection or filter it by topic. Each tutorial states its assumptions, defines its notation, derives the key results, and includes executable Python that you can modify and rerun.

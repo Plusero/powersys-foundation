@@ -1,0 +1,364 @@
+---
+title: "Weighted Least-Squares State Estimation"
+subtitle: "From noisy measurements to an observable network state"
+description: "Build the weighted least-squares estimator, solve a reproducible Python example, and interpret residual and observability diagnostics."
+author: "Power Systems Foundation contributors"
+date: "2026-08-09"
+categories: [State estimation, Power systems, Numerical methods, Python]
+reading-time: 16
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+draft: false
+---
+
+## What you will learn
+
+After working through this tutorial, you should be able to:
+
+- formulate the nonlinear measurement model used in power-system state estimation;
+- explain how measurement uncertainty determines the WLS weights;
+- derive the linear normal equations and their Gauss--Newton extension;
+- distinguish an angular reference from measurement observability;
+- calculate weighted and normalised residual diagnostics; and
+- recognise when conditioning, bad data, or modelling errors make an estimate unreliable.
+
+## 1. From telemetry to a network state
+
+A power-flow calculation starts with specified bus injections and solves for a state that satisfies the network equations. A state estimator starts instead with an **overdetermined, noisy, and sometimes inconsistent** collection of measurements. Its job is to find the state that best reconciles those measurements with the network model.
+
+For a conventional AC estimator, the state commonly contains all bus-voltage magnitudes and all non-reference voltage angles,
+
+$$
+\mathbf{x}
+=
+\begin{bmatrix}
+\boldsymbol{\theta}_{\setminus\mathrm{ref}} \\
+\mathbf{|V|}
+\end{bmatrix}.
+$$ {#eq-wls-ac-state}
+
+The measurement vector may combine active- and reactive-power injections, branch flows, voltage magnitudes, and synchronised phasor measurements. Given the network topology and parameters, the measurement model is
+
+$$
+\mathbf{z}=\mathbf{h}(\mathbf{x})+\mathbf{e},
+\qquad
+\mathbb{E}[\mathbf{e}]=\mathbf{0},
+\qquad
+\mathbb{E}[\mathbf{e}\mathbf{e}^{\mathsf T}]=\mathbf{R}.
+$$ {#eq-wls-measurement-model}
+
+Here, $\mathbf{h}(\mathbf{x})$ maps a candidate voltage state to predicted measurements, $\mathbf{e}$ represents measurement error, and $\mathbf{R}$ is its covariance matrix. The [Y-bus tutorial](y-bus-matrix.qmd) develops the network model from which the power-injection and power-flow functions are built; the same nonlinear equations are then derived in the [Newton--Raphson power-flow tutorial](newton-raphson-power-flow.qmd).
+
+State estimation is therefore not merely a power flow with more inputs. Redundancy and an explicit uncertainty model allow it to smooth ordinary measurement noise and to support data-quality diagnostics. This measurement-to-state viewpoint has been central to power-system static estimation since its foundational formulation [@schweppe1970staticstateestimationpart1] and remains the basis of modern treatments [@abur2004stateestimation; @monticelli1999stateestimation].
+
+## 2. Covariance and weights
+
+The weighted least-squares (WLS) weight matrix is
+
+$$
+\mathbf{W}=\mathbf{R}^{-1}.
+$$ {#eq-wls-weight-matrix}
+
+If measurement errors are independent, then
+
+$$
+\mathbf{R}
+=\operatorname{diag}(\sigma_1^2,\ldots,\sigma_m^2),
+\qquad
+\mathbf{W}
+=\operatorname{diag}\!\left(\frac{1}{\sigma_1^2},\ldots,
+\frac{1}{\sigma_m^2}\right).
+$$ {#eq-wls-diagonal-weights}
+
+A measurement with a smaller standard deviation $\sigma_i$ incurs a larger penalty for the same numerical residual. Doubling its assumed standard deviation reduces its weight by a factor of four. Its influence on the estimated state also depends on its sensitivity to that state. These statements only have a statistical meaning when the uncertainty values and their units are credible.
+
+::: {.callout-important}
+Each measurement, prediction, and standard deviation must use matching units; raw weights for different units are not directly comparable. A consistent unit conversion changes the residual and its standard deviation together, leaving its contribution to the objective unchanged. Per-unit conversion is usually helpful, but it does not replace a defensible covariance model. Pseudo-measurements, correlated meter errors, and near-zero-variance equality constraints require deliberate treatment rather than arbitrary large weights.
+:::
+
+When $\mathbf{R}$ is not diagonal, its off-diagonal entries describe correlated errors. Whitening with a factorisation $\mathbf{R}=\mathbf{C}\mathbf{C}^{\mathsf T}$ transforms the residual according to
+
+$$
+\widetilde{\mathbf{r}}
+=\mathbf{C}^{-1}\!\left[\mathbf{z}-\mathbf{h}(\mathbf{x})\right],
+$$ {#eq-wls-whitened-residual}
+
+so correlated WLS becomes an ordinary least-squares problem in whitened coordinates.
+
+## 3. WLS objective
+
+For the residual $\mathbf{r}(\mathbf{x})=\mathbf{z}-\mathbf{h}(\mathbf{x})$, WLS minimises
+
+$$
+J(\mathbf{x})
+=\mathbf{r}(\mathbf{x})^{\mathsf T}
+\mathbf{W}\mathbf{r}(\mathbf{x})
+=\left\|\mathbf{C}^{-1}\mathbf{r}(\mathbf{x})\right\|_2^2.
+$$ {#eq-wls-objective}
+
+Under a correct model with zero-mean Gaussian measurement errors, minimising @eq-wls-objective is also maximum-likelihood estimation. The Gaussian assumption is useful for interpreting tests and confidence measures, but the minimisation problem itself can be written without it.
+
+### Linear case
+
+If $\mathbf{h}(\mathbf{x})=\mathbf{H}\mathbf{x}$, differentiating @eq-wls-objective and setting its gradient to zero gives
+
+$$
+\underbrace{\mathbf{H}^{\mathsf T}\mathbf{W}\mathbf{H}}_{\mathbf{G}}
+\widehat{\mathbf{x}}
+=\mathbf{H}^{\mathsf T}\mathbf{W}\mathbf{z}.
+$$ {#eq-wls-linear-normal-equations}
+
+The matrix $\mathbf{G}$ is often called the **gain matrix**. If $\mathbf{H}$ has full column rank and $\mathbf{R}$ is positive definite, then $\mathbf{G}$ is positive definite and the estimate is unique.
+
+The familiar expression
+
+$$
+\widehat{\mathbf{x}}
+=\left(\mathbf{H}^{\mathsf T}\mathbf{W}\mathbf{H}\right)^{-1}
+\mathbf{H}^{\mathsf T}\mathbf{W}\mathbf{z}
+$$ {#eq-wls-closed-form}
+
+is useful for derivation, but software should solve a linear system or a whitened least-squares problem rather than explicitly form the inverse.
+
+### Nonlinear AC case
+
+At iteration $k$, define the measurement Jacobian
+
+$$
+\mathbf{H}_k
+=\left.\frac{\partial\mathbf{h}}{\partial\mathbf{x}}
+\right|_{\mathbf{x}=\mathbf{x}_k}.
+$$ {#eq-wls-measurement-jacobian}
+
+Linearising the measurement functions gives the Gauss--Newton step
+
+$$
+\left(\mathbf{H}_k^{\mathsf T}\mathbf{W}\mathbf{H}_k\right)
+\Delta\mathbf{x}_k
+=\mathbf{H}_k^{\mathsf T}\mathbf{W}
+\left[\mathbf{z}-\mathbf{h}(\mathbf{x}_k)\right],
+$$ {#eq-wls-gauss-newton-step}
+
+followed by
+
+$$
+\mathbf{x}_{k+1}=\mathbf{x}_k+\Delta\mathbf{x}_k.
+$$ {#eq-wls-state-update}
+
+This resembles a Newton power-flow step, but the matrices have different roles: a state estimator linearises measurement functions and projects an overdetermined residual, whereas power flow solves a square set of balance equations. The physical sensitivities behind [weak $P$--$V$ and $Q$--$\theta$ coupling](pv-qtheta-weak-coupling.qmd) can also motivate decoupled estimator approximations. Damping or a line search can improve robustness when the initial state is poor.
+
+## 4. Observability and the angle reference
+
+Two distinct questions must be answered before solving @eq-wls-gauss-newton-step.
+
+First, the network needs an angular reference. Conventional power injections and flows depend on angle **differences**, so adding the same constant to every bus angle leaves those measurements unchanged. Fixing one bus angle removes this gauge freedom; it does not add physical information to the measurement set.
+
+Second, the retained state must be observable from the available measurements. In the linear case this requires
+
+$$
+\operatorname{rank}(\mathbf{H})=n,
+$$ {#eq-wls-rank-condition}
+
+where $n$ is the number of state variables after fixing the reference. For nonlinear AC estimation, full column rank of the local Jacobian is the corresponding local condition. A nonsingular gain matrix is therefore a consequence of both a well-defined reference and sufficient independent measurement information, not a diagnostic to assume in advance.
+
+Structural observability asks whether the measurement placement can determine the state for generic parameter values. Numerical observability additionally asks whether the resulting matrices are sufficiently well conditioned at the operating point. The distinction matters: a matrix can be full rank in exact arithmetic and still be unsafe to solve in floating-point arithmetic [@monticelli1999stateestimation]. The [power-flow Jacobian invertibility tutorial](power-flow-jacobian-invertibility.qmd) develops the related regularity question for a square power-flow map; WLS observability instead concerns the column rank of a generally rectangular measurement Jacobian.
+
+## 5. Reproducible three-bus example
+
+Consider a lossless three-bus DC model with bus 1 as the angle reference. The unknown state is
+
+$$
+\mathbf{x}=\begin{bmatrix}\theta_2 & \theta_3\end{bmatrix}^{\mathsf T}.
+$$ {#eq-wls-example-state}
+
+For line coefficients $b_{12}=10$, $b_{13}=5$, and $b_{23}=8$ p.u., define positive line flow by
+
+$$
+P_{ij}=b_{ij}(\theta_i-\theta_j).
+$$ {#eq-wls-dc-flow}
+
+The five measurements $P_{12}$, $P_{13}$, $P_{23}$, $P_2$, and $P_3$ then satisfy the linear model
+
+$$
+\mathbf{z}
+=
+\underbrace{
+\begin{bmatrix}
+-10 & 0 \\
+0 & -5 \\
+8 & -8 \\
+18 & -8 \\
+-8 & 13
+\end{bmatrix}}_{\mathbf{H}}
+\begin{bmatrix}\theta_2\\\theta_3\end{bmatrix}
++\mathbf{e}.
+$$ {#eq-wls-example-model}
+
+The next cell creates deterministic synthetic measurements around a known state. Fixed perturbations keep the rendered example exactly reproducible.
+
+```{python}
+#| label: lst-wls-build-example
+#| code-summary: "Build the three-bus measurement model"
+
+import numpy as np
+
+np.set_printoptions(precision=6, suppress=True)
+
+b12, b13, b23 = 10.0, 5.0, 8.0
+
+H = np.array(
+    [
+        [-b12, 0.0],
+        [0.0, -b13],
+        [b23, -b23],
+        [b12 + b23, -b23],
+        [-b23, b13 + b23],
+    ]
+)
+
+measurement_names = np.array(["P12", "P13", "P23", "P2 injection", "P3 injection"])
+x_true = np.array([-0.050, -0.080])
+sigma = np.array([0.010, 0.015, 0.012, 0.020, 0.020])
+fixed_error = np.array([0.008, -0.012, 0.006, -0.015, 0.018])
+
+z_exact = H @ x_true
+z = z_exact + fixed_error
+R = np.diag(sigma**2)
+
+print("H =")
+print(H)
+print("\nmeasurements z =", z)
+```
+
+Whitening is preferable to directly solving the normal equations because forming $\mathbf{H}^{\mathsf T}\mathbf{W}\mathbf{H}$ squares the condition number. NumPy's least-squares solver can instead operate on $\widetilde{\mathbf{H}}=\mathbf{C}^{-1}\mathbf{H}$ and $\widetilde{\mathbf{z}}=\mathbf{C}^{-1}\mathbf{z}$.
+
+```{python}
+#| label: lst-wls-estimate-state
+#| code-summary: "Whiten the model and estimate the bus angles"
+
+C = np.linalg.cholesky(R)
+H_white = np.linalg.solve(C, H)
+z_white = np.linalg.solve(C, z)
+
+x_hat, _, numerical_rank, singular_values = np.linalg.lstsq(
+    H_white, z_white, rcond=None
+)
+
+gain = H_white.T @ H_white
+state_covariance = np.linalg.solve(gain, np.eye(gain.shape[0]))
+state_standard_deviation = np.sqrt(np.diag(state_covariance))
+
+print("estimated angles [rad] =", x_hat)
+print("estimated angles [deg] =", np.rad2deg(x_hat))
+print("state standard deviations [rad] =", state_standard_deviation)
+print("weighted-Jacobian rank =", numerical_rank)
+print(f"weighted-Jacobian condition number = {np.linalg.cond(H_white):.3f}")
+```
+
+### Power-system interpretation
+
+The estimated angles are approximately $-0.05052$ and $-0.07977$ rad, or $-2.89^\circ$ and $-4.57^\circ$. Both buses lag the reference, and bus 3 lags bus 2, so @eq-wls-dc-flow predicts positive transfers from bus 1 toward buses 2 and 3 and from bus 2 toward bus 3 under the chosen sign convention. The estimate is close to the synthetic truth $[-0.05,-0.08]^{\mathsf T}$ rad, but it does not pass through every measurement. That is the expected behaviour: WLS balances incompatible telemetry according to its uncertainty.
+
+## 6. Residual diagnostics
+
+After estimation, calculate the post-fit residual
+
+$$
+\widehat{\mathbf{r}}
+=\mathbf{z}-\mathbf{h}(\widehat{\mathbf{x}}).
+$$ {#eq-wls-postfit-residual}
+
+For a linear observable model, its covariance is
+
+$$
+\boldsymbol{\Omega}
+=\mathbf{R}
+-\mathbf{H}\mathbf{G}^{-1}\mathbf{H}^{\mathsf T}.
+$$ {#eq-wls-residual-covariance}
+
+This leads to the normalised residual
+
+$$
+r_i^{\mathrm{N}}
+=\frac{\widehat{r}_i}{\sqrt{\Omega_{ii}}}.
+$$ {#eq-wls-normalised-residual}
+
+If $\Omega_{ii}$ is zero or numerically tiny, measurement $i$ has no reliable residual redundancy and this normalisation is undefined or unstable. Such critical and high-leverage measurements need observability-aware diagnostics rather than a mechanical threshold.
+
+The objective at the solution is also a global consistency statistic. Under the ideal linear-Gaussian assumptions,
+
+$$
+J(\widehat{\mathbf{x}})
+\sim\chi^2_{m-n},
+$$ {#eq-wls-chi-square}
+
+where $m-n$ is the measurement redundancy. The example has $5-2=3$ degrees of freedom.
+
+```{python}
+#| label: lst-wls-residual-diagnostics
+#| code-summary: "Calculate weighted and normalised residual diagnostics"
+
+z_hat = H @ x_hat
+residual = z - z_hat
+weighted_residual = np.linalg.solve(C, residual)
+objective = weighted_residual @ weighted_residual
+
+residual_covariance = R - H @ np.linalg.solve(gain, H.T)
+residual_covariance = 0.5 * (residual_covariance + residual_covariance.T)
+residual_variance = np.diag(residual_covariance)
+variance_tolerance = np.finfo(float).eps * max(1.0, np.linalg.norm(R, ord=np.inf))
+if np.any(residual_variance <= variance_tolerance):
+    raise RuntimeError("normalised residual requires positive residual redundancy")
+normalised_residual = residual / np.sqrt(residual_variance)
+
+print("measurement       measured   estimated   residual   normalised")
+for name, measured, estimated, raw, normalised in zip(
+    measurement_names, z, z_hat, residual, normalised_residual
+):
+    print(
+        f"{name:16s} {measured:9.4f}  {estimated:9.4f}"
+        f"  {raw:9.4f}  {normalised:9.3f}"
+    )
+
+print(f"\nJ(x_hat) = {objective:.3f}")
+print("95% chi-square reference for 3 degrees of freedom = 7.815")
+```
+
+No normalised residual is especially large, and the objective lies below the displayed $95\%$ reference value. For this clean synthetic snapshot, the measurements are mutually plausible under the assumed covariance model.
+
+That conclusion is conditional. A chi-square test indicates global inconsistency, not its cause. A large statistic may result from a gross meter error, incorrect breaker status, a wrong line parameter, an unmodelled control action, correlated errors, or underestimated variances. Conversely, leverage points and interacting bad measurements can remain difficult to detect. Normalised-residual screening is useful, but it is not proof that accepted data are correct [@abur2004stateestimation].
+
+::: {.callout-warning}
+Do not remove measurements repeatedly until a statistical test passes without checking topology, parameters, units, timestamps, and sign conventions. Deleting valid telemetry can destroy observability while concealing the actual modelling error.
+:::
+
+## 7. Conditioning and practical checks
+
+Before trusting a WLS result, verify all of the following:
+
+1. **Reference:** exactly one independent angle reference has been imposed for each connected observable island.
+2. **Observability:** the measurement Jacobian has full numerical column rank after constraints and references are handled.
+3. **Scaling:** measurements, Jacobian columns, and standard deviations use consistent per-unit and angle conventions.
+4. **Linear solve:** QR, SVD, or an appropriate sparse factorisation is used when normal equations are poorly conditioned. The [recursive LU tutorial](recursive-lu-decomposition.qmd) explains the factorisation idea, while production estimators require pivoting and sparse methods.
+5. **Convergence:** both the state step and the weighted gradient or objective behaviour are checked; a small step alone can also indicate stagnation.
+6. **Residuals:** the global objective, largest normalised residuals, and high-leverage measurements are reviewed together.
+7. **Model consistency:** topology, tap positions, shunts, line parameters, measurement directions, and timestamps match the snapshot.
+8. **Plausibility:** estimated voltages, branch flows, injections, and uncertainty measures satisfy engineering expectations and operational limits.
+
+The diagonal of $\mathbf{G}^{-1}$ is often reported as an approximate state-uncertainty measure. It is only as credible as the linearisation, covariance, topology, and error assumptions behind it. For large sparse problems, selected solves or factor-based methods are preferred to constructing a dense inverse.
+
+## 8. Takeaways
+
+- WLS reconciles redundant measurements by penalising residuals relative to their uncertainty.
+- The covariance matrix is part of the physical measurement model, not a numerical tuning knob.
+- A reference angle removes gauge freedom; observability requires enough independent measurement information beyond that reference.
+- Linear WLS has a closed-form derivation, while AC WLS is normally solved by repeated Gauss--Newton linearisation.
+- Whitening plus QR or SVD is often numerically safer than explicitly forming and inverting the gain matrix.
+- Residual tests are diagnostic evidence, not automatic proof of a bad meter or a correct network model.
+
+## References {.unnumbered}
+
+::: {#refs}
+:::

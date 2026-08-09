@@ -12,7 +12,9 @@ A strong tutorial should connect four layers:
 1. the physical phenomenon;
 2. the modelling assumptions;
 3. the mathematical formulation; and
-4. the computational or engineering application.
+4. an executable Python experiment and its engineering interpretation.
+
+Every tutorial includes runnable Python beside the equations. Readers can copy the code, reproduce the published output, change the assumptions, and see how the system responds.
 
 ## Topics
 
@@ -29,4 +31,3 @@ The collection welcomes tutorials covering areas such as:
 ## Contributing
 
 This project is developed publicly on GitHub. Corrections, questions, worked examples, and new tutorials are welcome. Read [CONTRIBUTING.md](https://github.com/Plusero/powersys-foundation/blob/main/CONTRIBUTING.md) before opening a pull request.
-

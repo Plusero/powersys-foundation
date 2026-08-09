@@ -1,14 +1,14 @@
 ---
 title: "Power Systems Foundation"
 subtitle: "Build intuition. Work through the equations. Apply the methods."
-description: "Open, practical tutorials for understanding and analysing electric power systems."
+description: "Open power-system tutorials with rigorous derivations and executable Python examples."
 page-layout: full
 title-block-banner: true
 toc: false
 ---
 
 ::: {.hero-copy}
-Power systems are easier to understand when physical intuition, mathematical models, and working examples are presented together. This site is an open collection of tutorials designed around that principle.
+Power systems are easier to understand when physical intuition, mathematical models, and working examples are presented together. Every tutorial in this open collection includes executable Python so you can inspect the method, change the inputs, and learn by doing.
 
 [Browse tutorials](tutorials.qmd){.btn .btn-primary .btn-lg} [Contribute on GitHub](https://github.com/Plusero/powersys-foundation){.btn .btn-outline-secondary .btn-lg}
 :::
@@ -27,9 +27,9 @@ Connect phasors, networks, machines, and controls to the physical behaviour they
 :::
 
 ::: {.feature-card}
-### Reproducible examples
+### Hands-on Python
 
-Turn theory into algorithms and numerical experiments that readers can inspect and extend.
+Run the method in every tutorial, inspect its intermediate results, and extend the example into your own experiment.
 :::
 :::
 
@@ -48,4 +48,3 @@ Derive the bus power-balance equations, assemble the Jacobian, and interpret the
 ## Built in the open
 
 Every article lives beside the site code in this repository. Readers can propose corrections, improve explanations, add examples, or contribute an entirely new tutorial through a GitHub pull request. See the [contribution guide](https://github.com/Plusero/powersys-foundation/blob/main/CONTRIBUTING.md) to get started.
-

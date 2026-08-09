@@ -31,6 +31,9 @@ jobs:
       - name: Install Python dependencies
         run: uv sync --frozen
 
+      - name: Verify Python companion for every tutorial
+        run: uv run python scripts/check_tutorial_python.py
+
       - name: Install Quarto
         uses: quarto-dev/quarto-actions/setup@v2
 
