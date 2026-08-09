@@ -1,0 +1,367 @@
+---
+title: "What Is a Zero-Injection Pseudo-Measurement?"
+subtitle: "Using a known zero power balance without installing a meter"
+description: "Explain zero-injection information in state estimation, compare high-weight virtual measurements with exact equality constraints, and reproduce both treatments in Python."
+author: "Power Systems Foundation contributors"
+date: "2026-08-09"
+date-modified: "2026-08-09"
+categories: [State estimation, Power systems, Measurements, Numerical methods, Python]
+reading-time: 14
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+draft: false
+---
+
+## What you will learn
+
+After working through this tutorial, you should be able to:
+
+- define a zero-injection bus and distinguish zero injection from zero branch flow;
+- explain why the term *virtual measurement* is often more precise than *pseudo-measurement*;
+- write the active- and reactive-power zero-injection equations;
+- compare a high-weight WLS implementation with an exact equality-constrained implementation;
+- explain why very small pseudo-measurement variances can cause ill-conditioning; and
+- verify both approaches on a reproducible three-bus example.
+
+## Prerequisites
+
+The [weighted least-squares state-estimation tutorial](weighted-least-squares-state-estimation.qmd) introduces the measurement model, covariance weights, observability, and Gauss--Newton iteration. The [Y-bus tutorial](y-bus-matrix.qmd) develops the nodal equations used below.
+
+## 1. The short answer
+
+A **zero-injection bus** is a bus whose net external complex-power injection is known to be zero:
+
+$$
+\boxed{
+P_i(\mathbf x)=0,
+\qquad
+Q_i(\mathbf x)=0
+}
+$$ {#eq-zipm-zero-power}
+
+Typically, no generator or load is connected at that bus; it is a junction through which power can pass. The zero is inferred from the network model, equipment inventory, and switch statuses rather than read from a physical meter. Adding it to a state estimator supplies exact or near-exact balance information at no metering cost [@abur2004stateestimation].
+
+Zero injection does **not** mean that the bus voltage, incident currents, or individual branch flows are zero. It means that their signed net balance is zero. For example, $40$ MW can enter on one branch and leave on another while the bus injection remains zero.
+
+::: {.callout-note}
+Terminology is not fully uniform. An uncertain load estimate derived from historical profiles is usually called a **pseudo-measurement**. A zero derived from a known physical or topological condition is often called a **virtual measurement** because it is treated as error-free. “Zero-injection pseudo-measurement” is still widely understood, but the assumed uncertainty matters more than the label [@abur2004stateestimation].
+:::
+
+## 2. What exactly is constrained?
+
+Let the bus-admittance matrix be
+
+$$
+\mathbf Y=\mathbf G+\mathrm j\mathbf B,
+$$
+
+and let the state contain voltage magnitudes $V_i$ and angles $\theta_i$. With positive power defined as injection into the network, the AC bus-injection functions are
+
+$$
+P_i(\mathbf x)
+=V_i\sum_{k=1}^{N}V_k
+\left[
+G_{ik}\cos(\theta_i-\theta_k)
++B_{ik}\sin(\theta_i-\theta_k)
+\right],
+$$ {#eq-zipm-active-injection}
+
+and
+
+$$
+Q_i(\mathbf x)
+=V_i\sum_{k=1}^{N}V_k
+\left[
+G_{ik}\sin(\theta_i-\theta_k)
+-B_{ik}\cos(\theta_i-\theta_k)
+\right].
+$$ {#eq-zipm-reactive-injection}
+
+If bus $i$ has no net generation, load, storage, shunt demand, or other unmodelled device, its zero-injection information is
+
+$$
+\mathbf c_i(\mathbf x)
+=
+\begin{bmatrix}
+P_i(\mathbf x)\\
+Q_i(\mathbf x)
+\end{bmatrix}
+=\mathbf0.
+$$ {#eq-zipm-ac-constraint}
+
+Equivalently, since $\underline S_i=\underline V_i\underline I_i^*$ and a normal operating voltage is nonzero, zero complex-power injection implies zero net current injection. A rectangular current-injection formulation can exploit that relationship directly.
+
+The phrase “no connected load or generation” is only a screening rule. Before declaring the bus to be zero injection, the network model must account for bus shunts, station service, auxiliary supplies, grounded devices, switched equipment, and any aggregation hidden behind the bus.
+
+## 3. Why zero-injection information helps
+
+State estimation begins with
+
+$$
+\mathbf z=\mathbf h(\mathbf x)+\mathbf e,
+\qquad
+\operatorname{cov}(\mathbf e)=\mathbf R.
+$$ {#eq-zipm-measurement-model}
+
+Physical meters are limited and noisy. A reliable zero-injection relation can:
+
+- improve local numerical observability by adding independent balance equations;
+- propagate information through an otherwise weakly measured junction;
+- reduce state uncertainty and improve consistency among neighbouring flows; and
+- help observability analysis and measurement-placement design.
+
+In a full AC model, one zero-injection bus can contribute active- and reactive-power relations. They are useful only to the extent that their Jacobian rows add independent information. Several zero injections can be mutually dependent, and they do not automatically make an entire network observable [@abur2004stateestimation; @monticelli1999stateestimation].
+
+## 4. Two ways to include the zero
+
+### 4.1 Treat it as a high-confidence virtual measurement
+
+The simplest implementation appends two measurement values,
+
+$$
+z_{P_i}=0,
+\qquad
+z_{Q_i}=0,
+$$
+
+with small standard deviations $\sigma_{P_i,0}$ and $\sigma_{Q_i,0}$. Their WLS contribution is
+
+$$
+J_0(\mathbf x)
+=
+\frac{P_i(\mathbf x)^2}{\sigma_{P_i,0}^2}
++
+\frac{Q_i(\mathbf x)^2}{\sigma_{Q_i,0}^2}.
+$$ {#eq-zipm-penalty}
+
+This **penalty formulation** is convenient because the ordinary WLS machinery needs little modification. As the standard deviations shrink, violations become increasingly expensive. Under the usual regularity assumptions, a converged local solution approaches the corresponding equality-constrained solution.
+
+The limit cannot be implemented by setting the standard deviation to exactly zero: $\mathbf R^{-1}$ would be undefined. Choosing an extremely small positive value produces a large disparity of weights. The resulting gain matrix
+
+$$
+\mathbf G_{\mathrm{gain}}
+=\mathbf H^{\mathsf T}\mathbf W\mathbf H
+$$ {#eq-zipm-gain}
+
+can become severely ill-conditioned, degrading numerical accuracy or convergence. This is the central weakness of pretending that an exact equality is merely a meter with an enormous weight [@guo2013zeroinjection].
+
+### 4.2 Enforce it as an equality constraint
+
+A more faithful formulation is
+
+$$
+\begin{aligned}
+\underset{\mathbf x}{\operatorname{minimise}}\quad&
+[\mathbf z-\mathbf h(\mathbf x)]^{\mathsf T}
+\mathbf R^{-1}
+[\mathbf z-\mathbf h(\mathbf x)]\\
+\text{subject to}\quad&
+\mathbf c(\mathbf x)=\mathbf0.
+\end{aligned}
+$$ {#eq-zipm-constrained-wls}
+
+At Gauss--Newton iteration $k$, define
+
+$$
+\mathbf H_k
+=\left.\frac{\partial\mathbf h}{\partial\mathbf x}\right|_{\mathbf x_k},
+\qquad
+\mathbf C_k
+=\left.\frac{\partial\mathbf c}{\partial\mathbf x}\right|_{\mathbf x_k},
+\qquad
+\mathbf r_k=\mathbf z-\mathbf h(\mathbf x_k).
+$$
+
+The linearised Karush--Kuhn--Tucker system is
+
+$$
+\begin{bmatrix}
+\mathbf H_k^{\mathsf T}\mathbf R^{-1}\mathbf H_k
+&\mathbf C_k^{\mathsf T}\\
+\mathbf C_k&\mathbf0
+\end{bmatrix}
+\begin{bmatrix}
+\Delta\mathbf x_k\\
+\boldsymbol\lambda_k
+\end{bmatrix}
+=
+\begin{bmatrix}
+\mathbf H_k^{\mathsf T}\mathbf R^{-1}\mathbf r_k\\
+-\mathbf c(\mathbf x_k)
+\end{bmatrix}.
+$$ {#eq-zipm-kkt}
+
+The multipliers $\boldsymbol\lambda_k$ enforce the constraints without inventing tiny variances. The augmented matrix is symmetric but indefinite, so it needs a solver designed for that structure. Other valid implementations eliminate dependent variables or use null-space, orthogonal-transformation, or specialised modified-Newton methods. Equality handling avoids the high-weight ill-conditioning, but it is not computationally free [@guo2013zeroinjection].
+
+## 5. Three-bus example
+
+Consider the lossless three-bus DC approximation used in the other state-estimation tutorials. Bus 1 is the angle reference, and
+
+$$
+\mathbf x=
+\begin{bmatrix}
+\theta_2&\theta_3
+\end{bmatrix}^{\mathsf T}.
+$$ {#eq-zipm-example-state}
+
+With positive DC branch coefficients $b_{ij}=1/x_{ij}>0$, let $b_{12}=10$, $b_{13}=5$, and $b_{23}=8$ p.u. The retained measurements $P_{12}$, $P_{13}$, $P_{23}$, and $P_3$ then have model
+
+$$
+\mathbf z
+=
+\underbrace{
+\begin{bmatrix}
+-10&0\\
+0&-5\\
+8&-8\\
+-8&13
+\end{bmatrix}}_{\mathbf H}
+\mathbf x+\mathbf e.
+$$ {#eq-zipm-example-measurements}
+
+Bus 2 is a zero-injection bus, so its DC active-power balance is
+
+$$
+c(\mathbf x)
+=
+\underbrace{
+\begin{bmatrix}
+18&-8
+\end{bmatrix}}_{\mathbf c^{\mathsf T}}
+\mathbf x
+=0.
+$$ {#eq-zipm-example-constraint}
+
+The true synthetic state $[-0.04,-0.09]^{\mathsf T}$ rad satisfies this equality. The code first estimates the state without the zero, then adds virtual measurements with progressively smaller standard deviations, and finally solves the exact constrained problem.
+
+```{python}
+#| label: lst-zipm-penalty-versus-constraint
+#| code-summary: "Compare high-weight and exact zero-injection treatments"
+
+import numpy as np
+
+np.set_printoptions(precision=8, suppress=True)
+
+b12, b13, b23 = 10.0, 5.0, 8.0
+
+H = np.array(
+    [
+        [-b12, 0.0],
+        [0.0, -b13],
+        [b23, -b23],
+        [-b23, b13 + b23],
+    ]
+)
+c = np.array([b12 + b23, -b23])
+
+x_true = np.array([-0.040, -0.090])
+sigma = np.array([0.020, 0.015, 0.020, 0.025])
+fixed_error = np.array([0.018, -0.009, 0.014, -0.020])
+z = H @ x_true + fixed_error
+
+# Whiten the physical measurements.
+H_white = H / sigma[:, None]
+z_white = z / sigma
+gain_physical = H_white.T @ H_white
+rhs_physical = H_white.T @ z_white
+
+x_without_zero, _, _, _ = np.linalg.lstsq(H_white, z_white, rcond=None)
+
+rows = [
+    (
+        "no zero injection",
+        x_without_zero,
+        c @ x_without_zero,
+        np.linalg.cond(gain_physical),
+    )
+]
+
+for sigma_zero in (1e-1, 1e-2, 1e-3, 1e-6):
+    H_augmented = np.vstack((H_white, c / sigma_zero))
+    z_augmented = np.append(z_white, 0.0)
+    x_penalty, _, _, _ = np.linalg.lstsq(
+        H_augmented, z_augmented, rcond=None
+    )
+    gain_penalty = H_augmented.T @ H_augmented
+    rows.append(
+        (
+            f"virtual sigma={sigma_zero:.0e}",
+            x_penalty,
+            c @ x_penalty,
+            np.linalg.cond(gain_penalty),
+        )
+    )
+
+# Exact equality-constrained WLS for this linear example.
+kkt = np.block(
+    [
+        [gain_physical, c[:, None]],
+        [c[None, :], np.zeros((1, 1))],
+    ]
+)
+solution = np.linalg.solve(kkt, np.append(rhs_physical, 0.0))
+x_constrained = solution[:2]
+
+np.testing.assert_allclose(c @ x_true, 0.0, atol=1e-14)
+np.testing.assert_allclose(c @ x_constrained, 0.0, atol=1e-12)
+np.testing.assert_allclose(rows[-1][1], x_constrained, atol=1e-8)
+
+print("method                  theta2       theta3       P2 mismatch    cond(G)")
+for name, estimate, mismatch, condition in rows:
+    print(
+        f"{name:22s} {estimate[0]:11.7f} {estimate[1]:11.7f}"
+        f" {mismatch:13.3e} {condition:12.3e}"
+    )
+
+print(
+    f"{'exact constraint':22s} {x_constrained[0]:11.7f}"
+    f" {x_constrained[1]:11.7f} {c @ x_constrained:13.3e}"
+    "          n/a"
+)
+```
+
+The ordinary WLS estimate leaves a small nonzero bus-2 injection because it reconciles only the four noisy physical measurements. Reducing the virtual-measurement standard deviation drives the mismatch toward zero and the estimate toward the equality-constrained result. At the same time, the condition number of the penalty gain matrix increases by many orders of magnitude.
+
+The exact KKT result satisfies the balance to round-off without choosing an artificial variance. The displayed condition number is deliberately reported only for the penalty gain matrix: the KKT matrix has different variable blocks and units, so its unscaled condition number is not directly comparable.
+
+::: {.callout-important}
+This DC example contributes one active-power constraint. A conventional AC estimator normally enforces both $P_i=0$ and $Q_i=0$. The example demonstrates numerical treatment, not the full AC observability contribution.
+:::
+
+## 6. When “exactly zero” is wrong
+
+An equality constraint is powerful because the estimator is not allowed to disagree with it. That is also its risk. A supposed zero-injection bus may actually contain:
+
+- an unrecorded load, generator, storage unit, or station-service supply;
+- a shunt or switched device omitted from the model;
+- a breaker whose recorded status is wrong or stale;
+- a phase-specific connection hidden by a balanced positive-sequence model; or
+- measurements and topology from different timestamps.
+
+If any of these applies, forcing $\mathbf c(\mathbf x)=0$ can bias neighbouring states and residuals or impair convergence. A high-weight virtual measurement has the same problem in approximate form. Equality-constrained methods improve accuracy only when the equality information is reliable; erroneous zero injections require topology validation or robust constraint handling rather than still larger weights [@pires2014erroneouszeroinjections].
+
+## 7. Practical checklist
+
+Before using a zero injection in an estimator:
+
+1. **Define the boundary.** Confirm which loads, generators, shunts, and auxiliaries are included in the bus injection.
+2. **Check topology and time.** Ensure switch statuses and the measurement snapshot refer to the same network state.
+3. **Choose the semantics.** Use a low-weight pseudo-measurement for an uncertain forecast; reserve an exact constraint for genuinely deterministic information.
+4. **Check independence.** Verify that the added constraint contributes useful rank rather than duplicating other balances.
+5. **Use a suitable solver.** Avoid arbitrary near-zero variances when an equality-constrained implementation is available.
+6. **Monitor model validity.** Investigate persistent neighbouring residuals or implausible multipliers as possible evidence that the “zero” is wrong.
+
+## 8. Takeaways
+
+- A zero-injection bus has zero **net** active and reactive injection, not zero voltage or zero branch flow.
+- The information comes from topology and equipment status, so *virtual measurement* often describes it better than *pseudo-measurement*.
+- Appending a zero with a small variance is easy but only approximates an equality and can make the WLS gain matrix ill-conditioned.
+- Equality-constrained WLS enforces the zero directly and avoids artificial weights, while requiring an appropriate constrained solver.
+- A false zero is a model error with potentially wide influence; validate the bus classification before treating it as exact.
+
+## References {.unnumbered}
+
+::: {#refs}
+:::

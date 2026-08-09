@@ -1,0 +1,482 @@
+---
+title: "The Pi-Model of a Transformer"
+subtitle: "From nameplate test data to a two-bus admittance stamp"
+description: "Derive a transformer's direct pi-equivalent circuit from short-circuit and open-circuit data, include an off-nominal complex ratio, and compare it with the physical T model."
+author: "Power Systems Foundation contributors"
+date: "2026-08-09"
+date-modified: "2026-08-09"
+categories: [Transformers, Network analysis, Per-unit system, Python]
+reading-time: 16
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+draft: false
+---
+
+## What you will learn
+
+After working through this tutorial, you should be able to:
+
+- explain what the series and shunt branches of a transformer equivalent circuit represent;
+- derive per-unit series impedance and magnetising admittance from nameplate test data;
+- distinguish pandapower's direct $\pi$ approximation from the physical T model;
+- include an off-nominal magnitude ratio and phase shift in a two-bus admittance stamp;
+- convert a T circuit to a terminal-equivalent $\pi$ circuit with a star--delta transformation; and
+- verify terminal currents, power, and losses with NumPy.
+
+## Prerequisites
+
+You should be comfortable with RMS phasors, complex power, and basic nodal analysis. The [complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd) reviews phasor notation, the [Y-bus tutorial](y-bus-matrix.qmd) explains admittance stamping, and the [per-unit tutorial](per-unit-values.qmd) develops the base conversions used below.
+
+## 1. Why replace a transformer with a circuit model?
+
+An ideal transformer changes voltage and current without loss. A real transformer also has winding resistance, leakage flux, core loss, and a magnetising current. A steady-state network model represents those effects with a few lumped impedances and admittances [@grainger1994].
+
+For balanced positive-sequence power flow, the direct $\pi$ model used in pandapower can be pictured as
+
+```text
+HV bus -- ideal ratio n:1 --o------ z ------o-- LV bus
+                           |               |
+                          y/2             y/2
+                           |               |
+                        reference       reference
+```
+
+The two complex parameters have different jobs:
+
+- $\underline z=r+\mathrm{j}x$ is the **total series leakage impedance**. Its resistance represents winding copper loss and its reactance represents leakage flux.
+- $\underline y=g-\mathrm{j}b$ is the **total magnetising admittance**. Its conductance represents iron loss and its negative susceptance represents the inductive magnetising current.
+
+The ideal complex ratio $\underline n$ accounts for rated voltages, an off-nominal tap, and possibly a phase shift. Referring all electrical quantities to compatible per-unit voltage bases usually removes the nominal turns ratio; only the off-nominal part remains.
+
+::: {.callout-important}
+This is a balanced, sinusoidal steady-state model. It does not by itself describe winding connections, neutral grounding, zero-sequence paths, saturation, inrush, harmonics, or fast electromagnetic transients.
+:::
+
+## 2. What the transformer tests tell us
+
+Transformer data sheets commonly provide the rated apparent power $S_r$, rated high- and low-voltage magnitudes, relative short-circuit voltage $v_k$, its resistive component $v_{kr}$, iron loss $P_{fe}$, and no-load current $i_0$. The pandapower transformer element uses these quantities directly [@pandapower2026transformer].
+
+### 2.1 Short-circuit test: the series branch
+
+On the transformer's own rated base,
+
+$$
+z_k=\frac{v_k}{100},
+\qquad
+r_k=\frac{v_{kr}}{100},
+\qquad
+x_k=\sqrt{z_k^2-r_k^2},
+$$ {#eq-trafo-series-own-base}
+
+and therefore
+
+$$
+\underline z_k=r_k+\mathrm{j}x_k.
+$$ {#eq-trafo-series-complex}
+
+At rated current, the resistive percentage can also be obtained from the three-phase copper loss:
+
+$$
+v_{kr}=100\frac{P_{cu}}{S_r}.
+$$ {#eq-trafo-vkr-copper-loss}
+
+The square root in @eq-trafo-series-own-base requires $v_k\geq v_{kr}$. A violation usually signals inconsistent units or data.
+
+### 2.2 Open-circuit test: the shunt branch
+
+The no-load current sets the magnitude of the magnetising admittance on the transformer base:
+
+$$
+y_m=\frac{i_0}{100}.
+$$ {#eq-trafo-magnetising-magnitude}
+
+The iron loss fixes its conductance,
+
+$$
+g_m=\frac{P_{fe}}{S_r},
+$$ {#eq-trafo-core-conductance}
+
+where numerator and denominator must use the same power unit. The inductive susceptance magnitude and complex admittance are
+
+$$
+b_m=\sqrt{y_m^2-g_m^2},
+\qquad
+\underline y_m=g_m-\mathrm{j}b_m.
+$$ {#eq-trafo-magnetising-admittance}
+
+This calculation requires $y_m\geq g_m$. The sign is negative because an inductive shunt absorbs positive reactive power under the passive sign convention.
+
+### 2.3 Move to the network base
+
+If the transformer values use $(S_r,V_r)$ and the network uses $(S_B,V_B)$ on the same side, then
+
+$$
+\underline z
+=\underline z_k
+\frac{S_B}{S_r}
+\left(\frac{V_r}{V_B}\right)^2,
+$$ {#eq-trafo-z-base-conversion}
+
+whereas admittance scales inversely:
+
+$$
+\underline y
+=\underline y_m
+\frac{S_r}{S_B}
+\left(\frac{V_B}{V_r}\right)^2.
+$$ {#eq-trafo-y-base-conversion}
+
+When the bus voltage bases equal the transformer rated voltages, only the power-base factors remain. The [per-unit tutorial](per-unit-values.qmd) derives these conversions and explains why the same per-unit impedance is then seen from either winding.
+
+## 3. The ideal ratio and phase shift
+
+Pandapower defines the magnitude of the off-nominal ratio as
+
+$$
+n=
+\frac{V_{r,\mathrm{HV}}}{V_{r,\mathrm{LV}}}
+\frac{V_{B,\mathrm{LV}}}{V_{B,\mathrm{HV}}}.
+$$ {#eq-trafo-off-nominal-ratio}
+
+If the voltage bases follow the rated transformer ratio, $n=1$. When voltage angles are represented, a fixed phase shift $\theta$ makes the ratio complex:
+
+$$
+\underline n=n e^{\mathrm{j}\theta}.
+$$ {#eq-trafo-complex-ratio}
+
+Tap-changer settings modify the magnitude, angle, or both. Ratio direction and phase-shift sign vary across software, so never transfer tap data without checking the convention.
+
+This tutorial places $\underline n:1$ at the HV side and defines the internal voltage after the ideal transformer as
+
+$$
+\underline U_h=\frac{\underline V_h}{\underline n}.
+$$ {#eq-trafo-internal-voltage}
+
+## 4. The two-bus $\pi$ stamp
+
+Let
+
+$$
+\underline y_s=\frac{1}{\underline z}
+$$ {#eq-trafo-series-admittance}
+
+be the series admittance. Define $\underline I_h$ and $\underline I_l$ as currents entering the complete transformer model from the HV and LV buses. For the symmetric direct $\pi$ model,
+
+$$
+\begin{bmatrix}
+\underline I_h\\[2pt]
+\underline I_l
+\end{bmatrix}
+=
+\underbrace{
+\begin{bmatrix}
+\dfrac{\underline y_s+\underline y/2}{|\underline n|^2}
+&-\dfrac{\underline y_s}{\underline n^*}\\[10pt]
+-\dfrac{\underline y_s}{\underline n}
+&\underline y_s+\underline y/2
+\end{bmatrix}}_{\mathbf Y_{\mathrm{trafo}}}
+\begin{bmatrix}
+\underline V_h\\[2pt]
+\underline V_l
+\end{bmatrix}.
+$$ {#eq-trafo-pi-stamp}
+
+This four-entry matrix can be added directly to the corresponding HV/LV entries of the bus-admittance matrix. It is the transformer-specific version of the off-nominal branch stamp developed in the [Y-bus tutorial](y-bus-matrix.qmd).
+
+Several useful checks follow immediately:
+
+- $\underline n=1$ removes all tap factors;
+- $\underline y=0$ leaves a series transformer model;
+- a real $\underline n$ retains equal mutual entries; and
+- a nonzero phase shift generally gives $Y_{hl}\ne Y_{lh}$, so the stamped Y-bus need not be symmetric.
+
+::: {.callout-note}
+The factor $1/|\underline n|^2$ applies to the complete internal HV-side self-admittance because both voltage and current are referred through the ideal transformer. Omitting that factor breaks power conservation.
+:::
+
+## 5. Why the physical model is T-shaped
+
+The usual transformer equivalent circuit is physically T-shaped:
+
+```text
+HV -- ideal n:1 -- z_h --o-- z_l -- LV
+                            |
+                            z_m = 1/y
+                            |
+                         reference
+```
+
+Here $\underline z_h$ and $\underline z_l$ represent leakage impedance assigned to the two windings, and the full magnetising admittance lies at their internal junction. With an equal split, $\underline z_h=\underline z_l=\underline z/2$.
+
+Pandapower can split leakage resistance and reactance independently through `leakage_resistance_ratio_hv` and `leakage_reactance_ratio_hv`, both of which default to $0.5$. Thus an unequal allocation can have $\underline z_h=\alpha_r r+\mathrm{j}\alpha_x x$ and $\underline z_l=(1-\alpha_r)r+\mathrm{j}(1-\alpha_x)x$ rather than one shared complex split fraction [@pandapower2026transformer].
+
+Pandapower 3.5.4 exposes both `trafo_model="t"` and `trafo_model="pi"`. Its default power-flow choice is the T model, which its balanced-AC power-flow documentation describes as more accurate; the direct $\pi$ option is provided for compatibility with software that uses that convention [@pandapower2026transformer; @pandapower2026acpowerflow]. The two options use the same input-derived $\underline z$ and $\underline y$, but place them differently:
+
+| Model option | Series placement | Magnetising placement | Interpretation |
+|---|---|---|---|
+| `"t"` | $\underline z_h$ and $\underline z_l$ around the midpoint | full $\underline y$ at the midpoint | physical equivalent circuit |
+| `"pi"` | total $\underline z$ between terminals | $\underline y/2$ at each end | direct symmetric approximation |
+
+: Transformer model distinction {#tbl-trafo-model-comparison}
+
+These two circuits are close when $|\underline z\,\underline y|\ll1$, but they are **not exactly terminal-equivalent** with unchanged parameters.
+
+### 5.1 Exact T-to-$\pi$ conversion
+
+An exact terminal-equivalent $\pi$ circuit follows from a star--delta transformation. Define
+
+$$
+\underline z_m=\frac{1}{\underline y},
+\qquad
+\underline D
+=\underline z_h\underline z_l
++\underline z_h\underline z_m
++\underline z_l\underline z_m.
+$$ {#eq-trafo-star-delta-sum}
+
+Then the equivalent $\pi$ parameters are
+
+$$
+\underline z_{\pi}=\frac{\underline D}{\underline z_m},
+\qquad
+\underline y_{h,\pi}=\frac{\underline z_l}{\underline D},
+\qquad
+\underline y_{l,\pi}=\frac{\underline z_h}{\underline D}.
+$$ {#eq-trafo-exact-pi}
+
+For an equal leakage split, these simplify to
+
+$$
+\underline z_{\pi}
+=\underline z+\frac{\underline z^2\underline y}{4},
+\qquad
+\underline y_{h,\pi}=\underline y_{l,\pi}
+=\frac{\underline y/2}{1+\underline z\underline y/4}.
+$$ {#eq-trafo-exact-pi-equal-split}
+
+The direct approximation $\underline z_{\pi}\approx\underline z$ and $\underline y_{h,\pi}\approx\underline y_{l,\pi}\approx\underline y/2$ drops the product corrections. Unequal leakage allocation produces unequal end shunts in the exact $\pi$ equivalent.
+
+## 6. Reproducible numerical example
+
+Consider a $40\ \mathrm{MVA}$, $110/10\ \mathrm{kV}$ transformer with
+
+$$
+v_k=10\%,\quad
+v_{kr}=0.5\%,\quad
+P_{fe}=30\ \mathrm{kW},\quad
+i_0=0.10\%.
+$$
+
+Use a $100\ \mathrm{MVA}$ network base whose voltage bases match $110/10\ \mathrm{kV}$. The next cell converts the nameplate values and checks their physical consistency.
+
+```{python}
+#| label: lst-trafo-nameplate-conversion
+#| lst-cap: "Convert transformer test data to a common per-unit base"
+#| code-summary: "Derive series impedance and magnetising admittance"
+
+import numpy as np
+
+np.set_printoptions(precision=7, suppress=True)
+
+
+def transformer_parameters_pu(
+    rated_power_mva: float,
+    system_power_mva: float,
+    vk_percent: float,
+    vkr_percent: float,
+    iron_loss_kw: float,
+    no_load_current_percent: float,
+) -> tuple[complex, complex]:
+    """Return series impedance and magnetising admittance on an aligned system base."""
+    z_magnitude_own = vk_percent / 100.0
+    resistance_own = vkr_percent / 100.0
+    if resistance_own > z_magnitude_own:
+        raise ValueError("vkr_percent cannot exceed vk_percent")
+
+    reactance_own = np.sqrt(z_magnitude_own**2 - resistance_own**2)
+    z_own = resistance_own + 1j * reactance_own
+
+    y_magnitude_own = no_load_current_percent / 100.0
+    conductance_own = iron_loss_kw / (1000.0 * rated_power_mva)
+    if conductance_own > y_magnitude_own:
+        raise ValueError("iron-loss conductance exceeds the no-load admittance")
+
+    susceptance_magnitude_own = np.sqrt(
+        y_magnitude_own**2 - conductance_own**2
+    )
+    y_own = conductance_own - 1j * susceptance_magnitude_own
+
+    power_scale = system_power_mva / rated_power_mva
+    return z_own * power_scale, y_own / power_scale
+
+
+z, y = transformer_parameters_pu(
+    rated_power_mva=40.0,
+    system_power_mva=100.0,
+    vk_percent=10.0,
+    vkr_percent=0.5,
+    iron_loss_kw=30.0,
+    no_load_current_percent=0.10,
+)
+
+print(f"series impedance z = {z.real:.7f} {z.imag:+.7f}j p.u.")
+print(f"magnetising admittance y = {y.real:.7f} {y.imag:+.7f}j p.u.")
+```
+
+Now construct both the direct $\pi$ model and the exact $\pi$ equivalent of an equal-split T model.
+
+```{python}
+#| label: lst-trafo-pi-comparison
+#| lst-cap: "Compare direct and T-equivalent pi parameters"
+#| code-summary: "Apply the star-delta conversion"
+
+
+def exact_pi_from_t(
+    z_hv: complex,
+    z_lv: complex,
+    magnetising_admittance: complex,
+) -> tuple[complex, complex, complex]:
+    """Convert a T circuit to terminal-equivalent pi parameters."""
+    if magnetising_admittance == 0:
+        return z_hv + z_lv, 0.0j, 0.0j
+
+    z_m = 1.0 / magnetising_admittance
+    delta_sum = z_hv * z_lv + z_hv * z_m + z_lv * z_m
+    z_series = delta_sum / z_m
+    y_hv = z_lv / delta_sum
+    y_lv = z_hv / delta_sum
+    return z_series, y_hv, y_lv
+
+
+z_direct = z
+y_hv_direct = y / 2.0
+y_lv_direct = y / 2.0
+
+z_t_equivalent, y_hv_t_equivalent, y_lv_t_equivalent = exact_pi_from_t(
+    z / 2.0, z / 2.0, y
+)
+
+print("direct pi:")
+print("  z_pi =", z_direct)
+print("  y_hv  =", y_hv_direct)
+print("exact pi equivalent of the T model:")
+print("  z_pi =", z_t_equivalent)
+print("  y_hv  =", y_hv_t_equivalent)
+print(f"relative series-parameter difference = {abs(z_t_equivalent / z_direct - 1):.3e}")
+```
+
+The difference is small for these realistic no-load parameters, but it is nonzero. Calling the circuits equivalent without changing their parameters would therefore be incorrect.
+
+### 6.1 Stamp the transformer and verify power
+
+Use an off-nominal ratio $\underline n=1.025e^{\mathrm{j}2^\circ}$ and two illustrative bus voltages. The helper below implements @eq-trafo-pi-stamp for either symmetric or asymmetric end shunts.
+
+```{python}
+#| label: lst-trafo-pi-stamp-check
+#| lst-cap: "Stamp the transformer and reconcile its absorbed power"
+#| code-summary: "Calculate terminal currents, powers, and a loss check"
+
+
+def transformer_pi_stamp(
+    z_series: complex,
+    y_hv: complex,
+    y_lv: complex,
+    ratio: complex = 1.0 + 0.0j,
+) -> np.ndarray:
+    """Return the HV/LV primitive admittance matrix."""
+    if z_series == 0 or ratio == 0:
+        raise ValueError("series impedance and ratio must be nonzero")
+
+    y_series = 1.0 / z_series
+    return np.array(
+        [
+            [
+                (y_series + y_hv) / abs(ratio) ** 2,
+                -y_series / ratio.conjugate(),
+            ],
+            [-y_series / ratio, y_series + y_lv],
+        ],
+        dtype=complex,
+    )
+
+
+ratio = 1.025 * np.exp(1j * np.deg2rad(2.0))
+voltage = np.array(
+    [
+        1.03 * np.exp(1j * np.deg2rad(0.0)),
+        0.985 * np.exp(1j * np.deg2rad(-4.0)),
+    ]
+)
+
+y_branch = transformer_pi_stamp(
+    z_direct, y_hv_direct, y_lv_direct, ratio
+)
+current = y_branch @ voltage
+terminal_power = voltage * current.conjugate()
+
+# Independently reconstruct the complex power absorbed by each passive branch.
+internal_hv_voltage = voltage[0] / ratio
+y_series = 1.0 / z_direct
+branch_power = (
+    abs(internal_hv_voltage - voltage[1]) ** 2 * y_series.conjugate()
+    + abs(internal_hv_voltage) ** 2 * y_hv_direct.conjugate()
+    + abs(voltage[1]) ** 2 * y_lv_direct.conjugate()
+)
+
+print("Y_trafo =")
+print(y_branch)
+for side, value in zip(("HV", "LV"), terminal_power):
+    print(f"{side} terminal power = {value.real:+.7f} {value.imag:+.7f}j p.u.")
+print("total absorbed power =", terminal_power.sum())
+print(f"power-reconstruction error = {abs(terminal_power.sum() - branch_power):.3e} p.u.")
+
+assert np.allclose(terminal_power.sum(), branch_power)
+assert terminal_power.real.sum() > 0.0
+```
+
+The two terminal powers can individually have either sign because power enters one winding and leaves the other. Their sum is the transformer's absorbed complex power. Its positive real part contains series copper loss and shunt iron loss. The independent branch calculation verifies both the tap scaling and current directions.
+
+## 7. Practical modelling choices
+
+### When the direct $\pi$ model is useful
+
+- reproducing or validating a program whose transformer branch is defined in that form;
+- constructing a two-bus Y-bus stamp from already converted $\pi$ parameters; or
+- making a controlled approximation when the neglected $\underline z\,\underline y$ corrections are demonstrably immaterial.
+
+### When more detail is needed
+
+- Use the T model when the physical placement of the magnetising branch or leakage split matters.
+- Use sequence-aware transformer models for unbalanced load flow and fault studies; the vector group and grounding determine zero-sequence transfer.
+- Use saturation and time-domain models for energisation, inrush, ferroresonance, harmonics, or fast transients.
+- Represent tap-dependent impedance and phase-shifting logic explicitly when those effects are present in the source data.
+
+::: {.callout-warning}
+A positive-sequence $\pi$ stamp cannot infer a zero-sequence path from $v_k$, $v_{kr}$, $P_{fe}$, and $i_0$. Winding connection, neutral grounding, and zero-sequence test data are additional inputs.
+:::
+
+## 8. Common mistakes
+
+1. **Treating percentages as per-unit values.** Divide $10\%$ by $100$ before using it as $0.10$ p.u.
+2. **Using $x_k=z_k$.** Compute $x_k=\sqrt{z_k^2-r_k^2}$ unless resistance is deliberately neglected.
+3. **Giving magnetising susceptance the wrong sign.** An inductive shunt is $g-\mathrm{j}b$ under the convention used here.
+4. **Scaling impedance and admittance in the same direction.** Their base-conversion factors are reciprocal.
+5. **Dropping the tap from diagonal terms.** The HV self-admittance carries $1/|\underline n|^2$.
+6. **Calling unchanged T and $\pi$ parameters exact equivalents.** Exact equivalence requires @eq-trafo-exact-pi.
+7. **Ignoring convention differences.** Tap side, ratio direction, phase-shift sign, and terminal-current direction must all match the target software.
+
+## 9. Takeaways
+
+- The series branch comes from the short-circuit test; the magnetising branch comes from the open-circuit test.
+- Pandapower's direct $\pi$ option uses total $\underline z$ in series and splits total $\underline y$ equally between the ends.
+- A complex off-nominal ratio changes all four entries of the two-terminal admittance stamp.
+- The physical T model and the direct $\pi$ approximation are generally close, not identical.
+- A star--delta transformation produces an exact terminal-equivalent $\pi$ model, including asymmetric end shunts when leakage is unevenly distributed.
+- Terminal-power reconstruction is a compact numerical check of ratio, sign, and admittance conventions.
+
+## References {.unnumbered}
+
+::: {#refs}
+:::

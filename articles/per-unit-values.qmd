@@ -1,0 +1,392 @@
+---
+title: "What Is a Per-Unit Value?"
+subtitle: "Normalise power-system quantities without losing their physical meaning"
+description: "Learn how per-unit bases are chosen, derive three-phase base current and impedance, change bases safely, and see why transformer ratios disappear."
+author: "Power Systems Foundation contributors"
+date: "2026-08-09"
+date-modified: "2026-08-09"
+categories: [Fundamentals, Per-unit system, Transformers, Python]
+reading-time: 15
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+draft: false
+---
+
+## What you will learn
+
+After working through this tutorial, you should be able to:
+
+- define a per-unit value and recover its physical value;
+- choose coherent power and voltage bases for a balanced three-phase system;
+- derive base current, impedance, and admittance;
+- convert impedances and admittances from one base to another;
+- explain why a transformer can have the same per-unit impedance on both sides; and
+- verify a multi-voltage base calculation with NumPy.
+
+## Prerequisites
+
+You should know Ohm's law, complex power, and the difference between line-to-line and line-to-neutral voltage in a balanced three-phase system. The [complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd) reviews phasors and complex power, and the [star--delta tutorial](star-delta-three-phase-systems.qmd) develops the three-phase voltage and current relationships used here.
+
+## 1. One physical value, measured relative to a base
+
+A **per-unit value** is a physical quantity divided by a chosen reference value of the same kind:
+
+$$
+x_{pu}=\frac{x}{x_B}.
+$$ {#eq-pu-definition}
+
+The result is dimensionless. The subscript $B$ denotes the base, not a measured operating point. To return to physical units,
+
+$$
+x=x_{pu}x_B.
+$$ {#eq-pu-denormalise}
+
+For example, a $220\ \mathrm{kV}$ voltage on a $230\ \mathrm{kV}$ base is
+
+$$
+V_{pu}
+=\frac{220\ \mathrm{kV}}{230\ \mathrm{kV}}
+\approx0.9565\ \mathrm{p.u.}
+$$
+
+and $1.05$ p.u. means $5\%$ above the selected base value. Percent and per-unit values contain the same information:
+
+$$
+x_{\%}=100x_{pu},
+\qquad
+x_{pu}=\frac{x_{\%}}{100}.
+$$ {#eq-pu-percent}
+
+Thus an $8\%$ transformer impedance is $0.08$ p.u., not $8$ p.u.
+
+::: {.callout-important}
+A per-unit number is incomplete without its base. $1$ p.u. voltage can mean $400\ \mathrm{V}$ in one zone and $230\ \mathrm{kV}$ in another. The normalised values are equal; the physical voltages are not.
+:::
+
+## 2. Choose two independent bases
+
+Voltage, current, power, and impedance cannot all be selected independently if Ohm's law and the power equations are to retain their usual form. Power-system studies normally choose
+
+1. a three-phase apparent-power base $S_B$; and
+2. a line-to-line RMS voltage base $V_B$ at one bus.
+
+The other bases follow from the balanced three-phase relation $S=\sqrt{3}V_{LL}I_L$:
+
+$$
+I_B=\frac{S_B}{\sqrt{3}V_B},
+$$ {#eq-pu-current-base}
+
+$$
+Z_B=\frac{V_B^2}{S_B},
+\qquad
+Y_B=\frac{1}{Z_B}=\frac{S_B}{V_B^2}.
+$$ {#eq-pu-impedance-base}
+
+If $S_B$ is entered in MVA and $V_B$ in kV, @eq-pu-current-base gives kA and @eq-pu-impedance-base gives ohms. This convenient unit cancellation is one reason those engineering units are commonly paired.
+
+The same impedance base follows from per-phase quantities:
+
+$$
+\frac{V_{B,LN}^2}{S_B/3}
+=\frac{(V_{B,LL}/\sqrt{3})^2}{S_B/3}
+=\frac{V_{B,LL}^2}{S_B}.
+$$ {#eq-pu-phase-three-phase-consistency}
+
+The two formulations agree only when the line-to-line/line-to-neutral and total/per-phase conventions are paired consistently.
+
+## 3. Normalise each electrical quantity
+
+With coherent bases, common quantities become the values below. In every ratio, the numerator and base must use the same convention: for example, line-to-line voltage divided by a line-to-line base, or phase-to-neutral voltage divided by its phase-to-neutral base.
+
+| Quantity | Per-unit definition | Recover physical value |
+|---|---|---|
+| Voltage | $\underline V_{pu}=\underline V/V_B$ | $\underline V=\underline V_{pu}V_B$ |
+| Current | $\underline I_{pu}=\underline I/I_B$ | $\underline I=\underline I_{pu}I_B$ |
+| Complex power | $\underline S_{pu}=\underline S/S_B$ | $\underline S=\underline S_{pu}S_B$ |
+| Impedance | $\underline Z_{pu}=\underline Z/Z_B$ | $\underline Z=\underline Z_{pu}Z_B$ |
+| Admittance | $\underline Y_{pu}=\underline Y/Y_B$ | $\underline Y=\underline Y_{pu}Y_B$ |
+
+: Per-unit and physical quantities {#tbl-pu-definitions}
+
+For balanced phasor equations, take $\underline V_\phi$ as a phase-to-neutral voltage and $\underline I$ as the corresponding line current. Its voltage base is $V_{B,\phi}=V_{B,LL}/\sqrt{3}$, while its per-unit magnitude is the same as the line-to-line voltage's per-unit magnitude. Because $Z_B=V_{B,\phi}/I_B$, Ohm's law keeps exactly the same algebraic form:
+
+$$
+\underline V_{\phi,pu}=\underline Z_{pu}\underline I_{pu}.
+$$ {#eq-pu-ohms-law}
+
+Since $S_B=3V_{B,\phi}I_B$, the balanced three-phase complex-power relation also retains its form:
+
+$$
+\underline S_{pu}=\underline V_{\phi,pu}\underline I_{pu}^*.
+$$ {#eq-pu-complex-power}
+
+The equations are not new physics. Per-unit normalisation is a change of numerical scale that preserves the underlying circuit laws [@grainger1994; @ybus_glover2017].
+
+::: {.callout-note}
+Voltage and current angles are normally left as angles in radians or degrees; they are not divided by the voltage or current base. Likewise, a statement such as $0.95$ p.u. should identify whether it refers to a magnitude, a complex phasor, or another quantity.
+:::
+
+## 4. Why power engineers use per unit
+
+### Operating conditions become easy to read
+
+A bus voltage of $0.97$ p.u. is immediately recognisable as $3\%$ below its base voltage, regardless of whether the bus is at low, medium, or high voltage.
+
+### Equipment values become easier to compare
+
+Impedances of equipment with very different voltage and power ratings often occupy similar per-unit ranges on their own ratings. A suspicious value can therefore be easier to spot in per unit than in ohms.
+
+### Multi-voltage networks become simpler
+
+Choose one system-wide $S_B$. Select $V_B$ in one voltage zone, then propagate voltage bases across every transformer in proportion to its rated turns ratio. Under that rule, nominal ideal-transformer **magnitude** ratios disappear from the per-unit network; an intentional phase shift or off-nominal tap remains. Lines, machines, and transformer impedances can then be connected without repeatedly referring every impedance through turns-ratio squares.
+
+### Numerical scales are often friendlier
+
+Many normal operating quantities lie near unity rather than spanning volts to hundreds of kilovolts and amperes to kiloamperes. This scaling can improve interpretability and sometimes numerical conditioning, although it cannot repair an intrinsically ill-conditioned model.
+
+## 5. Why the ideal transformer ratio disappears
+
+Consider an ideal transformer with no phase shift and rated magnitude ratio
+
+$$
+a=\frac{V_{r,H}}{V_{r,L}}.
+$$ {#eq-pu-transformer-ratio}
+
+Use the same power base on both sides and select voltage bases such that
+
+$$
+\frac{V_{B,H}}{V_{B,L}}=a.
+$$ {#eq-pu-transformer-voltage-bases}
+
+Since $V_H=aV_L$ for the ideal transformer,
+
+$$
+V_{H,pu}
+=\frac{aV_L}{aV_{B,L}}
+=V_{L,pu}.
+$$ {#eq-pu-transformer-voltage-equality}
+
+The current bases change inversely with voltage, just as the physical winding currents do, so their per-unit magnitudes also match. The impedance bases satisfy
+
+$$
+\frac{Z_{B,H}}{Z_{B,L}}
+=\left(\frac{V_{B,H}}{V_{B,L}}\right)^2
+=a^2.
+$$ {#eq-pu-transformer-impedance-base-ratio}
+
+A physical impedance referred from the low side to the high side also gains the factor $a^2$. Dividing by the corresponding base therefore gives the same per-unit impedance on either side:
+
+$$
+\frac{a^2\underline Z_L}{a^2 Z_{B,L}}
+=\frac{\underline Z_L}{Z_{B,L}}.
+$$ {#eq-pu-transformer-impedance-invariance}
+
+This invariance depends on a common power base and voltage bases that follow the transformer ratio. If the chosen voltage bases do not match that ratio, an off-nominal per-unit tap remains. The [transformer $\pi$-model tutorial](transformer-pi-model.qmd) shows how that tap enters a two-bus admittance stamp.
+
+## 6. Change a per-unit base safely
+
+The physical quantity does not change when its base changes. For impedance,
+
+$$
+\underline Z
+=\underline Z_{pu,old}\frac{V_{B,old}^2}{S_{B,old}}
+=\underline Z_{pu,new}\frac{V_{B,new}^2}{S_{B,new}}.
+$$
+
+Solving for the new per-unit value gives
+
+$$
+\underline Z_{pu,new}
+=\underline Z_{pu,old}
+\frac{S_{B,new}}{S_{B,old}}
+\left(\frac{V_{B,old}}{V_{B,new}}\right)^2.
+$$ {#eq-pu-impedance-base-change}
+
+Admittance uses the reciprocal factor:
+
+$$
+\underline Y_{pu,new}
+=\underline Y_{pu,old}
+\frac{S_{B,old}}{S_{B,new}}
+\left(\frac{V_{B,new}}{V_{B,old}}\right)^2.
+$$ {#eq-pu-admittance-base-change}
+
+Power and voltage conversions follow directly from @eq-pu-definition:
+
+$$
+\underline S_{pu,new}
+=\underline S_{pu,old}\frac{S_{B,old}}{S_{B,new}},
+\qquad
+\underline V_{pu,new}
+=\underline V_{pu,old}\frac{V_{B,old}}{V_{B,new}}.
+$$ {#eq-pu-power-voltage-base-change}
+
+::: {.callout-tip}
+When uncertain about a memorised base-change formula, return to physical units and divide by the new base. That two-step route is slower on paper but makes the direction of every factor unambiguous.
+:::
+
+## 7. Reproducible single-bus calculation
+
+Take a $100\ \mathrm{MVA}$, $230\ \mathrm{kV}$ base. Suppose the actual line-to-line voltage is $220\ \mathrm{kV}$ and the three-phase complex power is $80+\mathrm{j}30\ \mathrm{MVA}$. Also consider a branch impedance $8+\mathrm{j}40\ \Omega$ in this voltage zone.
+
+```{python}
+#| label: lst-pu-single-zone
+#| lst-cap: "Calculate and verify per-unit quantities in one voltage zone"
+#| code-summary: "Build coherent three-phase bases and normalise values"
+
+import numpy as np
+
+
+def three_phase_bases(power_mva: float, voltage_ll_kv: float) -> dict[str, float]:
+    """Return line-current, impedance, and admittance bases."""
+    current_ka = power_mva / (np.sqrt(3.0) * voltage_ll_kv)
+    impedance_ohm = voltage_ll_kv**2 / power_mva
+    admittance_siemens = 1.0 / impedance_ohm
+    return {
+        "current_ka": current_ka,
+        "impedance_ohm": impedance_ohm,
+        "admittance_siemens": admittance_siemens,
+    }
+
+
+s_base_mva = 100.0
+v_base_ll_kv = 230.0
+v_base_phase_kv = v_base_ll_kv / np.sqrt(3.0)
+bases = three_phase_bases(s_base_mva, v_base_ll_kv)
+
+voltage_phase_kv = 220.0 / np.sqrt(3.0) + 0.0j
+power_mva = 80.0 + 30.0j
+current_ka = np.conj(power_mva / (3.0 * voltage_phase_kv))
+impedance_ohm = 8.0 + 40.0j
+
+voltage_pu = voltage_phase_kv / v_base_phase_kv
+current_pu = current_ka / bases["current_ka"]
+power_pu = power_mva / s_base_mva
+impedance_pu = impedance_ohm / bases["impedance_ohm"]
+
+print(f"I_base = {bases['current_ka']:.6f} kA")
+print(f"Z_base = {bases['impedance_ohm']:.3f} ohm")
+print(f"V = {voltage_pu:.6f} p.u.")
+print(f"I = {current_pu.real:.6f} {current_pu.imag:+.6f}j p.u.")
+print(f"S = {power_pu.real:.6f} {power_pu.imag:+.6f}j p.u.")
+print(f"Z = {impedance_pu.real:.6f} {impedance_pu.imag:+.6f}j p.u.")
+
+# Coherent bases preserve the complex-power equation and the round trip.
+assert np.allclose(power_pu, voltage_pu * current_pu.conjugate())
+assert np.allclose(impedance_ohm, impedance_pu * bases["impedance_ohm"])
+```
+
+The physical values have different units and scales, but the per-unit results are all dimensionless quantities of order one or smaller. The two assertions verify both the complex-power identity and conversion back to ohms.
+
+## 8. Transformer example: the same impedance on both sides
+
+Consider a transformer rated $50\ \mathrm{MVA}$, $230/115\ \mathrm{kV}$ with an $8\%$ impedance magnitude. Let its resistive component be $0.8\%$, so its own-base complex impedance is
+
+$$
+\underline z_{old}
+=0.008+\mathrm{j}\sqrt{0.08^2-0.008^2}.
+$$
+
+The next calculation refers the physical impedance to each winding, changes to a $100\ \mathrm{MVA}$ system base, and verifies that both sides give the same result.
+
+```{python}
+#| label: lst-pu-transformer-base-change
+#| lst-cap: "Change a transformer impedance to a common system base"
+#| code-summary: "Verify per-unit invariance across transformer windings"
+
+
+def change_impedance_base(
+    z_pu_old: complex,
+    s_base_old_mva: float,
+    v_base_old_kv: float,
+    s_base_new_mva: float,
+    v_base_new_kv: float,
+) -> complex:
+    """Convert a per-unit impedance between power and voltage bases."""
+    return (
+        z_pu_old
+        * (s_base_new_mva / s_base_old_mva)
+        * (v_base_old_kv / v_base_new_kv) ** 2
+    )
+
+
+s_rated_mva = 50.0
+v_hv_rated_kv = 230.0
+v_lv_rated_kv = 115.0
+turns_ratio = v_hv_rated_kv / v_lv_rated_kv
+
+z_old = 0.008 + 1j * np.sqrt(0.08**2 - 0.008**2)
+z_base_hv_old = v_hv_rated_kv**2 / s_rated_mva
+z_base_lv_old = v_lv_rated_kv**2 / s_rated_mva
+z_hv_ohm = z_old * z_base_hv_old
+z_lv_ohm = z_old * z_base_lv_old
+
+s_system_mva = 100.0
+v_hv_system_kv = 220.0
+v_lv_system_kv = 110.0  # propagated through the same 2:1 ratio
+
+z_hv_pu = z_hv_ohm / (v_hv_system_kv**2 / s_system_mva)
+z_lv_pu = z_lv_ohm / (v_lv_system_kv**2 / s_system_mva)
+z_formula = change_impedance_base(
+    z_old,
+    s_rated_mva,
+    v_hv_rated_kv,
+    s_system_mva,
+    v_hv_system_kv,
+)
+
+print(f"HV-referred physical impedance = {z_hv_ohm:.6f} ohm")
+print(f"LV-referred physical impedance = {z_lv_ohm:.6f} ohm")
+print(f"HV-side system-base impedance = {z_hv_pu:.7f} p.u.")
+print(f"LV-side system-base impedance = {z_lv_pu:.7f} p.u.")
+print(f"direct base-change result      = {z_formula:.7f} p.u.")
+
+assert np.allclose(z_hv_ohm, turns_ratio**2 * z_lv_ohm)
+assert np.allclose(z_hv_pu, z_lv_pu)
+assert np.allclose(z_hv_pu, z_formula)
+```
+
+Although the HV-referred impedance in ohms is four times the LV-referred value, the HV impedance base is also four times larger. Their per-unit values are therefore identical. The direct formula in @eq-pu-impedance-base-change reaches the same result without first calculating ohms.
+
+## 9. Common mistakes
+
+### Confusing the base with the actual value
+
+The voltage base is a selected reference. It is often chosen equal to nominal voltage for convenience, but actual operating voltage still varies around it.
+
+### Mixing three-phase and per-phase conventions
+
+Use total three-phase $S_B$ with line-to-line $V_B$ in @eq-pu-current-base and @eq-pu-impedance-base. If per-phase power is used, pair it with line-to-neutral voltage.
+
+### Forgetting which base a manufacturer used
+
+Transformer and machine percentages are normally stated on the equipment's own rating. Convert them before combining them with network quantities on a different system base.
+
+### Applying the impedance factor to admittance
+
+Impedance and admittance scale reciprocally. Use @eq-pu-admittance-base-change or convert through siemens.
+
+### Propagating voltage bases incorrectly
+
+Across each transformer, propagate the voltage base by the rated ratio and keep the same power base. A wrong voltage zone silently introduces squared errors in impedance.
+
+### Assuming per unit fixes every numerical problem
+
+Normalisation reduces scale disparities, but singular topology, poor observability, weak Jacobians, and bad parameters remain physical or modelling problems.
+
+## 10. Takeaways
+
+- A per-unit value is an actual quantity divided by a declared base quantity.
+- In balanced three-phase studies, choosing total $S_B$ and line-to-line $V_B$ determines $I_B$, $Z_B$, and $Y_B$.
+- Coherent bases preserve the familiar forms of Ohm's law and the complex-power equation.
+- A system-wide power base and transformer-ratio-consistent voltage bases remove nominal ideal-transformer ratios.
+- Impedance base conversion scales directly with new power base and inversely with the square of new voltage base; admittance does the opposite.
+- The same per-unit transformer impedance appears on both windings because the physical impedance and its base both transform by the turns ratio squared.
+- A per-unit result is meaningful only when its base and convention are known.
+
+## References {.unnumbered}
+
+::: {#refs}
+:::

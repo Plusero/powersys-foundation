@@ -1,0 +1,294 @@
+---
+title: "What Is Zero-Sequence Current?"
+subtitle: "Symmetrical components, return paths, and the meaning of 3I0"
+description: "Decompose three-phase currents into sequence components, explain where zero-sequence current can flow, and verify the residual-current relationship in Python."
+author: "Power Systems Foundation contributors"
+date: "2026-08-09"
+date-modified: "2026-08-09"
+categories: [Three-phase systems, Fault analysis, Protection, Fundamentals, Python]
+reading-time: 13
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+draft: false
+---
+
+## What you will learn
+
+After working through this tutorial, you should be able to:
+
+- define zero-sequence current from three phase-current phasors;
+- distinguish the per-phase component $I_0$ from the residual current $3I_0$;
+- explain why the three zero-sequence phasors are in phase;
+- identify the neutral, earth, and transformer paths that permit or block zero-sequence line current;
+- relate zero-sequence current to common fault and non-fault conditions; and
+- calculate and reconstruct symmetrical components in Python.
+
+## Prerequisites
+
+You should be comfortable with RMS phasors and balanced three-phase sets. The [complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd) introduces phasor notation, while [Why Power Systems Use Three Phases](why-three-phase-power-systems.qmd) and the [star--delta tutorial](star-delta-three-phase-systems.qmd) develop the phase relationships and neutral-current balance used here.
+
+## 1. The short answer
+
+For phase-current phasors $\underline I_a$, $\underline I_b$, and $\underline I_c$, the **zero-sequence current** is
+
+$$
+\boxed{
+\underline I_0
+=\frac{1}{3}
+\left(\underline I_a+\underline I_b+\underline I_c\right)
+}
+$$ {#eq-zs-zero-sequence-definition}
+
+The zero-sequence part of the three phase currents is therefore
+
+$$
+\underline I_{a0}
+=\underline I_{b0}
+=\underline I_{c0}
+=\underline I_0.
+$$ {#eq-zs-in-phase-components}
+
+All three phasors have the same magnitude **and the same angle**. Their sum reinforces rather than cancels:
+
+$$
+\underbrace{\underline I_a+\underline I_b+\underline I_c}_{\text{residual current}}
+=3\underline I_0.
+$$ {#eq-zs-residual-current}
+
+This common-mode component is useful because balanced positive- and negative-sequence currents each sum to zero. A residual-current measurement therefore isolates the part of the phase-current set that needs a neutral, earth, cable screen, or another common return path.
+
+::: {.callout-important}
+$I_0$ and $3I_0$ are not numerically interchangeable. In standard symmetrical-component notation, $I_0$ is the zero-sequence current **per phase** and $3I_0$ is the three-phase residual. Relay manuals and software displays sometimes label the residual quantity simply as “ground current” or even “zero-sequence current,” so always check the product definition and scaling.
+:::
+
+## 2. Where $I_0$ comes from
+
+Fortescue's symmetrical-component transformation represents any three unbalanced phasors as the sum of three structured sets: zero, positive, and negative sequence [@fortescue1918symmetricalcomponents]. For an $a$--$b$--$c$ phase order, define
+
+$$
+a=e^{\mathrm{j}2\pi/3},
+\qquad
+a^2=e^{\mathrm{j}4\pi/3},
+\qquad
+1+a+a^2=0.
+$$ {#eq-zs-sequence-operator}
+
+The phase currents are reconstructed from their sequence components by
+
+$$
+\begin{bmatrix}
+\underline I_a\\
+\underline I_b\\
+\underline I_c
+\end{bmatrix}
+=
+\underbrace{
+\begin{bmatrix}
+1&1&1\\
+1&a^2&a\\
+1&a&a^2
+\end{bmatrix}}_{\mathbf A}
+\begin{bmatrix}
+\underline I_0\\
+\underline I_1\\
+\underline I_2
+\end{bmatrix}.
+$$ {#eq-zs-forward-transform}
+
+The inverse transformation is
+
+$$
+\begin{bmatrix}
+\underline I_0\\
+\underline I_1\\
+\underline I_2
+\end{bmatrix}
+=
+\frac{1}{3}
+\begin{bmatrix}
+1&1&1\\
+1&a&a^2\\
+1&a^2&a
+\end{bmatrix}
+\begin{bmatrix}
+\underline I_a\\
+\underline I_b\\
+\underline I_c
+\end{bmatrix}.
+$$ {#eq-zs-inverse-transform}
+
+The first row of @eq-zs-inverse-transform gives @eq-zs-zero-sequence-definition immediately. The three sequence sets have different geometry:
+
+- **positive sequence:** equal magnitudes, $120^\circ$ apart, with the original $a$--$b$--$c$ order;
+- **negative sequence:** equal magnitudes, $120^\circ$ apart, with the reverse order; and
+- **zero sequence:** equal magnitudes with zero angular displacement.
+
+The indices $0$, $1$, and $2$ label sequence components, not phases. For example, $\underline I_0$ contributes the same phasor to phases $a$, $b$, and $c$.
+
+## 3. The physical return-path interpretation
+
+Suppose all four current-reference arrows point into the same network boundary. Kirchhoff's current law gives
+
+$$
+\underline I_a+\underline I_b+\underline I_c+\underline I_n=0,
+$$ {#eq-zs-kcl-neutral}
+
+where $\underline I_n$ is the neutral or other common-return current on that common entering-current convention. Combining @eq-zs-kcl-neutral with @eq-zs-residual-current gives
+
+$$
+\underline I_n=-3\underline I_0.
+$$ {#eq-zs-neutral-current}
+
+The negative sign says that the physical neutral return is opposite to the three phase-current arrows; its magnitude is $3|I_0|$. This is why a four-wire grounded-wye circuit can carry zero-sequence line current, whereas an ideal isolated three-wire section enforces $\underline I_a+\underline I_b+\underline I_c=0$ at its boundary and therefore has no zero-sequence **line** current there.
+
+The path, not merely the existence of unbalance, is decisive [@grainger1994]:
+
+| Connection or path | Zero-sequence behaviour |
+|---|---|
+| Grounded-wye neutral | Permits line current to return through the neutral and grounding network |
+| Ungrounded-wye neutral | Blocks steady zero-sequence line current through that winding, apart from capacitances and non-ideal paths |
+| Delta winding | Can support zero-sequence current circulating inside the closed delta, but zero-sequence current cannot appear in its three line leads |
+| Grounded-wye--delta transformer | The grounded-wye side can exchange zero-sequence line current with ground; balancing current can circulate in the delta, but it does not pass out as delta-side line current |
+| Three-wire line with shunt capacitance to earth | May carry capacitive earth-fault current because the phase-to-earth capacitances complete a return path |
+
+::: {.callout-note}
+“A delta blocks zero sequence” is useful shorthand only for **terminal line currents**. It does not mean that every delta-winding zero-sequence current is zero: equal in-phase currents can circulate around the closed winding while cancelling at its three external terminals.
+:::
+
+The return path also determines the zero-sequence impedance network used in fault calculations. A neutral grounding impedance $Z_n$ carries $3I_0$, so it appears as $3Z_n$ in the per-phase zero-sequence network. Transformer winding connections and grounding therefore affect earth-fault current much more directly than they affect positive- or negative-sequence current.
+
+## 4. When should zero-sequence current appear?
+
+A nonzero $I_0$ is strongly associated with ground involvement, but it is not a universal fault flag.
+
+| Condition | Ideal zero-sequence current at the observation point? | Reason |
+|---|---:|---|
+| Balanced three-phase load | No | The three phase phasors sum to zero |
+| Balanced three-phase fault | No | The fault remains a positive-sequence condition |
+| Phase-to-phase fault with no ground path | No | The two fault currents are equal and opposite and the third is zero |
+| Single-phase-to-ground fault | Usually yes | Fault current returns through ground, neutral, screens, or phase-to-earth capacitance |
+| Two-phase-to-ground fault | Usually yes | The ground connection couples in the zero-sequence network |
+| Unequal phase-to-neutral loads in a four-wire system | Possibly yes | The neutral carries the non-cancelling phase-current sum |
+| Open conductor, asymmetrical line, or nontransposed line | Possibly yes | The operating asymmetry can create a residual component if a return path exists |
+
+For an $a$-phase-to-ground fault at the fault point, $\underline I_b=\underline I_c=0$. Substitution in @eq-zs-inverse-transform gives
+
+$$
+\underline I_0=\underline I_1=\underline I_2
+=\frac{\underline I_a}{3}.
+$$ {#eq-zs-slg-components}
+
+That equality is a boundary-condition result at the fault. It does not say that the three sequence impedances are equal, nor that every relay elsewhere measures the same sequence-current contribution.
+
+Protection engineers exploit the fact that normal residual current is often small. A relay can calculate $3I_0$ from three phase-current transformers or measure the flux sum directly with a core-balance current transformer. Zero-sequence overcurrent and directional elements can then detect sensitive ground faults. However, unbalanced loading, nontransposed lines, open phases, current-transformer mismatch, and zero-sequence mutual coupling can all influence the measured quantity; pickup settings must allow for normal-system residual current [@mooney1998groundfault].
+
+## 5. Reproduce the decomposition in Python
+
+Construct a current set from known sequence components:
+
+$$
+\underline I_0=12\angle30^\circ\ \mathrm A,
+\qquad
+\underline I_1=100\angle(-10^\circ)\ \mathrm A,
+\qquad
+\underline I_2=7\angle70^\circ\ \mathrm A.
+$$ {#eq-zs-example-components}
+
+The example transforms these components to phase currents and then recovers them. It also verifies that the residual is exactly $3I_0$.
+
+```{python}
+#| label: lst-zs-symmetrical-components
+#| code-summary: "Transform between phase and sequence currents"
+
+import numpy as np
+
+np.set_printoptions(precision=6, suppress=True)
+
+
+def phasor(magnitude, angle_deg):
+    """Create an RMS phasor from magnitude and angle in degrees."""
+    return magnitude * np.exp(1j * np.deg2rad(angle_deg))
+
+
+def polar_string(value):
+    """Format a complex phasor in polar form."""
+    return f"{abs(value):8.3f} at {np.rad2deg(np.angle(value)):8.3f} deg"
+
+
+a = np.exp(1j * 2.0 * np.pi / 3.0)
+
+A_phase_from_sequence = np.array(
+    [
+        [1.0, 1.0, 1.0],
+        [1.0, a**2, a],
+        [1.0, a, a**2],
+    ],
+    dtype=complex,
+)
+
+A_sequence_from_phase = (
+    np.array(
+        [
+            [1.0, 1.0, 1.0],
+            [1.0, a, a**2],
+            [1.0, a**2, a],
+        ],
+        dtype=complex,
+    )
+    / 3.0
+)
+
+current_012 = np.array(
+    [
+        phasor(12.0, 30.0),
+        phasor(100.0, -10.0),
+        phasor(7.0, 70.0),
+    ]
+)
+
+current_abc = A_phase_from_sequence @ current_012
+recovered_012 = A_sequence_from_phase @ current_abc
+residual_current = current_abc.sum()
+
+np.testing.assert_allclose(recovered_012, current_012, atol=1e-12)
+np.testing.assert_allclose(residual_current, 3.0 * current_012[0], atol=1e-12)
+
+for name, value in zip(("Ia", "Ib", "Ic"), current_abc):
+    print(f"{name}: {polar_string(value)}")
+
+print()
+for name, value in zip(("I0", "I1", "I2"), recovered_012):
+    print(f"{name}: {polar_string(value)}")
+
+print(f"\nIa + Ib + Ic: {polar_string(residual_current)}")
+print(f"3 I0:          {polar_string(3.0 * recovered_012[0])}")
+```
+
+Although the phase currents have quite different magnitudes and angles, the inverse transform recovers the prescribed $I_0$, $I_1$, and $I_2$. The negative-sequence component changes the individual phase currents but contributes nothing to their sum. Only the three equal zero-sequence phasors survive the residual calculation.
+
+Try setting `current_012[0]` to zero. The phase currents can remain badly unbalanced because $I_2$ is still present, yet their vector sum becomes zero. **Unbalance and zero sequence are related but not synonymous.**
+
+## 6. Common misconceptions
+
+**“Any unbalance creates zero-sequence current.”**  No. A phase-to-phase fault is unbalanced and contains negative sequence, but its three phase currents still sum to zero when there is no ground connection.
+
+**“Zero sequence means zero frequency.”**  No. The word *zero* describes zero phase displacement among the three component phasors. At the fundamental, all three still oscillate at the grid frequency. Triplen harmonics can also form zero-sequence sets, but harmonic order and sequence order are different concepts.
+
+**“A nonzero $3I_0$ proves there is a ground fault.”**  No. It is evidence of a non-cancelling current and a common return path. Normal unbalance, shunt capacitance, open conductors, sensor errors, and CT saturation must also be considered.
+
+**“Zero-sequence current flows through every transformer.”**  No. Winding connection, grounding, core construction, and the external return path determine whether it circulates internally, appears at line terminals, or is blocked.
+
+## 7. Takeaways
+
+- Zero-sequence current is the average phasor $(I_a+I_b+I_c)/3$.
+- Its three phase components are equal and in phase, so the residual current is $3I_0$.
+- A physical common return path is required; neutral grounding and transformer connections determine that path.
+- Ground faults commonly produce zero sequence, but some unbalanced faults do not and some non-fault conditions do.
+- Residual-current protection is sensitive precisely because ordinary balanced load components cancel, but settings must account for normal asymmetry and measurement error.
+
+## References {.unnumbered}
+
+::: {#refs}
+:::
