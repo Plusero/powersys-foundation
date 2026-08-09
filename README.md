@@ -2,6 +2,8 @@
 
 An open collection of practical tutorials for understanding and analysing electric power systems. Every tutorial pairs its derivation with executable Python so readers can change inputs, rerun the method, and build practical intuition. The website is built with [Quarto](https://quarto.org/) and published with GitHub Pages.
 
+Visit the [Power Systems Foundation website](https://plusero.github.io/powersys-foundation/).
+
 ## Preview locally
 
 1. Install the [Quarto CLI](https://quarto.org/docs/get-started/) and [uv](https://docs.astral.sh/uv/).

@@ -136,11 +136,13 @@ body.quarto-dark .quarto-color-scheme-toggle .bi::before {
 }
 
 .quarto-title-banner .title,
-.quarto-title-banner .subtitle {
+.quarto-title-banner .subtitle,
+.quarto-title-banner .description {
   color: #fff;
 }
 
-.quarto-title-banner .subtitle {
+.quarto-title-banner .subtitle,
+.quarto-title-banner .description {
   max-width: 720px;
   opacity: 0.88;
 }
