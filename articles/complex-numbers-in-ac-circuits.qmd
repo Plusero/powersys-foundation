@@ -1,0 +1,405 @@
+---
+title: "Complex Numbers in AC Circuits"
+subtitle: "From rotating sinusoids to impedance and complex power"
+description: "Learn how complex numbers turn sinusoidal steady-state circuit equations into algebra, then solve and verify a series RLC circuit in Python."
+author: "Power Systems Foundation contributors"
+date: "2026-08-09"
+categories: [Circuit analysis, Fundamentals, Phasors, Python]
+reading-time: 18
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+draft: false
+---
+
+## What you will learn
+
+After working through this tutorial, you should be able to:
+
+- move between rectangular, polar, and exponential forms of a complex number;
+- explain how a phasor represents a sinusoid at one fixed frequency;
+- use complex impedances for resistors, inductors, and capacitors;
+- solve a sinusoidal steady-state circuit with complex Ohm's law;
+- calculate active, reactive, and apparent power with a consistent sign convention; and
+- recognise when a phasor model is not appropriate.
+
+## 1. Why AC calculations use complex numbers
+
+Suppose a voltage and current have the same angular frequency $\omega$ but different amplitudes and phases:
+
+$$
+v(t)=\sqrt{2}V\cos(\omega t+\theta_v),
+\qquad
+i(t)=\sqrt{2}I\cos(\omega t+\theta_i).
+$$ {#eq-ac-waveforms}
+
+Here $V$ and $I$ are root-mean-square (RMS) values. Directly applying Kirchhoff's laws to sinusoids requires repeated trigonometric manipulations. Complex numbers package each amplitude and phase into one quantity, so differentiation, integration, and phase shifts become multiplication or division.
+
+Electrical engineering uses $\mathrm{j}$ for the imaginary unit because $i$ is normally reserved for current:
+
+$$
+\mathrm{j}^2=-1.
+$$
+
+A complex number $z$ can be written in three equivalent forms:
+
+$$
+\begin{aligned}
+z &= a+\mathrm{j}b && \text{rectangular form},\\
+  &= |z|\angle\theta && \text{polar form},\\
+  &= |z|e^{\mathrm{j}\theta} && \text{exponential form},
+\end{aligned}
+$$ {#eq-complex-forms}
+
+where
+
+$$
+|z|=\sqrt{a^2+b^2},
+\qquad
+\theta=\operatorname{atan2}(b,a).
+$$ {#eq-magnitude-angle}
+
+The two rectangular components are $a=|z|\cos\theta$ and $b=|z|\sin\theta$. Euler's identity,
+
+$$
+e^{\mathrm{j}\theta}=\cos\theta+\mathrm{j}\sin\theta,
+$$
+
+connects the rectangular and polar descriptions.
+
+Use rectangular form for addition and subtraction. Use polar form for multiplication and division:
+
+$$
+\begin{aligned}
+(a+\mathrm{j}b)+(c+\mathrm{j}d)
+  &= (a+c)+\mathrm{j}(b+d),\\
+(r_1\angle\theta_1)(r_2\angle\theta_2)
+  &= r_1r_2\angle(\theta_1+\theta_2),\\
+\frac{r_1\angle\theta_1}{r_2\angle\theta_2}
+  &= \frac{r_1}{r_2}\angle(\theta_1-\theta_2).
+\end{aligned}
+$$ {#eq-complex-arithmetic}
+
+The complex conjugate $z^*=a-\mathrm{j}b$ reflects $z$ across the real axis. Because $zz^*=|z|^2$, it is useful for division and, later, for complex power.
+
+::: {.callout-tip}
+Angles in equations may be shown in degrees for intuition, but NumPy's trigonometric and exponential functions expect radians. Convert explicitly with `np.deg2rad` and `np.rad2deg`.
+:::
+
+## 2. From a sinusoid to a phasor
+
+Write a sinusoid as the real part of a rotating complex exponential:
+
+$$
+v(t)
+=\sqrt{2}\,\Re\!\left\{V e^{\mathrm{j}\theta_v}e^{\mathrm{j}\omega t}\right\}.
+$$ {#eq-sinusoid-complex-exponential}
+
+Every voltage and current in a linear steady-state circuit at the same frequency contains the common factor $e^{\mathrm{j}\omega t}$. Suppressing that factor leaves the **phasor**
+
+$$
+\underline V=V e^{\mathrm{j}\theta_v}=V\angle\theta_v.
+$$ {#eq-voltage-phasor}
+
+This tutorial marks phasors with an underline in equations. Python's built-in complex type carries the same information without special notation.
+
+The reference convention matters. We use cosine-based RMS phasors throughout, so the inverse mapping is
+
+$$
+v(t)=\sqrt{2}\,\Re\!\left\{\underline V e^{\mathrm{j}\omega t}\right\}.
+$$ {#eq-phasor-to-time}
+
+For example, $\underline V=230\angle 30^\circ\ \mathrm{V}$ represents an RMS magnitude of $230\ \mathrm{V}$, a peak magnitude of $\sqrt{2}(230)\ \mathrm{V}$, and a cosine phase of $30^\circ$.
+
+::: {.callout-warning}
+Do not silently mix peak and RMS phasors, or sine and cosine references. The circuit current has the same scale convention as the voltage, but the familiar power formula $\underline S=\underline V\underline I^*$ gives power directly only when $\underline V$ and $\underline I$ are RMS phasors.
+:::
+
+### 2.1 Why derivatives become multiplication by $\mathrm{j}\omega$
+
+Differentiating the complex exponential gives
+
+$$
+\frac{\mathrm d}{\mathrm dt}
+\left(\underline V e^{\mathrm{j}\omega t}\right)
+=\mathrm{j}\omega\underline V e^{\mathrm{j}\omega t}.
+$$
+
+The time-domain derivative therefore corresponds to multiplying the phasor by $\mathrm{j}\omega$. Multiplication by $\mathrm{j}=e^{\mathrm{j}\pi/2}$ also rotates a complex number counter-clockwise by $90^\circ$. These two facts produce the familiar inductor and capacitor impedances.
+
+## 3. Impedance: Ohm's law for phasors
+
+In sinusoidal steady state, voltage and current phasors obey complex Ohm's law [@grainger1994]:
+
+$$
+\underline V=\underline Z\,\underline I,
+\qquad
+\underline I=\frac{\underline V}{\underline Z}.
+$$ {#eq-complex-ohm}
+
+At angular frequency $\omega=2\pi f$, the ideal element impedances are
+
+| Element | Time-domain relation | Impedance | Phase effect |
+|---|---|---|---|
+| Resistor $R$ | $v=Ri$ | $Z_R=R$ | voltage and current are in phase |
+| Inductor $L$ | $v=L\,\mathrm di/\mathrm dt$ | $Z_L=\mathrm{j}\omega L$ | voltage leads current by $90^\circ$ |
+| Capacitor $C$ | $i=C\,\mathrm dv/\mathrm dt$ | $Z_C=1/(\mathrm{j}\omega C)=-\mathrm{j}/(\omega C)$ | current leads voltage by $90^\circ$ |
+
+: Ideal R, L, and C impedance models {#tbl-rlc-impedances}
+
+An impedance is commonly split into resistance and reactance:
+
+$$
+\underline Z=R+\mathrm{j}X.
+$$ {#eq-resistance-reactance}
+
+Positive reactance is inductive; negative reactance is capacitive. Series impedances add because their current is common:
+
+$$
+\underline Z_{\mathrm{series}}
+=\underline Z_1+\underline Z_2+\cdots.
+$$
+
+For parallel branches it is often easier to use admittance,
+
+$$
+\underline Y=\frac{1}{\underline Z}=G+\mathrm{j}B,
+$$
+
+because parallel admittances add. $G$ is conductance and $B$ is susceptance.
+
+::: {.callout-note}
+The symbols $R$, $L$, and $C$ are physical component values. Impedance is frequency dependent: changing $f$ changes $Z_L$ and $Z_C$, even though $L$ and $C$ themselves stay fixed in this ideal model.
+:::
+
+## 4. Worked series RLC circuit
+
+Consider a $230\ \mathrm{V}$ RMS, $50\ \mathrm{Hz}$ source feeding a series circuit with
+
+$$
+R=12\ \Omega,
+\qquad
+L=80\ \mathrm{mH},
+\qquad
+C=100\ \mu\mathrm{F}.
+$$
+
+Take the source as the angular reference, $\underline V_s=230\angle0^\circ\ \mathrm{V}$. The total impedance is
+
+$$
+\underline Z
+=R+\mathrm{j}\omega L+\frac{1}{\mathrm{j}\omega C}
+=R+\mathrm{j}\left(\omega L-\frac{1}{\omega C}\right).
+$$ {#eq-series-rlc-impedance}
+
+The resistance is the real part and the net reactance is the imaginary part. Once $\underline Z$ is known, @eq-complex-ohm gives the common series current. Individual voltage drops then follow from $\underline V_k=\underline I\underline Z_k$.
+
+```{python}
+#| label: lst-complex-rlc-solution
+#| lst-cap: "Solve a series RLC circuit with complex arithmetic"
+#| code-summary: "Calculate the impedance, current, and element voltages"
+
+import numpy as np
+
+
+def polar(magnitude: float, angle_deg: float = 0.0) -> complex:
+    """Create a complex number from magnitude and angle in degrees."""
+    return magnitude * np.exp(1j * np.deg2rad(angle_deg))
+
+
+def describe(name: str, value: complex, unit: str) -> None:
+    """Print rectangular and polar representations of a phasor."""
+    print(
+        f"{name:>3} = {value.real:+9.3f} {value.imag:+9.3f}j {unit}"
+        f"  = {abs(value):8.3f} ∠ {np.rad2deg(np.angle(value)):+7.2f}° {unit}"
+    )
+
+
+frequency = 50.0  # Hz
+resistance = 12.0  # ohm
+inductance = 80e-3  # H
+capacitance = 100e-6  # F
+source_voltage = polar(230.0, 0.0)  # V RMS
+
+omega = 2.0 * np.pi * frequency
+z_r = resistance + 0j
+z_l = 1j * omega * inductance
+z_c = 1.0 / (1j * omega * capacitance)
+z_total = z_r + z_l + z_c
+current = source_voltage / z_total
+
+v_r = current * z_r
+v_l = current * z_l
+v_c = current * z_c
+
+for label, phasor, unit in [
+    ("Z", z_total, "Ω"),
+    ("I", current, "A"),
+    ("VR", v_r, "V"),
+    ("VL", v_l, "V"),
+    ("VC", v_c, "V"),
+]:
+    describe(label, phasor, unit)
+
+voltage_residual = source_voltage - (v_r + v_l + v_c)
+print(f"\nKVL residual magnitude = {abs(voltage_residual):.3e} V")
+```
+
+At $50\ \mathrm{Hz}$, the capacitive reactance magnitude is larger than the inductive reactance, so $\operatorname{Im}(\underline Z)<0$. The circuit is net capacitive and the current leads the source voltage. The resistor voltage is in phase with the current; the inductor and capacitor voltages are respectively $90^\circ$ ahead of and behind it.
+
+The magnitudes $|\underline V_L|$ and $|\underline V_C|$ should **not** be added as ordinary scalars. Their phasors point in opposite directions, so they partially cancel. The small printed KVL residual verifies the vector sum
+
+$$
+\underline V_s=\underline V_R+\underline V_L+\underline V_C.
+$$ {#eq-rlc-kvl}
+
+::: {.callout-tip}
+Change `frequency` to $40\ \mathrm{Hz}$ and then to $80\ \mathrm{Hz}$. Before rerunning, predict whether the circuit is net capacitive or inductive and whether the current leads or lags the voltage.
+:::
+
+## 5. Complex power and the conjugate
+
+Adopt the passive sign convention: current enters the terminal marked with positive voltage. With RMS phasors, the absorbed complex power is
+
+$$
+\underline S=\underline V\underline I^*=P+\mathrm{j}Q.
+$$ {#eq-complex-power-basics}
+
+Its components are
+
+| Quantity | Definition | Unit | Interpretation |
+|---|---|---|---|
+| Active power | $P=\Re\{\underline S\}$ | watt (W) | average energy conversion or dissipation |
+| Reactive power | $Q=\Im\{\underline S\}$ | var | oscillatory energy exchange with fields |
+| Apparent power | $|\underline S|=|\underline V||\underline I|$ | volt-ampere (VA) | RMS voltage-current loading |
+| Power factor | $\mathrm{pf}=P/|\underline S|$ | dimensionless | utilisation of apparent power |
+
+: Quantities derived from complex power {#tbl-complex-power-quantities}
+
+If $\phi=\theta_v-\theta_i$ is the voltage angle minus the current angle, then
+
+$$
+\underline S=VI\angle\phi,
+\qquad
+P=VI\cos\phi,
+\qquad
+Q=VI\sin\phi.
+$$ {#eq-power-angle}
+
+The conjugate produces the required **difference** of voltage and current angles. Without it, multiplication would incorrectly add the angles.
+
+Under the passive sign convention, an inductive load has lagging current and $Q>0$; a capacitive load has leading current and $Q<0$. Apply @eq-complex-power-basics to the worked circuit:
+
+```{python}
+#| label: lst-complex-rlc-power
+#| lst-cap: "Calculate and reconcile complex power"
+#| code-summary: "Calculate active, reactive, and apparent power"
+
+s_source_delivered = source_voltage * current.conjugate()
+s_r = v_r * current.conjugate()
+s_l = v_l * current.conjugate()
+s_c = v_c * current.conjugate()
+s_elements = s_r + s_l + s_c
+
+active_power = s_source_delivered.real
+reactive_power = s_source_delivered.imag
+apparent_power = abs(s_source_delivered)
+power_factor = active_power / apparent_power
+power_factor_type = "lagging" if reactive_power > 0 else "leading"
+
+print(f"S = {active_power:.2f} {reactive_power:+.2f}j VA")
+print(f"P = {active_power:.2f} W")
+print(f"Q = {reactive_power:.2f} var")
+print(f"|S| = {apparent_power:.2f} VA")
+print(f"power factor = {power_factor:.4f} {power_factor_type}")
+print(f"power-balance residual = {abs(s_source_delivered - s_elements):.3e} VA")
+```
+
+Only the ideal resistor absorbs average power. The ideal inductor and capacitor have zero average power, but their positive and negative reactive powers do not vanish individually. Their net reactive power is negative here because the circuit is net capacitive. The final residual checks that the source-delivered complex power equals the total complex power absorbed by the three elements.
+
+::: {.callout-important}
+Power signs depend on the chosen current direction. @Eq-complex-power-basics describes **absorbed** power when current enters the positive-voltage terminal. If current is instead defined as leaving that terminal, insert a minus sign or reinterpret positive power as injection. State the convention before comparing results.
+:::
+
+## 6. Frequency changes the circuit
+
+The series circuit resonates when its inductive and capacitive reactances cancel:
+
+$$
+\omega_0L=\frac{1}{\omega_0C},
+\qquad
+f_0=\frac{1}{2\pi\sqrt{LC}}.
+$$ {#eq-series-resonance}
+
+At $f_0$, the ideal series impedance is purely resistive, the current is in phase with the source, and its magnitude reaches $V/R$. Below resonance the circuit is net capacitive; above resonance it is net inductive.
+
+```{python}
+#| label: lst-complex-frequency-sweep
+#| lst-cap: "Inspect the frequency dependence of a series RLC circuit"
+#| code-summary: "Sweep frequency around series resonance"
+
+resonant_frequency = 1.0 / (2.0 * np.pi * np.sqrt(inductance * capacitance))
+frequencies = np.array([25.0, 40.0, 50.0, resonant_frequency, 75.0, 100.0])
+
+print(f"resonant frequency = {resonant_frequency:.3f} Hz\n")
+print(" f (Hz)   |Z| (Ω)   ∠Z (deg)   |I| (A)   behaviour")
+for f in frequencies:
+    angular_frequency = 2.0 * np.pi * f
+    impedance = resistance + 1j * (
+        angular_frequency * inductance
+        - 1.0 / (angular_frequency * capacitance)
+    )
+    branch_current = source_voltage / impedance
+    if np.isclose(impedance.imag, 0.0, atol=1e-10):
+        behaviour = "resistive"
+    elif impedance.imag > 0.0:
+        behaviour = "inductive"
+    else:
+        behaviour = "capacitive"
+    print(
+        f"{f:7.3f}  {abs(impedance):8.3f}"
+        f"  {np.rad2deg(np.angle(impedance)):10.3f}"
+        f"  {abs(branch_current):8.3f}   {behaviour}"
+    )
+```
+
+This sweep is a reminder that a phasor solution belongs to one frequency. Each row represents a different steady-state problem; a single phasor cannot combine those frequencies.
+
+## 7. Common mistakes
+
+### Adding magnitudes instead of phasors
+
+Kirchhoff's laws apply to complex phasors. Add $\underline V_1+\underline V_2$, not $|\underline V_1|+|\underline V_2|$, unless the phasors happen to have the same angle.
+
+### Confusing $\mathrm{j}$ with a unit label
+
+In `12 - 6.7j`, `j` is part of the number. The unit $\Omega$ belongs to the complete complex impedance, not only to its real part.
+
+### Losing the quadrant of an angle
+
+Use a two-argument angle function such as $\operatorname{atan2}(b,a)$ or `np.angle(z)`. Computing $\arctan(b/a)$ alone cannot distinguish all four quadrants and fails when $a=0$.
+
+### Forgetting the power conjugate
+
+For RMS phasors under the passive sign convention, use $\underline S=\underline V\underline I^*$. The unconjugated product has the wrong phase angle.
+
+### Applying phasors outside their assumptions
+
+The impedance method used here assumes a linear circuit in sinusoidal steady state at a single frequency. Switching transients, nonlinear devices, saturation, and waveforms containing several frequencies require time-domain analysis or a separate phasor calculation for each frequency when superposition is valid.
+
+## 8. Takeaways
+
+- A phasor stores the RMS magnitude and phase of a sinusoid while suppressing its common time factor.
+- Complex impedance converts differential RLC relations into algebraic equations at a specified frequency.
+- Rectangular form is convenient for sums; polar form exposes magnitude multiplication and phase addition.
+- Voltages and currents obey Kirchhoff's laws as complex quantities, not as magnitudes alone.
+- The conjugate in $\underline S=\underline V\underline I^*$ makes power depend on the voltage-current angle difference.
+- Phasors describe single-frequency sinusoidal steady state, not arbitrary waveforms or transients.
+
+The same ideas scale from one circuit to an entire power network. The [Y-bus matrix tutorial](y-bus-matrix.qmd) assembles complex branch admittances into a network equation, and the [Newton--Raphson power-flow tutorial](newton-raphson-power-flow.qmd) uses complex bus voltages to calculate active and reactive power.
+
+## References {.unnumbered}
+
+::: {#refs}
+:::
