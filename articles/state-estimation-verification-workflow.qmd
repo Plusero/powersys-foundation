@@ -1,0 +1,318 @@
+---
+title: "A Typical Verification Workflow for State Estimation Methods"
+subtitle: "From power-flow truth to noisy measurements and quantitative error checks"
+description: "Build a reproducible four-step state-estimation test, then extend it with Monte Carlo trials and stress scenarios."
+author: "Power Systems Foundation contributors"
+date: "2026-08-09"
+categories: [State estimation, Power flow, Verification, Python]
+reading-time: 14
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+draft: false
+---
+
+## What you will learn
+
+After working through this tutorial, you should be able to:
+
+- generate a known reference state with power flow (PF);
+- convert that state into ideal measurements and add controlled noise;
+- run weighted least-squares state estimation (SE) without leaking the truth into the estimator;
+- compare the estimate with PF truth using reproducible metrics; and
+- extend one worked case into Monte Carlo and stress-test campaigns.
+
+The workflow has four explicit steps:
+
+1. **Run Power Flow (PF), use the values as ground truth values.**
+2. **Generate ideal measurements from the ground truth, then add noise.**
+3. **Run State Estimation with the generated measurements.**
+4. **Compare state estimates with ground truth values (from PF).**
+
+This is a controlled **synthetic verification** workflow. It answers “does the estimator recover a known state under the tested assumptions?” It does not by itself prove that the network model, uncertainty model, or field data are correct.
+
+To keep every calculation visible, the worked example uses a three-bus DC model. It assumes a balanced lossless network, fixed voltage magnitudes of $1$ p.u., small angle differences, and bus 1 as the reference. Active powers are in per unit and angles are in radians. See [Power Flow Calculation and State Estimation](power-flow-versus-state-estimation.qmd) for the distinction between the two problems and [Weighted Least-Squares State Estimation](weighted-least-squares-state-estimation.qmd) for the general AC formulation.
+
+## 1. Run Power Flow (PF), use the values as ground truth values
+
+For branch coefficients $b_{12}=10$, $b_{13}=5$, and $b_{23}=8$ p.u., define
+
+$$
+P_{ij}=b_{ij}(\theta_i-\theta_j).
+$$ {#eq-seval-dc-flow}
+
+With $\theta_1=0$, the retained PF equations are
+
+$$
+\underbrace{
+\begin{bmatrix}
+18&-8\\
+-8&13
+\end{bmatrix}}_{\mathbf B_{\mathrm{red}}}
+\underbrace{
+\begin{bmatrix}\theta_2\\\theta_3\end{bmatrix}}_{\mathbf x}
+=
+\underbrace{
+\begin{bmatrix}-0.26\\-0.64\end{bmatrix}}_{\mathbf p_{\mathrm{spec}}}.
+$$ {#eq-seval-pf-system}
+
+The PF solution is designated $\mathbf x^{\mathrm{true}}$. “True” here means the numerical reference for this experiment, not an assertion that the model perfectly represents a physical grid.
+
+```{python}
+#| label: lst-seval-run-pf
+#| code-summary: "Step 1: solve PF and store the reference state"
+
+import numpy as np
+
+np.set_printoptions(precision=6, suppress=True)
+
+b12, b13, b23 = 10.0, 5.0, 8.0
+B_reduced = np.array(
+    [
+        [b12 + b23, -b23],
+        [-b23, b13 + b23],
+    ]
+)
+p_specified = np.array([-0.26, -0.64])
+
+x_true = np.linalg.solve(B_reduced, p_specified)
+pf_mismatch = p_specified - B_reduced @ x_true
+
+theta_all = np.concatenate(([0.0], x_true))
+true_flows = np.array(
+    [
+        b12 * (theta_all[0] - theta_all[1]),
+        b13 * (theta_all[0] - theta_all[2]),
+        b23 * (theta_all[1] - theta_all[2]),
+    ]
+)
+
+print("true non-reference angles [rad] =", x_true)
+print("true line flows [P12, P13, P23] p.u. =", true_flows)
+print("maximum PF mismatch =", np.max(np.abs(pf_mismatch)))
+```
+
+The mismatch check is essential. A failed or loosely converged PF result is not a defensible reference. For nonlinear AC studies, also record bus types, active limits, reactive-limit switching, solver tolerances, iteration count, and the exact topology and parameter version used to create the case [@grainger1994].
+
+## 2. Generate ideal measurements from the ground truth, then add noise
+
+Noise should be added to **ideal measurement values**, not indiscriminately to every state or PF input. First evaluate each intended meter function at $\mathbf x^{\mathrm{true}}$:
+
+$$
+\mathbf z^{\mathrm{ideal}}=\mathbf h(\mathbf x^{\mathrm{true}}).
+$$ {#eq-seval-ideal-measurements}
+
+Then generate a measurement realisation
+
+$$
+\mathbf z
+=\mathbf z^{\mathrm{ideal}}+\mathbf e,
+\qquad
+\mathbb E[\mathbf e]=\mathbf0,
+\qquad
+\operatorname{cov}(\mathbf e)=\mathbf R.
+$$ {#eq-seval-noisy-measurements}
+
+The example measures $P_{12}$, $P_{13}$, $P_{23}$, $P_2$, and $P_3$. Its DC measurement function is linear, $\mathbf h(\mathbf x)=\mathbf H\mathbf x$. The fixed standardised errors below define one documented, deterministic trial.
+
+```{python}
+#| label: lst-seval-add-noise
+#| code-summary: "Step 2: construct ideal and noisy measurements"
+
+H = np.array(
+    [
+        [-b12, 0.0],
+        [0.0, -b13],
+        [b23, -b23],
+        [b12 + b23, -b23],
+        [-b23, b13 + b23],
+    ]
+)
+measurement_names = np.array(["P12", "P13", "P23", "P2 injection", "P3 injection"])
+sigma = np.array([0.010, 0.015, 0.012, 0.020, 0.020])
+standardised_error = np.array([0.8, -0.8, 0.5, -0.75, 0.9])
+
+z_ideal = H @ x_true
+measurement_error = sigma * standardised_error
+z_measured = z_ideal + measurement_error
+
+print("measurement       ideal      noise      measured")
+for name, ideal, error, measured in zip(
+    measurement_names, z_ideal, measurement_error, z_measured
+):
+    print(f"{name:15s} {ideal: .6f} {error: .6f} {measured: .6f}")
+```
+
+Keep $\mathbf x^{\mathrm{true}}$ outside the estimator interface. The estimator should receive only the network model, measurement definitions, $\mathbf z$, $\mathbf R$, its initial state, and numerical settings. Otherwise the test can accidentally leak the answer into the algorithm.
+
+The covariance must match the simulated error model. Independent errors give $\mathbf R=\operatorname{diag}(\sigma_i^2)$. Correlated channel errors require a non-diagonal covariance or an explicit common-error construction. Rounded meters, limits, dropouts, and gross errors are not well represented by simply increasing Gaussian variance [@abur2004stateestimation].
+
+## 3. Run State Estimation with the generated measurements
+
+For diagonal $\mathbf R$, whitening divides each measurement equation by its standard deviation. The WLS estimate solves
+
+$$
+\widehat{\mathbf x}
+=\underset{\mathbf x}{\arg\min}\;
+\left\|
+\operatorname{diag}(\boldsymbol\sigma)^{-1}
+(\mathbf z-\mathbf H\mathbf x)
+\right\|_2^2.
+$$ {#eq-seval-wls}
+
+Use a linear solve or least-squares factorisation rather than explicitly inverting $\mathbf H^{\mathsf T}\mathbf R^{-1}\mathbf H$. The rank check verifies observability of this retained state for this measurement set.
+
+```{python}
+#| label: lst-seval-run-se
+#| code-summary: "Step 3: estimate the state by whitened WLS"
+
+H_white = H / sigma[:, None]
+z_white = z_measured / sigma
+
+# A noiseless recovery test isolates implementation errors from noise effects.
+x_noiseless, _, noiseless_rank, _ = np.linalg.lstsq(
+    H_white, z_ideal / sigma, rcond=None
+)
+if noiseless_rank != H.shape[1]:
+    raise RuntimeError("ideal measurement set is not observable")
+np.testing.assert_allclose(x_noiseless, x_true, rtol=0.0, atol=1e-12)
+
+x_estimated, _, numerical_rank, singular_values = np.linalg.lstsq(
+    H_white, z_white, rcond=None
+)
+if numerical_rank != H.shape[1]:
+    raise RuntimeError("measurement set is not observable")
+
+z_estimated = H @ x_estimated
+postfit_residual = z_measured - z_estimated
+
+print(
+    "noiseless recovery maximum error =",
+    np.max(np.abs(x_noiseless - x_true)),
+)
+print("estimated angles [rad] =", x_estimated)
+print("weighted-Jacobian rank =", numerical_rank)
+print(
+    "weighted-Jacobian condition number =",
+    singular_values[0] / singular_values[-1],
+)
+```
+
+For nonlinear AC SE, this step becomes iterative: evaluate $\mathbf h(\mathbf x_k)$ and its Jacobian, solve for a correction, update the state, and apply explicit convergence and iteration-limit checks. The initial state, stopping rule, and any damping must be fixed as part of the experiment rather than tuned after seeing the answer [@monticelli1999stateestimation].
+
+## 4. Compare state estimates with ground truth values (from PF)
+
+The state error is available only because this is a synthetic case:
+
+$$
+\Delta\mathbf x
+=\widehat{\mathbf x}-\mathbf x^{\mathrm{true}}.
+$$ {#eq-seval-state-error}
+
+Report errors in physically meaningful coordinates and units. An angle RMSE is
+
+$$
+\operatorname{RMSE}_{\theta}
+=\sqrt{\frac{1}{n_\theta}
+\sum_i(\widehat\theta_i-\theta_i^{\mathrm{true}})^2}.
+$$ {#eq-seval-angle-rmse}
+
+Before comparing AC voltage angles, express the truth and estimate with the same reference and wrap each angular difference into a common interval such as $(-\pi,\pi]$. An AC study should normally report voltage-magnitude error separately; mixing radians and per-unit magnitudes into one unscaled norm hides their meanings.
+
+```{python}
+#| label: lst-seval-compare-truth
+#| code-summary: "Step 4: calculate state and measurement diagnostics"
+
+state_error = x_estimated - x_true
+angle_rmse = np.sqrt(np.mean(state_error**2))
+weighted_residual_rms = np.sqrt(np.mean((postfit_residual / sigma) ** 2))
+
+print("bus  PF truth [rad]  SE estimate [rad]  error [rad]  error [deg]")
+for bus, truth, estimate, error in zip(
+    [2, 3], x_true, x_estimated, state_error
+):
+    print(
+        f"{bus:3d} {truth:15.6f} {estimate:18.6f}"
+        f" {error:12.6f} {np.rad2deg(error):12.6f}"
+    )
+
+print("angle RMSE [rad] =", angle_rmse)
+print("angle RMSE [deg] =", np.rad2deg(angle_rmse))
+print("weighted residual RMS =", weighted_residual_rms)
+```
+
+State error and residual answer different questions. The state error measures accuracy against the hidden synthetic truth. The residual measures consistency between the estimate and the measurements; a small residual does not guarantee a small state error when the model is biased or weakly observable.
+
+Define acceptance criteria before running the experiment. Useful checks include:
+
+- PF and SE convergence rates;
+- measurement-Jacobian rank and conditioning;
+- bias and RMSE for angle and voltage-magnitude states;
+- empirical confidence-interval coverage;
+- residual-test false-alarm and bad-data detection rates; and
+- runtime and iteration counts at a stated system size.
+
+### Monte Carlo testing
+
+One noise realisation can be unusually easy or difficult. Monte Carlo testing repeats steps 2--4 for many independent, seeded realisations while holding the PF case and experimental settings fixed. Report the seed policy, trial count, failures, sample bias, RMSE, quantiles, and confidence intervals---not only the best run.
+
+The linear example can evaluate all trials in one least-squares solve. A fixed seed makes this aggregate experiment reproducible while still sampling Gaussian errors.
+
+```{python}
+#| label: lst-seval-monte-carlo
+#| code-summary: "Repeat the measurement and estimation stages over many trials"
+
+rng = np.random.default_rng(20260809)
+n_trials = 2000
+noise_trials = rng.normal(size=(n_trials, sigma.size)) * sigma
+z_trials = z_ideal + noise_trials
+
+# Each column supplied to lstsq is one whitened measurement vector.
+x_trials = np.linalg.lstsq(
+    H_white, (z_trials / sigma).T, rcond=None
+)[0].T
+trial_errors = x_trials - x_true
+
+empirical_bias = np.mean(trial_errors, axis=0)
+empirical_rmse = np.sqrt(np.mean(trial_errors**2, axis=0))
+gain = H_white.T @ H_white
+predicted_covariance = np.linalg.solve(gain, np.eye(gain.shape[0]))
+predicted_standard_deviation = np.sqrt(np.diag(predicted_covariance))
+
+print("Monte Carlo bias [rad] =", empirical_bias)
+print("Monte Carlo RMSE [rad] =", empirical_rmse)
+print("WLS-predicted standard deviation [rad] =", predicted_standard_deviation)
+```
+
+Under the correctly specified linear-Gaussian model, the empirical bias should approach zero and the RMSE should approach the WLS-predicted standard deviation as the number of trials grows. A deterministic tolerance should account for finite-sample variability; exact equality is neither expected nor a sensible test.
+
+### Stress testing
+
+Monte Carlo noise tests random accuracy under one assumed model. Stress tests deliberately change the conditions most likely to break that model or algorithm:
+
+- **Operating point:** scale transfers and loading; for AC SE, include low voltages, large angle differences, and binding reactive limits.
+- **Measurement availability:** remove meters, communication groups, or an entire substation and recheck observability after every removal.
+- **Bad data:** inject isolated outliers, interacting outliers, drifts, stuck values, and timing errors; measure both detection and false-alarm rates.
+- **Covariance mismatch:** misstate variances, add correlated errors, and test mixed-quality pseudo-measurements.
+- **Model mismatch:** perturb line parameters, transformer taps, shunts, and topology status. Do not always generate and estimate with the exact same model.
+- **Numerical conditions:** vary the initial state, scaling, stopping tolerance, and maximum iterations; retain every non-converged trial in the reported failure rate.
+
+Separating these campaigns makes failures interpretable. If noise-only Monte Carlo tests pass but topology-error tests fail, the evidence points toward robustness to model mismatch rather than a basic WLS implementation error.
+
+### What this workflow establishes
+
+A strong synthetic verification demonstrates reproducibility, correctness on known cases, statistical behaviour under declared noise, and robustness over declared stress scenarios. It does **not** replace tests on independent implementations, field snapshots, hardware or simulator data, and historically difficult events. Generating truth and estimating it with identical equations can conceal shared modelling errors---sometimes called a circular or inverse-crime test.
+
+## Takeaways {.unnumbered}
+
+- Verify PF convergence before treating its output as synthetic truth.
+- Generate ideal meter values through the measurement functions, then add errors with a documented covariance and seed policy.
+- Keep the hidden truth out of the estimator inputs.
+- Compare state error, residual behaviour, convergence, observability, and runtime against predeclared criteria.
+- Use repeated Monte Carlo trials for statistical claims and separate stress campaigns for bad data, missing measurements, model mismatch, and difficult operating points.
+
+## References {.unnumbered}
+
+::: {#refs}
+:::

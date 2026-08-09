@@ -1,0 +1,421 @@
+---
+title: "Why Power Systems Use Three Phases"
+subtitle: "Constant power, economical conductors, and a naturally rotating magnetic field"
+description: "Derive the main physical and economic reasons AC power systems settled on three phases, then verify the claims with reproducible Python examples."
+author: "Power Systems Foundation contributors"
+date: "2026-08-09"
+categories: [Three-phase systems, Circuit analysis, Fundamentals, Python]
+reading-time: 17
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+draft: false
+---
+
+## What you will learn
+
+After working through this tutorial, you should be able to:
+
+- describe a balanced three-phase set in the time and phasor domains;
+- prove that a balanced three-phase load absorbs constant total instantaneous power;
+- explain how three phase-shifted currents create a constant-magnitude rotating magnetic field;
+- compare the conductor material required by single- and three-phase transmission under stated assumptions;
+- explain why three phases are a practical compromise rather than a law of nature; and
+- recognise where balance, sinusoidal waveforms, and ideal conductors enter the usual claims.
+
+## Prerequisites
+
+You should be comfortable with sinusoidal waveforms, RMS values, and basic complex numbers. The [complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd) introduces RMS phasors and complex power. The companion [star--delta tutorial](star-delta-three-phase-systems.qmd) develops the line-to-phase voltage and current relationships used in practical three-phase circuits.
+
+## 1. What does “three phase” mean?
+
+A phase is not a separate kind of electricity. In a balanced three-phase source, three sinusoidal voltages have the same RMS magnitude $V_{\mathrm{ph}}$ and frequency $f$, but their angles are separated by $120^\circ$. For the positive sequence $a$--$b$--$c$, write
+
+$$
+\begin{aligned}
+v_a(t) &= \sqrt{2}V_{\mathrm{ph}}\cos(\omega t),\\
+v_b(t) &= \sqrt{2}V_{\mathrm{ph}}\cos(\omega t-2\pi/3),\\
+v_c(t) &= \sqrt{2}V_{\mathrm{ph}}\cos(\omega t+2\pi/3),
+\end{aligned}
+$$ {#eq-3ph-balanced-voltages}
+
+where $\omega=2\pi f$. The factor $\sqrt{2}$ converts each RMS magnitude to its peak magnitude.
+
+At every instant,
+
+$$
+v_a(t)+v_b(t)+v_c(t)=0.
+$$ {#eq-3ph-voltage-sum}
+
+The corresponding RMS phasors are
+
+$$
+\underline V_a=V_{\mathrm{ph}}\angle0^\circ,
+\qquad
+\underline V_b=V_{\mathrm{ph}}\angle-120^\circ,
+\qquad
+\underline V_c=V_{\mathrm{ph}}\angle120^\circ.
+$$ {#eq-3ph-balanced-phasors}
+
+For the **source set**, “balanced” means equal magnitudes and exactly $120^\circ$ angular separation. A **balanced load** is a separate assumption: its three phase impedances are equal, so a balanced source produces balanced currents. The constant-power result below assumes both source and load balance. Real systems are designed to operate close to these conditions, but source asymmetry, faults, and unequal single-phase loads create unbalance.
+
+::: {.callout-note}
+The order $a$--$b$--$c$ is the **phase sequence**. Interchanging any two line conductors reverses the sequence. Many magnitude relationships remain unchanged, but a rotating machine's field reverses direction.
+:::
+
+## 2. Three phases deliver constant total power
+
+The strongest mathematical advantage appears in instantaneous power. Let each phase feed the same linear load. If the RMS current is $I_{\mathrm{ph}}$ and the current lags its phase voltage by the impedance angle $\phi$, then phase $k$ has
+
+$$
+\begin{aligned}
+v_k(t)&=\sqrt{2}V_{\mathrm{ph}}\cos(\omega t-\alpha_k),\\
+i_k(t)&=\sqrt{2}I_{\mathrm{ph}}\cos(\omega t-\alpha_k-\phi),
+\end{aligned}
+$$ {#eq-3ph-phase-waveforms}
+
+with $\alpha_k\in\{0,2\pi/3,-2\pi/3\}$. Using
+
+$$
+2\cos A\cos B=\cos(A-B)+\cos(A+B),
+$$
+
+the instantaneous power in one phase is
+
+$$
+p_k(t)
+=V_{\mathrm{ph}}I_{\mathrm{ph}}
+\left[
+\cos\phi+\cos(2\omega t-2\alpha_k-\phi)
+\right].
+$$ {#eq-3ph-one-phase-power}
+
+It contains a constant term and a term oscillating at twice the electrical frequency. In a balanced three-phase set, the three double-frequency terms are themselves $120^\circ$ apart and sum to zero. Therefore,
+
+$$
+\boxed{
+p_{3\phi}(t)=p_a(t)+p_b(t)+p_c(t)
+=3V_{\mathrm{ph}}I_{\mathrm{ph}}\cos\phi
+}
+$$ {#eq-3ph-constant-power}
+
+is constant. By contrast, the power of a single-phase load is
+
+$$
+p_{1\phi}(t)=VI\left[\cos\phi+\cos(2\omega t-\phi)\right],
+$$ {#eq-3ph-single-phase-power}
+
+so energy delivery pulsates even when voltage and current are perfect sinusoids.
+
+Constant total electrical power means less pulsating torque in balanced generators and motors and less double-frequency mechanical vibration. It also reduces the energy buffering that would otherwise be required between a source and a steady mechanical load.
+
+### 2.1 Verify the cancellation in Python
+
+The following example compares one phase with the sum of all three phases for a load whose power-factor angle is $30^\circ$.
+
+```{python}
+#| label: lst-three-phase-power-cancellation
+#| lst-cap: "Instantaneous power in one phase and in a balanced three-phase set"
+#| code-summary: "Verify cancellation of the double-frequency power ripple"
+
+import numpy as np
+
+frequency = 50.0  # Hz
+voltage_rms = 230.0  # V per phase
+current_rms = 10.0  # A per phase
+load_angle_deg = 30.0  # current lags voltage
+
+omega = 2.0 * np.pi * frequency
+load_angle = np.deg2rad(load_angle_deg)
+phase_offsets = np.deg2rad(np.array([0.0, 120.0, -120.0]))
+time = np.linspace(0.0, 2.0 / frequency, 2001)
+
+angles = omega * time[:, None] - phase_offsets[None, :]
+voltages = np.sqrt(2.0) * voltage_rms * np.cos(angles)
+currents = np.sqrt(2.0) * current_rms * np.cos(angles - load_angle)
+phase_powers = voltages * currents
+
+single_phase_power = phase_powers[:, 0]
+three_phase_power = phase_powers.sum(axis=1)
+expected_total_power = (
+    3.0 * voltage_rms * current_rms * np.cos(load_angle)
+)
+
+np.testing.assert_allclose(
+    three_phase_power,
+    expected_total_power,
+    rtol=0.0,
+    atol=1e-10,
+)
+
+print(f"Expected three-phase active power = {expected_total_power:.2f} W")
+print(
+    "Single-phase instantaneous range = "
+    f"{single_phase_power.min():.2f} to {single_phase_power.max():.2f} W"
+)
+print(
+    "Three-phase instantaneous range = "
+    f"{three_phase_power.min():.2f} to {three_phase_power.max():.2f} W"
+)
+print(f"Maximum |va + vb + vc| = {np.max(np.abs(voltages.sum(axis=1))):.3e} V")
+```
+
+Each phase still has a large power ripple. Only their sum is constant. Change `load_angle_deg` and predict the constant level before rerunning. At $90^\circ$, the ideal balanced load has zero total instantaneous power: individual phases exchange energy, but their instantaneous contributions cancel in the sum.
+
+::: {.callout-warning}
+@eq-3ph-constant-power assumes balanced sinusoidal voltages and currents. Negative-sequence components, unequal phase impedances, and harmonics can reintroduce total-power pulsations. Three conductors do not make each individual phase's power constant.
+:::
+
+## 3. Three phases create a rotating magnetic field
+
+Place three identical stator windings on spatial axes separated by $120^\circ$. Let the axis angles be the same $\alpha_k$ used in @eq-3ph-phase-waveforms, and let the fundamental magnetic effect of phase $k$ be proportional to
+
+$$
+F_k(t)=F_{\mathrm m}\cos(\omega t-\alpha_k).
+$$ {#eq-3ph-winding-excitation}
+
+Represent a spatial direction by the complex unit vector $e^{\mathrm{j}\alpha_k}$. The resultant fundamental field vector is then
+
+$$
+\underline F(t)
+=\sum_k F_{\mathrm m}\cos(\omega t-\alpha_k)e^{\mathrm{j}\alpha_k}.
+$$ {#eq-3ph-field-sum}
+
+Expanding the cosine into complex exponentials gives
+
+$$
+\begin{aligned}
+\underline F(t)
+&=\frac{F_{\mathrm m}}{2}
+\sum_k
+\left[
+e^{\mathrm{j}\omega t}
++e^{-\mathrm{j}\omega t}e^{\mathrm{j}2\alpha_k}
+\right]\\
+&=\frac{3}{2}F_{\mathrm m}e^{\mathrm{j}\omega t}.
+\end{aligned}
+$$ {#eq-3ph-rotating-field}
+
+The second sum vanishes because its three vectors are evenly spaced. The surviving vector has constant magnitude $3F_{\mathrm m}/2$ and an angle that advances continuously with time. This naturally rotating field is the foundation of three-phase synchronous and induction machines [@grainger1994]. A single winding instead produces a pulsating field and does not, by itself, select a starting direction.
+
+```{python}
+#| label: lst-three-phase-rotating-field
+#| lst-cap: "Resultant field from three spatially and temporally displaced windings"
+#| code-summary: "Verify constant field magnitude and phase-sequence reversal"
+
+import numpy as np
+
+electrical_angle = np.linspace(0.0, 2.0 * np.pi, 721)
+winding_axes = np.deg2rad(np.array([0.0, 120.0, -120.0]))
+axis_vectors = np.exp(1j * winding_axes)
+
+positive_sequence_currents = np.cos(
+    electrical_angle[:, None] - winding_axes[None, :]
+)
+positive_field = (positive_sequence_currents * axis_vectors).sum(axis=1)
+
+negative_sequence_currents = np.cos(
+    electrical_angle[:, None] + winding_axes[None, :]
+)
+negative_field = (negative_sequence_currents * axis_vectors).sum(axis=1)
+
+np.testing.assert_allclose(
+    positive_field,
+    1.5 * np.exp(1j * electrical_angle),
+    atol=1e-12,
+)
+np.testing.assert_allclose(
+    negative_field,
+    1.5 * np.exp(-1j * electrical_angle),
+    atol=1e-12,
+)
+
+positive_turn = np.diff(np.unwrap(np.angle(positive_field))).sum()
+negative_turn = np.diff(np.unwrap(np.angle(negative_field))).sum()
+
+print(
+    "Positive-sequence field magnitude range = "
+    f"{np.abs(positive_field).min():.12f} to {np.abs(positive_field).max():.12f}"
+)
+print(f"Positive-sequence angle change = {np.rad2deg(positive_turn):.1f} degrees")
+print(f"Reversed-sequence angle change = {np.rad2deg(negative_turn):.1f} degrees")
+```
+
+The calculation uses one electrical revolution. In a machine with $P$ magnetic poles, the synchronous mechanical speed is
+
+$$
+n_{\mathrm s}=\frac{120f}{P}\quad\text{r/min}.
+$$ {#eq-3ph-synchronous-speed}
+
+An induction-machine rotor runs close to, but not exactly at, this speed when producing torque. The field derivation above concerns the ideal fundamental component; real windings also create space harmonics.
+
+## 4. A balanced three-phase circuit needs no neutral current
+
+If the three phase currents have equal magnitude and $120^\circ$ separation, their phasor sum is
+
+$$
+\underline I_a+\underline I_b+\underline I_c=0.
+$$ {#eq-3ph-current-sum}
+
+The three line conductors can therefore carry power to a balanced load without a separate current-return conductor. Each conductor serves as part of the return path for the other two phases. This is a major practical advantage over three unrelated single-phase circuits, which would require paired conductors or a substantial common return.
+
+The phase-to-phase voltage also uses the source windings effectively. For example,
+
+$$
+\underline V_{ab}=\underline V_a-\underline V_b
+=\sqrt{3}V_{\mathrm{ph}}\angle30^\circ.
+$$ {#eq-3ph-line-voltage-preview}
+
+Thus a star-connected source with $230\ \mathrm{V}$ phase-to-neutral provides about $400\ \mathrm{V}$ phase-to-phase. The [star--delta tutorial](star-delta-three-phase-systems.qmd) derives this relationship and the corresponding current relationships in detail.
+
+::: {.callout-important}
+Distribution systems often retain a neutral because customers and appliances are not perfectly balanced. Triplen harmonics---the third, ninth, and so on---are in phase in all three conductors and can add in the neutral instead of cancelling.
+:::
+
+## 5. Three phases can use less conductor material
+
+Conductor economy depends on what is held equal. Consider a deliberately narrow comparison:
+
+- the same transmitted active power $P$;
+- the same RMS line voltage $V$ and power factor $\cos\phi$;
+- the same route length $\ell$, conductor resistivity $\rho$, and total resistive loss;
+- two conductors for single phase and three conductors for balanced three phase; and
+- no neutral current.
+
+The required line currents are
+
+$$
+I_{1\phi}=\frac{P}{V\cos\phi},
+\qquad
+I_{3\phi}=\frac{P}{\sqrt{3}V\cos\phi}
+=\frac{I_{1\phi}}{\sqrt{3}}.
+$$ {#eq-3ph-current-comparison}
+
+If one conductor has resistance $R=\rho\ell/A$, the total line losses are
+
+$$
+P_{\mathrm{loss},1\phi}=2I_{1\phi}^2\frac{\rho\ell}{A_1},
+\qquad
+P_{\mathrm{loss},3\phi}=3I_{3\phi}^2\frac{\rho\ell}{A_3}.
+$$ {#eq-3ph-loss-comparison}
+
+Equating these losses and substituting @eq-3ph-current-comparison gives $A_3=A_1/2$. The ratio of total conductor volumes is therefore
+
+$$
+\frac{3A_3\ell}{2A_1\ell}=\frac{3}{4}.
+$$ {#eq-3ph-copper-ratio}
+
+Under these assumptions, the balanced three-phase link needs $75\%$ as much conductor material as the single-phase link: a $25\%$ reduction.
+
+```{python}
+#| label: lst-three-phase-conductor-comparison
+#| lst-cap: "Equal-power, equal-voltage, equal-loss conductor comparison"
+#| code-summary: "Reproduce the conditional 75 percent material ratio"
+
+import numpy as np
+
+active_power = 10e6  # W
+line_voltage = 33e3  # V RMS
+power_factor = 0.90
+route_length = 20e3  # m per conductor
+copper_resistivity = 1.724e-8  # ohm m, representative value near 20 degC
+allowed_loss = 0.01 * active_power  # W
+
+current_single = active_power / (line_voltage * power_factor)
+current_three = active_power / (
+    np.sqrt(3.0) * line_voltage * power_factor
+)
+
+area_single = (
+    2.0 * current_single**2 * copper_resistivity * route_length
+    / allowed_loss
+)
+area_three = (
+    3.0 * current_three**2 * copper_resistivity * route_length
+    / allowed_loss
+)
+
+volume_single = 2.0 * area_single * route_length
+volume_three = 3.0 * area_three * route_length
+material_ratio = volume_three / volume_single
+
+loss_single = (
+    2.0 * current_single**2 * copper_resistivity * route_length
+    / area_single
+)
+loss_three = (
+    3.0 * current_three**2 * copper_resistivity * route_length
+    / area_three
+)
+
+np.testing.assert_allclose(current_three, current_single / np.sqrt(3.0))
+np.testing.assert_allclose(area_three, area_single / 2.0)
+np.testing.assert_allclose(material_ratio, 0.75)
+np.testing.assert_allclose([loss_single, loss_three], allowed_loss)
+
+print(f"Single-phase line current = {current_single:.1f} A")
+print(f"Three-phase line current = {current_three:.1f} A")
+print(f"Single-phase conductor area = {area_single * 1e6:.1f} mm^2 each")
+print(f"Three-phase conductor area = {area_three * 1e6:.1f} mm^2 each")
+print(f"Three-phase / single-phase material = {material_ratio:.3f}")
+print(f"Verified loss in either link = {loss_three / 1e3:.1f} kW")
+```
+
+This is a scaling comparison, not a line-design prescription. Real conductor sizes are discrete and are constrained by temperature, sag, corona, short-circuit strength, skin effect, insulation clearances, mechanical loading, reactive power, and reliability. A comparison at equal current density rather than equal loss gives a different material ratio. Always state the comparison basis before quoting a percentage.
+
+## 6. Why three rather than two or six?
+
+Three phases are not the only way to obtain constant power or a rotating field. Balanced two-phase currents separated by $90^\circ$ can do both. Systems with more than three phases can also do so and are useful in specialised machines and power-electronic converters.
+
+The engineering compromise is that three is the smallest commonly useful phase count that combines all of the following:
+
+| Property | Single phase | Balanced two phase | Balanced three phase |
+|---|---|---|---|
+| Constant total load power | No | Yes | Yes |
+| Natural rotating field | No | Yes | Yes |
+| Equal phase conductors with zero balanced return current | Requires a return | Usually four wires, or a larger shared return | Three wires |
+| Number of line conductors | 2 | Commonly 4 | 3 |
+| Standard line-to-line voltage set | One voltage | Two quadrature voltages | Three symmetric voltages |
+
+: Qualitative comparison of common AC phase systems {#tbl-3ph-phase-count-comparison}
+
+Adding more phases increases conductors, switchgear poles, sensors, protection channels, and insulation coordination. Three phases capture the principal electromagnetic and transmission benefits without that extra system-wide complexity. Once generators, transformers, motors, standards, and installed networks converged on three phases, interoperability and manufacturing scale reinforced the choice.
+
+Single phase remains valuable where simplicity matters more than bulk-power efficiency, especially for small loads derived from a three-phase distribution network. High-voltage direct current is attractive for other specific problems, such as very long cables, asynchronous interconnections, and some long-distance corridors. “Three phase is standard” does not imply “three phase is best for every link or load.”
+
+## 7. Practical pitfalls
+
+### Treating balance as automatic
+
+A three-phase nameplate does not guarantee balanced currents. Unequal impedances, unequal phase-to-neutral loads, faults, and asymmetric line parameters can introduce negative-sequence components and, where a return path exists, zero-sequence components.
+
+### Assuming the neutral is always unnecessary
+
+Neutral current is zero when the three phase-current phasors sum to zero at every frequency present. A balanced fundamental set satisfies that condition, as do balanced non-triplen harmonic sets; zero-sequence components such as triplen harmonics add instead of cancelling. Four-wire low-voltage systems need a neutral to stabilise phase-to-neutral voltages and carry unbalance and these non-cancelling components.
+
+### Quoting conductor savings without assumptions
+
+The $75\%$ material ratio in @eq-3ph-copper-ratio holds for the exact equal-voltage, equal-power, equal-loss comparison stated above. Changing the insulation basis, allowable temperature, reliability criterion, or current density changes the result.
+
+### Confusing phase sequence with phase labels
+
+Relabelling all phases consistently changes nothing. Physically swapping two conductors reverses the sequence and the rotating field, which can reverse a motor.
+
+### Calling every three-phase quantity constant
+
+Each phase voltage, current, and instantaneous power still varies with time. It is the **sum** of balanced phase powers and the **magnitude** of the fundamental rotating field that are constant.
+
+## 8. Takeaways
+
+- Three equal sinusoids separated by $120^\circ$ sum to zero.
+- Their double-frequency power ripples cancel, giving constant total instantaneous power for a balanced sinusoidal load.
+- Three spatially displaced windings carrying three-phase currents create a constant-magnitude rotating fundamental field.
+- Balanced phase currents need no neutral return, and three-phase transmission can reduce conductor material under a fair, explicitly stated comparison.
+- Two and higher phase counts can provide some of the same benefits; three phases are the practical system-wide compromise between performance and complexity.
+- Unbalance, harmonics, grounding, insulation, and real equipment constraints must be included before applying the ideal conclusions to a design.
+
+## References {.unnumbered}
+
+::: {#refs}
+:::

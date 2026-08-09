@@ -1,0 +1,496 @@
+---
+title: "Star (Y) and Delta Connections in Three-Phase Systems"
+subtitle: "Phase and line quantities, balanced loads, and the consequences of losing the neutral"
+description: "Derive star and delta voltage, current, power, and impedance relationships, then test balanced and unbalanced circuits in Python."
+author: "Power Systems Foundation contributors"
+date: "2026-08-09"
+categories: [Three-phase systems, Circuit analysis, Fundamentals, Python]
+reading-time: 19
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+draft: false
+---
+
+## What you will learn
+
+After working through this tutorial, you should be able to:
+
+- distinguish line quantities from phase quantities;
+- derive the $\sqrt{3}$ magnitude and $30^\circ$ angle relationships for balanced star and delta connections;
+- calculate balanced three-phase complex power from either phase or line quantities;
+- convert a balanced star impedance to its terminally equivalent delta impedance;
+- explain why connecting the same impedance in delta draws three times the line current of star;
+- calculate the neutral displacement of an unbalanced floating-star load; and
+- avoid common mistakes involving phase sequence, neutral current, and delta branch current.
+
+## Prerequisites
+
+This tutorial uses RMS phasors and complex impedance. Review the [complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd) if those ideas are unfamiliar. [Why Power Systems Use Three Phases](why-three-phase-power-systems.qmd) derives the constant-power, rotating-field, and conductor-economy benefits of a balanced three-phase set.
+
+## 1. Begin with precise definitions
+
+The same words are sometimes used for different quantities, so define the terminals before writing a formula. Let $A$, $B$, and $C$ be the three line terminals and $N$ the source neutral. Use the positive phase sequence $A$--$B$--$C$ and the balanced source phasors
+
+$$
+\underline V_{AN}=V_{\mathrm{ph}}\angle0^\circ,
+\qquad
+\underline V_{BN}=V_{\mathrm{ph}}\angle-120^\circ,
+\qquad
+\underline V_{CN}=V_{\mathrm{ph}}\angle120^\circ.
+$$ {#eq-sd-source-phasors}
+
+All magnitudes in this tutorial are RMS values. Line currents $\underline I_A$, $\underline I_B$, and $\underline I_C$ are positive from the source lines into the load.
+
+| Term | Meaning |
+|---|---|
+| Line-to-line voltage | Voltage between two line terminals, such as $\underline V_{AB}=\underline V_{AN}-\underline V_{BN}$ |
+| Phase voltage | Voltage across one load element or one source winding |
+| Line current | Current in an external line conductor, such as $\underline I_A$ |
+| Phase current | Current through one load element or one source winding |
+
+: Line and phase quantities must be identified from the connection {#tbl-sd-line-phase-definitions}
+
+In a star connection, each phase element lies between a line and a common star point. In a delta connection, each phase element lies between two lines. Consequently, “phase voltage” does not mean “line-to-neutral voltage” in every circuit.
+
+::: {.callout-important}
+Never apply a memorised $\sqrt{3}$ factor until you have identified what one **phase element** is connected across and where its current flows.
+:::
+
+## 2. Star (Y or wye) connection
+
+Connect three identical impedances $\underline Z_Y$ from lines $A$, $B$, and $C$ to a common load star point $n$. If $n$ is connected to the ideal source neutral $N$, the phase voltages are simply $\underline V_{AN}$, $\underline V_{BN}$, and $\underline V_{CN}$. Ohm's law gives
+
+$$
+\underline I_A=\frac{\underline V_{AN}}{\underline Z_Y},
+\qquad
+\underline I_B=\frac{\underline V_{BN}}{\underline Z_Y},
+\qquad
+\underline I_C=\frac{\underline V_{CN}}{\underline Z_Y}.
+$$ {#eq-sd-star-currents}
+
+Every line conductor is in series with its phase element, so
+
+$$
+\boxed{I_{\mathrm L}=I_{\mathrm{ph}}\quad\text{in star}.}
+$$ {#eq-sd-star-current-relation}
+
+### 2.1 Derive the star voltage relationship
+
+The line-to-line voltage from $A$ to $B$ is a **phasor difference**, not a sum of magnitudes:
+
+$$
+\begin{aligned}
+\underline V_{AB}
+&=\underline V_{AN}-\underline V_{BN}\\
+&=V_{\mathrm{ph}}
+\left(1-e^{-\mathrm{j}2\pi/3}\right)\\
+&=\sqrt{3}V_{\mathrm{ph}}e^{\mathrm{j}\pi/6}.
+\end{aligned}
+$$ {#eq-sd-star-line-voltage}
+
+Therefore,
+
+$$
+\boxed{V_{\mathrm{LL}}=\sqrt{3}V_{\mathrm{ph}}\quad\text{in star}.}
+$$ {#eq-sd-star-voltage-relation}
+
+For positive sequence, $\underline V_{AB}$ leads $\underline V_{AN}$ by $30^\circ$. The other line voltages have the same magnitude and remain $120^\circ$ apart:
+
+$$
+\underline V_{AB}=V_{\mathrm{LL}}\angle30^\circ,
+\quad
+\underline V_{BC}=V_{\mathrm{LL}}\angle-90^\circ,
+\quad
+\underline V_{CA}=V_{\mathrm{LL}}\angle150^\circ.
+$$ {#eq-sd-line-voltage-set}
+
+A nominal $400\ \mathrm{V}$ line-to-line star system therefore has a phase-to-neutral voltage of $400/\sqrt{3}\approx231\ \mathrm{V}$.
+
+### 2.2 What happens to the neutral current?
+
+For a balanced load, the three currents have equal magnitude and $120^\circ$ separation, so
+
+$$
+\underline I_A+\underline I_B+\underline I_C=0.
+$$ {#eq-sd-balanced-neutral-current}
+
+No fundamental-frequency current flows in an ideal neutral. A three-wire connection is therefore sufficient for a balanced star load. The neutral remains valuable when phase-to-neutral loads are unequal, when a stable star-point voltage is required, or when zero-sequence and harmonic currents must be carried.
+
+## 3. Delta ($\Delta$) connection
+
+Connect one impedance $\underline Z_\Delta$ from $A$ to $B$, one from $B$ to $C$, and one from $C$ to $A$. Define the branch currents $\underline I_{AB}$, $\underline I_{BC}$, and $\underline I_{CA}$ in those directions. Each phase element is directly across a line-to-line voltage:
+
+$$
+\underline I_{AB}=\frac{\underline V_{AB}}{\underline Z_\Delta},
+\qquad
+\underline I_{BC}=\frac{\underline V_{BC}}{\underline Z_\Delta},
+\qquad
+\underline I_{CA}=\frac{\underline V_{CA}}{\underline Z_\Delta}.
+$$ {#eq-sd-delta-branch-currents}
+
+Thus,
+
+$$
+\boxed{V_{\mathrm{LL}}=V_{\mathrm{ph}}\quad\text{in delta}.}
+$$ {#eq-sd-delta-voltage-relation}
+
+Here $V_{\mathrm{LL}}$ means the line-to-line voltage magnitude, and $V_{\mathrm{ph}}$ means the voltage magnitude across one delta branch.
+
+### 3.1 Derive the delta current relationship
+
+At terminal $A$, Kirchhoff's current law gives
+
+$$
+\underline I_A=\underline I_{AB}-\underline I_{CA}.
+$$ {#eq-sd-delta-terminal-kcl}
+
+The subtraction is essential: $\underline I_A$ and $\underline I_{CA}$ enter terminal $A$, whereas $\underline I_{AB}$ leaves it, so $\underline I_A+\underline I_{CA}=\underline I_{AB}$. For a balanced positive-sequence load, evaluating the difference gives
+
+$$
+\underline I_A
+=\sqrt{3}\,\underline I_{AB}e^{-\mathrm{j}\pi/6}.
+$$ {#eq-sd-delta-line-current-phasor}
+
+Therefore,
+
+$$
+\boxed{I_{\mathrm L}=\sqrt{3}I_{\mathrm{ph}}\quad\text{in delta}.}
+$$ {#eq-sd-delta-current-relation}
+
+For positive sequence, the line current $\underline I_A$ lags the corresponding branch current $\underline I_{AB}$ by $30^\circ$. Reversing the phase sequence reverses the signs of the $30^\circ$ shifts while leaving the $\sqrt{3}$ magnitudes unchanged.
+
+::: {.callout-warning}
+A clamp meter on line $A$ measures $I_A$, not either of the two delta branch currents touching terminal $A$. Branch protection and winding ratings must use the branch current, while feeder ratings use the line current.
+:::
+
+## 4. Put the balanced relationships side by side
+
+| Connection | Phase voltage magnitude | Phase current magnitude | Useful angle fact for positive sequence |
+|---|---:|---:|---|
+| Star | $V_{\mathrm{ph}}=V_{\mathrm{LL}}/\sqrt{3}$ | $I_{\mathrm{ph}}=I_{\mathrm L}$ | $V_{AB}$ leads $V_{AN}$ by $30^\circ$ |
+| Delta | $V_{\mathrm{ph}}=V_{\mathrm{LL}}$ | $I_{\mathrm{ph}}=I_{\mathrm L}/\sqrt{3}$ | $I_A$ lags $I_{AB}$ by $30^\circ$ |
+
+: Balanced line-to-phase relationships {#tbl-sd-balanced-relations}
+
+These relations assume equal phase impedances and balanced source voltages. Under unbalance, calculate the individual phasors with Kirchhoff's laws instead of applying $\sqrt{3}$ to each magnitude.
+
+## 5. Three-phase power has one common line formula
+
+Let the impedance angle be $\phi$, positive for an inductive load. The total complex power is the sum of the three phase powers [@grainger1994]:
+
+$$
+\underline S_{3\phi}
+=3V_{\mathrm{ph}}I_{\mathrm{ph}}(\cos\phi+\mathrm{j}\sin\phi).
+$$ {#eq-sd-phase-complex-power}
+
+Substituting either row of @tbl-sd-balanced-relations produces the same line-quantity formula:
+
+$$
+\boxed{
+\underline S_{3\phi}
+=\sqrt{3}V_{\mathrm{LL}}I_{\mathrm L}
+(\cos\phi+\mathrm{j}\sin\phi)
+}
+$$ {#eq-sd-line-complex-power}
+
+and therefore
+
+$$
+\begin{aligned}
+P_{3\phi}&=\sqrt{3}V_{\mathrm{LL}}I_{\mathrm L}\cos\phi,\\
+Q_{3\phi}&=\sqrt{3}V_{\mathrm{LL}}I_{\mathrm L}\sin\phi,\\
+|\underline S_{3\phi}|&=\sqrt{3}V_{\mathrm{LL}}I_{\mathrm L}.
+\end{aligned}
+$$ {#eq-sd-line-power-components}
+
+The formula works for balanced star and balanced delta loads because the connection-dependent factors cancel. The angle $\phi$ is the angle between a phase element's voltage and current; it is **not**, without adjustment, the angle between $\underline V_{AB}$ and $\underline I_A$.
+
+## 6. Balanced star--delta impedance equivalence
+
+Two balanced loads are terminally equivalent if they draw the same three line currents from the same three line voltages. For equal impedances within each connection, the required conversion is
+
+$$
+\boxed{
+\underline Z_\Delta=3\underline Z_Y,
+\qquad
+\underline Z_Y=\frac{\underline Z_\Delta}{3}.
+}
+$$ {#eq-sd-balanced-impedance-conversion}
+
+One way to see the factor of three is to express the line current in terms of the line-to-line voltage:
+
+$$
+I_{\mathrm L,Y}
+=\frac{V_{\mathrm{LL}}}{\sqrt{3}|\underline Z_Y|},
+\qquad
+I_{\mathrm L,\Delta}
+=\frac{\sqrt{3}V_{\mathrm{LL}}}{|\underline Z_\Delta|}.
+$$ {#eq-sd-line-current-by-connection}
+
+Equating the two currents gives @eq-sd-balanced-impedance-conversion.
+
+This must not be confused with reconnecting the **same physical phase impedance**. If $\underline Z_\Delta=\underline Z_Y=\underline Z$ at the same line voltage, then
+
+$$
+I_{\mathrm L,\Delta}=3I_{\mathrm L,Y},
+\qquad
+\underline S_\Delta=3\underline S_Y.
+$$ {#eq-sd-same-impedance-ratio}
+
+That factor underlies star--delta motor starting: during star connection, each winding receives $1/\sqrt{3}$ of the delta voltage, so ideal locked-rotor line current and torque are each approximately one third of their direct-delta values. Actual motor starting also depends on saturation, rotor parameters, supply impedance, transition method, and load torque.
+
+### 6.1 Verify both cases in Python
+
+Use a $400\ \mathrm{V}$ line-to-line source and a balanced star impedance of $12+\mathrm{j}9\ \Omega$ per phase. First compare it with the equivalent $36+\mathrm{j}27\ \Omega$ delta. Then reconnect the original $12+\mathrm{j}9\ \Omega$ impedance in delta.
+
+```{python}
+#| label: lst-star-delta-balanced-verification
+#| lst-cap: "Balanced star, equivalent delta, and same-impedance delta"
+#| code-summary: "Verify line currents, complex power, and the factor-of-three distinction"
+
+import numpy as np
+
+
+def polar(magnitude: float, angle_deg: float) -> complex:
+    """Return a complex phasor from magnitude and degrees."""
+    return magnitude * np.exp(1j * np.deg2rad(angle_deg))
+
+
+def delta_line_currents(branch_currents: np.ndarray) -> np.ndarray:
+    """Map [Iab, Ibc, Ica] to line currents [Ia, Ib, Ic]."""
+    i_ab, i_bc, i_ca = branch_currents
+    return np.array([i_ab - i_ca, i_bc - i_ab, i_ca - i_bc])
+
+
+line_voltage = 400.0  # V RMS
+phase_voltage = line_voltage / np.sqrt(3.0)
+source_phase_voltages = np.array(
+    [
+        polar(phase_voltage, 0.0),
+        polar(phase_voltage, -120.0),
+        polar(phase_voltage, 120.0),
+    ]
+)
+line_to_line_voltages = np.array(
+    [
+        source_phase_voltages[0] - source_phase_voltages[1],  # Vab
+        source_phase_voltages[1] - source_phase_voltages[2],  # Vbc
+        source_phase_voltages[2] - source_phase_voltages[0],  # Vca
+    ]
+)
+
+z_star = 12.0 + 9.0j  # ohm per phase
+z_delta_equivalent = 3.0 * z_star
+
+star_line_currents = source_phase_voltages / z_star
+equivalent_delta_branch_currents = (
+    line_to_line_voltages / z_delta_equivalent
+)
+equivalent_delta_line_currents = delta_line_currents(
+    equivalent_delta_branch_currents
+)
+
+s_star = np.sum(source_phase_voltages * np.conj(star_line_currents))
+s_delta_equivalent = np.sum(
+    line_to_line_voltages * np.conj(equivalent_delta_branch_currents)
+)
+
+same_z_delta_branch_currents = line_to_line_voltages / z_star
+same_z_delta_line_currents = delta_line_currents(
+    same_z_delta_branch_currents
+)
+s_delta_same_z = np.sum(
+    line_to_line_voltages * np.conj(same_z_delta_branch_currents)
+)
+
+load_angle = np.angle(z_star)
+s_from_line_formula = (
+    np.sqrt(3.0)
+    * line_voltage
+    * abs(star_line_currents[0])
+    * np.exp(1j * load_angle)
+)
+
+np.testing.assert_allclose(
+    equivalent_delta_line_currents,
+    star_line_currents,
+    atol=1e-12,
+)
+np.testing.assert_allclose(s_delta_equivalent, s_star, atol=1e-12)
+np.testing.assert_allclose(s_from_line_formula, s_star, atol=1e-12)
+np.testing.assert_allclose(
+    abs(same_z_delta_line_currents[0]) / abs(star_line_currents[0]),
+    3.0,
+)
+np.testing.assert_allclose(s_delta_same_z / s_star, 3.0)
+
+line_voltage_angles = np.rad2deg(np.angle(line_to_line_voltages))
+print("Line-voltage magnitudes (V) =", np.round(np.abs(line_to_line_voltages), 6))
+print("Line-voltage angles (deg) =", np.round(line_voltage_angles, 6))
+print(f"Star line-current magnitude = {abs(star_line_currents[0]):.3f} A")
+print(
+    "Equivalent-delta line-current magnitude = "
+    f"{abs(equivalent_delta_line_currents[0]):.3f} A"
+)
+print(f"Either equivalent load consumes S = {s_star.real:.2f} + j{s_star.imag:.2f} VA")
+print(
+    "Same-impedance delta / star line-current ratio = "
+    f"{abs(same_z_delta_line_currents[0]) / abs(star_line_currents[0]):.3f}"
+)
+print(f"Same-impedance delta / star power ratio = {(s_delta_same_z / s_star).real:.3f}")
+```
+
+The equivalent delta has three times the branch impedance and therefore presents exactly the same terminal currents and complex power as the star. The same-impedance delta is a different load: every element receives $\sqrt{3}$ times as much voltage as it did in star.
+
+Change the real and imaginary parts of `z_star`. The current magnitudes and power factor will change, but both verified ratios remain fixed while the system stays balanced.
+
+## 7. Unbalanced star loads and neutral displacement
+
+The simple star relationships require either balance or a firm neutral connection. Let three unequal impedances connect from the source phases to a floating load star point $n$. Relative to the source neutral $N$, the phase-element voltages are
+
+$$
+\underline V_{An}=\underline V_{AN}-\underline V_{nN},
+\quad
+\underline V_{Bn}=\underline V_{BN}-\underline V_{nN},
+\quad
+\underline V_{Cn}=\underline V_{CN}-\underline V_{nN}.
+$$ {#eq-sd-floating-load-voltages}
+
+With no neutral conductor, Kirchhoff's current law requires
+
+$$
+\frac{\underline V_{AN}-\underline V_{nN}}{\underline Z_A}
++\frac{\underline V_{BN}-\underline V_{nN}}{\underline Z_B}
++\frac{\underline V_{CN}-\underline V_{nN}}{\underline Z_C}=0.
+$$ {#eq-sd-floating-star-kcl}
+
+Writing $\underline Y_k=1/\underline Z_k$ and solving for the neutral displacement gives
+
+$$
+\boxed{
+\underline V_{nN}
+=\frac{
+\underline Y_A\underline V_{AN}
++\underline Y_B\underline V_{BN}
++\underline Y_C\underline V_{CN}
+}{
+\underline Y_A+\underline Y_B+\underline Y_C
+}.
+}
+$$ {#eq-sd-neutral-displacement}
+
+For equal impedances, the numerator is zero and the star point remains at neutral potential. For unequal impedances, the star point moves. Some phase elements can then experience overvoltage even though the source line-to-line voltages remain balanced.
+
+```{python}
+#| label: lst-star-neutral-displacement
+#| lst-cap: "Unequal star load with and without a solid neutral"
+#| code-summary: "Calculate neutral current and floating-star voltage displacement"
+
+import numpy as np
+
+phase_voltage = 230.0  # V RMS
+source_voltages = phase_voltage * np.exp(
+    1j * np.deg2rad(np.array([0.0, -120.0, 120.0]))
+)
+load_impedances = np.array(
+    [20.0 + 0.0j, 10.0 + 4.0j, 40.0 - 10.0j]
+)  # ohm
+
+# Four-wire case: the ideal neutral fixes the load star point at zero volts.
+currents_with_neutral = source_voltages / load_impedances
+neutral_return_current = currents_with_neutral.sum()
+
+# Three-wire case: solve for the floating star-point displacement.
+load_admittances = 1.0 / load_impedances
+neutral_displacement = np.sum(
+    load_admittances * source_voltages
+) / np.sum(load_admittances)
+floating_load_voltages = source_voltages - neutral_displacement
+floating_currents = floating_load_voltages / load_impedances
+
+np.testing.assert_allclose(floating_currents.sum(), 0.0, atol=1e-12)
+
+print(
+    "Solid-neutral return-current magnitude = "
+    f"{abs(neutral_return_current):.3f} A"
+)
+print(
+    "Floating star-point displacement = "
+    f"{abs(neutral_displacement):.3f} V at "
+    f"{np.rad2deg(np.angle(neutral_displacement)):.2f} degrees"
+)
+print(
+    "Load-voltage magnitudes with neutral (V) =",
+    np.round(np.abs(source_voltages), 3),
+)
+print(
+    "Load-voltage magnitudes without neutral (V) =",
+    np.round(np.abs(floating_load_voltages), 3),
+)
+print(f"Three-wire KCL residual = {abs(floating_currents.sum()):.3e} A")
+```
+
+With a solid neutral, each load retains $230\ \mathrm{V}$ and the unequal currents return through the neutral. Without it, the neutral current is forced to zero by changing the phase-element voltages. This is why a loose neutral in an unbalanced low-voltage installation can be dangerous.
+
+A neutral conductor with nonzero impedance lies between these two ideal cases. Its voltage drop must be included in the circuit equations.
+
+## 8. What the connection changes in equipment
+
+Connection choice affects more than the two $\sqrt{3}$ formulas.
+
+| Consideration | Star connection | Delta connection |
+|---|---|---|
+| Neutral and grounding | A star point can be brought out and grounded | No inherent neutral terminal |
+| Winding voltage at fixed $V_{\mathrm{LL}}$ | $V_{\mathrm{LL}}/\sqrt{3}$ | $V_{\mathrm{LL}}$ |
+| Balanced line/phase current | $I_{\mathrm L}=I_{\mathrm{ph}}$ | $I_{\mathrm L}=\sqrt{3}I_{\mathrm{ph}}$ |
+| Zero-sequence behavior | Depends strongly on star-point grounding | Zero-sequence line current cannot enter a three-wire delta, but internal circulating current can exist |
+| Unbalanced phase load | Neutral can stabilise phase voltages | Branch voltages remain line-to-line voltages for a stiff source |
+
+: Some system consequences of the connection choice {#tbl-sd-equipment-consequences}
+
+Generators are commonly star connected so a neutral and grounding reference are available and each winding sees a lower voltage than the line-to-line terminal voltage. Motor windings may be configured in star or delta to match their winding voltage rating to the supply. Transformer winding connections are selected to control grounding, zero-sequence paths, phase shifts, insulation requirements, and harmonic behavior. These are application choices, not universal rules.
+
+In an isolated three-wire delta, equal in-phase zero-sequence **line** currents cannot enter through the terminals. However, zero-sequence or triplen-frequency voltages induced around the closed delta can drive circulating branch currents that do not appear in the line currents. This distinction is important in transformer and protection studies.
+
+## 9. Practical pitfalls
+
+### Mixing up 230 V and 400 V
+
+On a nominal $400/230\ \mathrm{V}$ star system, $400\ \mathrm{V}$ is line-to-line and $230\ \mathrm{V}$ is line-to-neutral. A delta branch connected to the same lines sees $400\ \mathrm{V}$.
+
+### Multiplying by $\sqrt{3}$ twice
+
+Use either $3V_{\mathrm{ph}}I_{\mathrm{ph}}$ or $\sqrt{3}V_{\mathrm{LL}}I_{\mathrm L}$ for balanced apparent power. Mixing phase voltage with line current without checking the connection produces an extra or missing factor.
+
+### Ignoring the $30^\circ$ shift
+
+Magnitude-only rules are insufficient for relays, transformer vector groups, sequence networks, and phasor measurements. Derive the sign from the declared phase sequence and current direction.
+
+### Applying the factor-of-three conversion to an unbalanced load
+
+The simple $\underline Z_\Delta=3\underline Z_Y$ rule applies only to a balanced set of three equal impedances. General three-terminal star--delta conversion uses three different formulas.
+
+### Treating a floating star point as neutral
+
+An ungrounded, disconnected load star point is not automatically at the source-neutral potential. Use @eq-sd-neutral-displacement when the phase impedances are unequal.
+
+### Assuming a delta has no internal zero-sequence current
+
+Zero-sequence line current and internal circulating current are different quantities. A closed delta can carry circulating components that a line-current measurement cannot see.
+
+## 10. Takeaways
+
+- In star, $V_{\mathrm{LL}}=\sqrt{3}V_{\mathrm{ph}}$ and $I_{\mathrm L}=I_{\mathrm{ph}}$.
+- In delta, $V_{\mathrm{LL}}=V_{\mathrm{ph}}$ and $I_{\mathrm L}=\sqrt{3}I_{\mathrm{ph}}$.
+- For positive sequence, the associated line and phase quantities also differ by $30^\circ$; the sign follows from the declared voltage and current directions.
+- Either balanced connection obeys $\underline S_{3\phi}=\sqrt{3}V_{\mathrm{LL}}I_{\mathrm L}(\cos\phi+\mathrm{j}\sin\phi)$.
+- A balanced delta impedance must be three times the star impedance to present the same terminal behavior. The same impedance connected in delta draws three times the star line current.
+- An unbalanced floating-star load shifts its star-point voltage; a neutral prevents that displacement but carries the unbalanced current.
+- Grounding, zero-sequence paths, harmonics, winding ratings, and protection requirements matter as much as the ideal $\sqrt{3}$ relationships in real systems.
+
+## References {.unnumbered}
+
+::: {#refs}
+:::

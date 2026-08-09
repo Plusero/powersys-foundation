@@ -1,0 +1,369 @@
+---
+title: "Power Factor in AC Circuits"
+subtitle: "From phase shift and complex power to current and correction"
+description: "Derive power factor from voltage and current waveforms, interpret leading and lagging loads, and size a simple correction capacitor in Python."
+author: "Power Systems Foundation contributors"
+date: "2026-08-09"
+categories: [Circuit analysis, Fundamentals, Power factor, Python]
+reading-time: 18
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+draft: false
+---
+
+## What you will learn
+
+After working through this tutorial, you should be able to:
+
+- derive active power and power factor from sinusoidal voltage and current;
+- connect the power factor to complex power and the power triangle;
+- distinguish leading, lagging, displacement, and true power factor;
+- explain why a low power factor increases current for a fixed active-power transfer;
+- calculate a shunt capacitor for a simple single-phase inductive load; and
+- recognise when the familiar formula $\mathrm{pf}=\cos\phi$ is not sufficient.
+
+## Prerequisites
+
+You should be comfortable with sinusoidal waveforms and RMS values. The [complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd) explains phasors, impedance, and complex power in more detail. Here we build on those ideas to focus on the physical and practical meaning of power factor.
+
+## 1. Active power is only part of the current story
+
+An AC source may need to supply current even when not all of the associated energy is converted into heat, light, or mechanical work. Inductors and capacitors store energy during part of a cycle and return it later. This exchange contributes to RMS current and equipment loading, but its average energy transfer over a complete cycle is zero.
+
+Power factor compares the average active power $P$ with the voltage-current loading:
+
+$$
+\mathrm{pf}
+=\frac{P}{V_{\mathrm{rms}}I_{\mathrm{rms}}}.
+$$ {#eq-pf-general-definition}
+
+For an absorbing load with $P\ge 0$, the magnitude lies between zero and one. A value near one means that most of the available voltage-current product contributes to average power transfer. A lower value means that more current is required for the same active power at the same voltage.
+
+Rearranging @eq-pf-general-definition gives
+
+$$
+I_{\mathrm{rms}}
+=\frac{P}{V_{\mathrm{rms}}\mathrm{pf}}.
+$$ {#eq-pf-current-for-power}
+
+This relation is why power factor matters to conductors, transformers, generators, converters, and switchgear: they must carry or interrupt current and are commonly limited by voltage and current rather than active power alone.
+
+::: {.callout-note}
+Some conventions use a signed power factor when power reverses direction. Others report a nonnegative magnitude together with a **leading** or **lagging** label. This tutorial considers an absorbing load and uses the second convention unless stated otherwise.
+:::
+
+## 2. Derive power factor from two sinusoids
+
+Consider a sinusoidal voltage and current at the same angular frequency $\omega$:
+
+$$
+v(t)=\sqrt{2}V\cos(\omega t+\theta_v),
+\qquad
+i(t)=\sqrt{2}I\cos(\omega t+\theta_i),
+$$ {#eq-pf-sinusoidal-waveforms}
+
+where $V$ and $I$ are RMS magnitudes. Define the voltage-current phase difference as
+
+$$
+\phi=\theta_v-\theta_i.
+$$ {#eq-pf-phase-difference}
+
+Using $2\cos a\cos b=\cos(a-b)+\cos(a+b)$, the instantaneous power is
+
+$$
+p(t)=VI\left[
+\cos\phi
++\cos(2\omega t+\theta_v+\theta_i)
+\right].
+$$ {#eq-pf-instantaneous-power}
+
+The second term oscillates at twice the electrical frequency and has zero average over a complete period. The active power is therefore
+
+$$
+P=VI\cos\phi.
+$$ {#eq-pf-active-power}
+
+Substitution into @eq-pf-general-definition gives the sinusoidal result
+
+$$
+\mathrm{pf}=\cos\phi.
+$$ {#eq-pf-cosine}
+
+The phase angle, not a delay measured in seconds, is what stays meaningful when the frequency is specified. A fixed time delay corresponds to a different phase angle if the frequency changes.
+
+## 3. Complex power and the power triangle
+
+With cosine-based RMS phasors and the passive sign convention, absorbed complex power is [@grainger1994]
+
+$$
+\underline S
+=\underline V\underline I^*
+=P+\mathrm{j}Q.
+$$ {#eq-pf-complex-power}
+
+For the sinusoidal waveforms in @eq-pf-sinusoidal-waveforms,
+
+$$
+\begin{aligned}
+P &= VI\cos\phi,\\
+Q &= VI\sin\phi,\\
+|\underline S| &= VI=\sqrt{P^2+Q^2}.
+\end{aligned}
+$$ {#eq-pf-power-components}
+
+Active power $P$ is measured in watts, reactive power $Q$ in var, and apparent power $|\underline S|$ in volt-amperes. The units distinguish different physical roles even though all three have the same underlying dimensions.
+
+<figure>
+<svg viewBox="0 0 760 300" role="img" aria-labelledby="pf-triangle-title pf-triangle-desc" style="display:block;max-width:760px;width:100%;height:auto;margin:auto">
+  <title id="pf-triangle-title">Power triangle for an inductive load</title>
+  <desc id="pf-triangle-desc">A right triangle has active power P on the horizontal axis, positive reactive power Q on the vertical axis, apparent power magnitude S on the hypotenuse, and phase angle phi at the origin.</desc>
+  <defs>
+    <marker id="pf-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,4 L0,8 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <line x1="85" y1="235" x2="535" y2="235" stroke="currentColor" stroke-width="3" marker-end="url(#pf-arrow)"/>
+  <line x1="535" y1="235" x2="535" y2="65" stroke="currentColor" stroke-width="3" marker-end="url(#pf-arrow)"/>
+  <line x1="85" y1="235" x2="535" y2="65" stroke="currentColor" stroke-width="3" marker-end="url(#pf-arrow)"/>
+  <path d="M155,235 A70,70 0 0 0 150,210" fill="none" stroke="currentColor" stroke-width="2"/>
+  <text x="300" y="270" fill="currentColor" font-size="22">active power P</text>
+  <text x="548" y="157" fill="currentColor" font-size="22">reactive power Q</text>
+  <text x="285" y="125" fill="currentColor" font-size="22">|S|</text>
+  <text x="158" y="215" fill="currentColor" font-size="22">φ</text>
+</svg>
+<figcaption>Power triangle for an absorbing inductive load, for which $Q>0$ and current lags voltage.</figcaption>
+</figure>
+
+Under the stated convention, the sign of $Q$ identifies the phase relationship for an absorbing load:
+
+| Load behaviour | Current relative to voltage | $\phi=\theta_v-\theta_i$ | Reactive power | Label |
+|---|---|---:|---:|---|
+| Inductive | lags | $>0$ | $Q>0$ | lagging |
+| Resistive | in phase | $=0$ | $Q=0$ | unity |
+| Capacitive | leads | $<0$ | $Q<0$ | leading |
+
+: Phase and reactive-power signs under the passive sign convention {#tbl-pf-leading-lagging}
+
+The scalar $\cos\phi$ alone cannot distinguish $+\phi$ from $-\phi$. A complete report therefore gives both a power-factor magnitude and a leading or lagging label, or gives the signs of $P$ and $Q$ explicitly.
+
+## 4. Why a lower power factor increases losses and ratings
+
+Suppose a line with resistance $R_{\ell}$ delivers fixed active power $P$ at fixed RMS voltage $V$. From @eq-pf-current-for-power, its resistive loss is
+
+$$
+P_{\mathrm{loss}}
+=I^2R_{\ell}
+=\left(\frac{P}{V\,\mathrm{pf}}\right)^2R_{\ell}.
+$$ {#eq-pf-line-loss}
+
+Reducing the power factor from $1.0$ to $0.8$ increases current by a factor of $1/0.8=1.25$ and line loss by a factor of $1/0.8^2=1.5625$, if every other quantity in this comparison remains fixed. The larger current also causes a larger series voltage drop and consumes more of a device's ampere or volt-ampere capability.
+
+This does **not** mean that power factor and efficiency are the same quantity. An ideal inductor has zero power factor and zero average power loss; a real motor can have a high power factor while still dissipating substantial losses. Power factor describes how voltage and current combine at a terminal. Efficiency compares useful output power with active input power.
+
+## 5. Worked inductive-load example
+
+Connect an impedance
+
+$$
+\underline Z=12+\mathrm{j}9\ \Omega
+$$
+
+to a $230\ \mathrm{V}$ RMS, $50\ \mathrm{Hz}$ source. The impedance magnitude is $15\ \Omega$ and its angle is $36.87^\circ$, so the current should lag the voltage and the power factor should be $12/15=0.8$.
+
+```{python}
+#| label: lst-pf-inductive-load
+#| lst-cap: "Calculate power and current for an inductive load"
+#| code-summary: "Calculate complex power, power factor, and line loss"
+
+import numpy as np
+
+frequency = 50.0  # Hz
+voltage = 230.0 + 0.0j  # V RMS
+load_impedance = 12.0 + 9.0j  # ohm
+line_resistance = 0.40  # ohm
+
+current = voltage / load_impedance
+complex_power = voltage * current.conjugate()
+active_power = complex_power.real
+reactive_power = complex_power.imag
+apparent_power = abs(complex_power)
+power_factor = active_power / apparent_power
+
+unity_pf_current = active_power / abs(voltage)
+actual_line_loss = abs(current) ** 2 * line_resistance
+unity_pf_line_loss = unity_pf_current**2 * line_resistance
+
+print(f"I = {abs(current):.3f} A at {np.rad2deg(np.angle(current)):+.2f} deg")
+print(f"S = {active_power:.2f} {reactive_power:+.2f}j VA")
+print(f"|S| = {apparent_power:.2f} VA")
+print(f"power factor = {power_factor:.3f} lagging")
+print(f"current at unity power factor for the same P = {unity_pf_current:.3f} A")
+print(f"line loss at actual power factor = {actual_line_loss:.2f} W")
+print(f"line loss at unity power factor = {unity_pf_line_loss:.2f} W")
+print(f"loss ratio = {actual_line_loss / unity_pf_line_loss:.4f}")
+```
+
+The load absorbs about $2.82\ \mathrm{kW}$ and $2.12\ \mathrm{kvar}$ while requiring $3.53\ \mathrm{kVA}$. Its $15.33\ \mathrm{A}$ current exceeds the $12.27\ \mathrm{A}$ that would transfer the same active power at unity power factor. The printed line-loss ratio verifies the $1/\mathrm{pf}^2$ scaling for this controlled comparison.
+
+::: {.callout-tip}
+Change the reactance from `9.0j` to `-9.0j` before rerunning. The current magnitude and power-factor magnitude stay the same, but the current becomes leading and the sign of reactive power reverses.
+:::
+
+## 6. Correct a lagging power factor with a shunt capacitor
+
+A capacitor connected in parallel with an inductive load can supply negative reactive power locally. The load still absorbs the same $P$ and $Q$ in this idealised calculation, but the source supplies only their sum with the capacitor contribution.
+
+For an initial angle $\phi_1$ and a desired lagging angle $\phi_2$ at the same active power,
+
+$$
+Q_1=P\tan\phi_1,
+\qquad
+Q_2=P\tan\phi_2.
+$$
+
+The required capacitor reactive power is
+
+$$
+Q_C=Q_2-Q_1.
+$$ {#eq-pf-capacitor-reactive-power}
+
+For a single-phase shunt capacitor across RMS voltage $V$,
+
+$$
+Q_C=-\omega C V^2,
+\qquad
+C=-\frac{Q_C}{\omega V^2}.
+$$ {#eq-pf-capacitance}
+
+Use @eq-pf-capacitance to raise the source power factor of the worked load from $0.80$ lagging to $0.95$ lagging.
+
+```{python}
+#| label: lst-pf-capacitor-correction
+#| lst-cap: "Size a single-phase shunt correction capacitor"
+#| code-summary: "Correct the source power factor from 0.80 to 0.95"
+
+target_power_factor = 0.95
+target_angle = np.arccos(target_power_factor)
+target_reactive_power = active_power * np.tan(target_angle)
+capacitor_reactive_power = target_reactive_power - reactive_power
+
+omega = 2.0 * np.pi * frequency
+capacitance = -capacitor_reactive_power / (omega * abs(voltage) ** 2)
+
+corrected_complex_power = active_power + 1j * target_reactive_power
+corrected_source_current = np.conjugate(corrected_complex_power / voltage)
+corrected_power_factor = active_power / abs(corrected_complex_power)
+
+print(f"initial source Q = {reactive_power:.2f} var")
+print(f"target source Q = {target_reactive_power:.2f} var")
+print(f"capacitor Q = {capacitor_reactive_power:.2f} var")
+print(f"capacitance = {capacitance * 1e6:.2f} microfarad")
+print(f"corrected source current = {abs(corrected_source_current):.3f} A")
+print(f"corrected source power factor = {corrected_power_factor:.3f} lagging")
+print(
+    "reactive-power balance residual = "
+    f"{abs(reactive_power + capacitor_reactive_power - target_reactive_power):.3e} var"
+)
+```
+
+The capacitor supplies part of the load's reactive-power demand, reducing the source current while leaving the ideal load unchanged. Correcting exactly to unity is not always the best practical target: load variation can produce overcorrection, and a capacitor can interact with network inductance to create resonance or amplify harmonics.
+
+::: {.callout-warning}
+@Eq-pf-capacitance is a single-phase formula for a capacitor directly across the stated voltage. Three-phase capacitor-bank formulas depend on whether the elements are connected in star or delta and on whether the stated voltage is phase-to-neutral or line-to-line. The [star-and-delta tutorial](star-delta-three-phase-systems.qmd) develops those voltage relations.
+:::
+
+## 7. Displacement power factor is not always true power factor
+
+@Eq-pf-cosine assumes sinusoidal voltage and current at one frequency. For arbitrary periodic waveforms, the true power factor remains
+
+$$
+\mathrm{pf}_{\mathrm{true}}
+=\frac{\dfrac{1}{T}\int_0^T v(t)i(t)\,\mathrm dt}
+{V_{\mathrm{rms}}I_{\mathrm{rms}}}.
+$$ {#eq-pf-true-waveform}
+
+If the voltage is sinusoidal but the current contains harmonics, let $I_1$ be the RMS magnitude of its fundamental component and let $\phi_1$ be the phase displacement between the voltage and that component. Orthogonal current harmonics raise total RMS current without contributing active power against an ideal fundamental-frequency voltage. In that case,
+
+$$
+\mathrm{pf}_{\mathrm{true}}
+=\underbrace{\cos\phi_1}_{\text{displacement factor}}
+\underbrace{\frac{I_1}{I_{\mathrm{rms}}}}_{\text{distortion factor}}.
+$$ {#eq-pf-displacement-distortion}
+
+The next example combines a $10\ \mathrm{A}$ fundamental current lagging by $30^\circ$ with a $5\ \mathrm{A}$ third harmonic.
+
+```{python}
+#| label: lst-pf-distorted-current
+#| lst-cap: "Compare displacement and true power factor"
+#| code-summary: "Calculate power factor for a current containing a third harmonic"
+
+sample_count = 20_000
+time = np.linspace(0.0, 1.0 / frequency, sample_count, endpoint=False)
+
+voltage_waveform = np.sqrt(2.0) * 230.0 * np.cos(omega * time)
+fundamental_current_rms = 10.0
+third_harmonic_current_rms = 5.0
+fundamental_lag = np.deg2rad(30.0)
+
+current_waveform = np.sqrt(2.0) * (
+    fundamental_current_rms * np.cos(omega * time - fundamental_lag)
+    + third_harmonic_current_rms * np.cos(3.0 * omega * time + np.deg2rad(20.0))
+)
+
+voltage_rms = np.sqrt(np.mean(voltage_waveform**2))
+current_rms = np.sqrt(np.mean(current_waveform**2))
+waveform_active_power = np.mean(voltage_waveform * current_waveform)
+true_power_factor = waveform_active_power / (voltage_rms * current_rms)
+displacement_factor = np.cos(fundamental_lag)
+distortion_factor = fundamental_current_rms / current_rms
+
+print(f"V_rms = {voltage_rms:.3f} V")
+print(f"I_rms = {current_rms:.3f} A")
+print(f"active power = {waveform_active_power:.3f} W")
+print(f"displacement factor = {displacement_factor:.4f}")
+print(f"distortion factor = {distortion_factor:.4f}")
+print(f"true power factor = {true_power_factor:.4f}")
+print(f"factor-product residual = {abs(true_power_factor - displacement_factor * distortion_factor):.3e}")
+```
+
+The displacement factor is about $0.866$, but the true power factor is only about $0.775$ because the harmonic current increases total RMS current. A capacitor chosen only from the fundamental-frequency phase angle can improve displacement power factor without removing harmonic distortion.
+
+## 8. Practical pitfalls
+
+### Treating power factor as efficiency
+
+Power factor concerns terminal voltage, current, and active power. Efficiency concerns active-power losses between input and useful output. Neither determines the other.
+
+### Omitting the sign convention
+
+The labels leading, lagging, absorbed, and supplied depend on the defined current direction and voltage polarity. State the convention before interpreting $Q$ or comparing formulas.
+
+### Applying $\cos\phi$ to distorted waveforms
+
+$\cos\phi$ is the displacement power factor for sinusoidal quantities. Use @eq-pf-general-definition with total RMS values and average active power when distortion is present.
+
+### Correcting a varying load with one fixed capacitor
+
+A capacitor that is appropriate at rated load may overcorrect at light load. Switched banks, converter-based compensation, or coordinated control may be needed when operating conditions vary.
+
+### Assuming a low power factor always means large reactive power
+
+Harmonic distortion can lower true power factor even when the fundamental reactive power is small. Inspect both phase displacement and waveform distortion.
+
+## 9. Takeaways
+
+- Power factor is active power divided by RMS voltage-current loading.
+- For single-frequency sinusoids, $\mathrm{pf}=\cos(\theta_v-\theta_i)$.
+- Under the passive sign convention, an inductive load absorbs positive reactive power and has lagging current; a capacitive load has the opposite signs.
+- For fixed active power and voltage, lower power factor means higher current and therefore higher resistive line loss.
+- Shunt compensation changes the reactive power seen by the source, but its connection, voltage, operating range, and resonance risk all matter.
+- With distorted waveforms, true power factor includes both displacement and distortion effects.
+
+The [effective-value tutorial](effective-rms-value-in-ac-circuits.qmd) develops the RMS quantities used throughout this article. The [complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd) continues from the same equations to impedance, RLC circuits, and frequency response.
+
+## References {.unnumbered}
+
+::: {#refs}
+:::
