@@ -4,6 +4,7 @@ subtitle: "From noisy measurements to an observable network state"
 description: "Build the weighted least-squares estimator, solve a reproducible Python example, and interpret residual and observability diagnostics."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
+date-modified: "2026-08-09"
 categories: [State estimation, Power systems, Numerical methods, Python]
 reading-time: 16
 jupyter: python3

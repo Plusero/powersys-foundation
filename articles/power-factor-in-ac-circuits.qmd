@@ -4,6 +4,7 @@ subtitle: "From phase shift and complex power to current and correction"
 description: "Derive power factor from voltage and current waveforms, interpret leading and lagging loads, and size a simple correction capacitor in Python."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
+date-modified: "2026-08-09"
 categories: [Circuit analysis, Fundamentals, Power factor, Python]
 reading-time: 18
 jupyter: python3

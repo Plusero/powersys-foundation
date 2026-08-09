@@ -4,6 +4,7 @@ subtitle: "Reference angles, local uniqueness, and voltage-collapse boundaries"
 description: "Understand what makes the reduced power-flow Jacobian nonsingular, why it becomes ill-conditioned, and what that means physically and numerically."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
+date-modified: "2026-08-09"
 categories: [Power flow, Voltage stability, Numerical methods, Python]
 reading-time: 16
 jupyter: python3

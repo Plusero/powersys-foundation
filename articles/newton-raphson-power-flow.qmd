@@ -4,6 +4,7 @@ subtitle: "From network equations to an iterative algorithm"
 description: "Derive the AC power-flow equations, implement Newton's method in Python, and inspect its convergence."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
+date-modified: "2026-08-09"
 categories: [Power flow, Network analysis, Numerical methods, Python]
 reading-time: 18
 jupyter: python3

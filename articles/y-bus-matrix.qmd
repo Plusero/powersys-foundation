@@ -4,6 +4,7 @@ subtitle: "From branch models to a network equation"
 description: "Build the bus-admittance matrix from lines, shunts, and off-nominal transformers, then verify the result in Python."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
+date-modified: "2026-08-09"
 categories: [Network analysis, Power flow, Python]
 reading-time: 18
 jupyter: python3

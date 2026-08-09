@@ -4,6 +4,7 @@ subtitle: "Turn one factorisation into a solve with every unit vector"
 description: "Derive a matrix inverse from known LU factors, implement the triangular solves in Python, and decide when an explicit inverse is actually appropriate."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
+date-modified: "2026-08-09"
 categories: [Linear algebra, Numerical methods, Python]
 reading-time: 13
 jupyter: python3

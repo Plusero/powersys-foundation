@@ -4,6 +4,7 @@ subtitle: "From rotating sinusoids to impedance and complex power"
 description: "Learn how complex numbers turn sinusoidal steady-state circuit equations into algebra, then solve and verify a series RLC circuit in Python."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
+date-modified: "2026-08-09"
 categories: [Circuit analysis, Fundamentals, Phasors, Python]
 reading-time: 18
 jupyter: python3

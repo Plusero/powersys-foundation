@@ -4,6 +4,7 @@ subtitle: "The transmission-grid approximation behind decoupled power flow"
 description: "Derive why active power responds mainly to voltage angle and reactive power mainly to voltage magnitude in high-voltage transmission networks."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
+date-modified: "2026-08-09"
 categories: [Power flow, Network analysis, Voltage control, Python]
 reading-time: 16
 jupyter: python3

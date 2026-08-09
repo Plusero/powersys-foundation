@@ -4,6 +4,7 @@ subtitle: "Phase and line quantities, balanced loads, and the consequences of lo
 description: "Derive star and delta voltage, current, power, and impedance relationships, then test balanced and unbalanced circuits in Python."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
+date-modified: "2026-08-09"
 categories: [Three-phase systems, Circuit analysis, Fundamentals, Python]
 reading-time: 19
 jupyter: python3

@@ -4,6 +4,7 @@ subtitle: "From elimination to Schur complements"
 description: "Derive a recursive LU factorisation, implement it in Python, and connect it to power-system linear solves."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
+date-modified: "2026-08-09"
 categories: [Linear algebra, Numerical methods, Python]
 reading-time: 14
 jupyter: python3
@@ -298,4 +299,3 @@ Recursive block formulations expose parallel work and turn many scalar operation
 
 ::: {#refs}
 :::
-

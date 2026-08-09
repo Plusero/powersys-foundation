@@ -4,6 +4,7 @@ subtitle: "Why root mean square measures the useful size of a waveform"
 description: "Derive RMS from equivalent resistor heating, compare common waveforms, and calculate effective values from sampled data in Python."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
+date-modified: "2026-08-09"
 categories: [Circuit analysis, Fundamentals, RMS, Python]
 reading-time: 16
 jupyter: python3

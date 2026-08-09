@@ -4,6 +4,7 @@ subtitle: "From power-flow truth to noisy measurements and quantitative error ch
 description: "Build a reproducible four-step state-estimation test, then extend it with Monte Carlo trials and stress scenarios."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
+date-modified: "2026-08-09"
 categories: [State estimation, Power flow, Verification, Python]
 reading-time: 14
 jupyter: python3

@@ -4,6 +4,7 @@ subtitle: "Constant power, economical conductors, and a naturally rotating magne
 description: "Derive the main physical and economic reasons AC power systems settled on three phases, then verify the claims with reproducible Python examples."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
+date-modified: "2026-08-09"
 categories: [Three-phase systems, Circuit analysis, Fundamentals, Python]
 reading-time: 17
 jupyter: python3

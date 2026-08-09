@@ -4,6 +4,7 @@ subtitle: "Build the inverse while Schur-complement elimination unwinds"
 description: "Derive a recursive block inverse, implement simultaneous LU factorisation and inversion, and separate dense recursion from true selected inversion."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
+date-modified: "2026-08-09"
 categories: [Linear algebra, Numerical methods, Selective inversion, Python]
 reading-time: 16
 jupyter: python3

@@ -4,6 +4,7 @@ subtitle: "Two network calculations with different questions, data, and diagnost
 description: "Compare power flow and state estimation side by side, then reproduce both calculations on the same three-bus DC network."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
+date-modified: "2026-08-09"
 categories: [Power flow, State estimation, Network analysis, Python]
 reading-time: 12
 jupyter: python3
