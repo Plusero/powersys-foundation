@@ -1,0 +1,261 @@
+---
+title: "What Is a Resistor?"
+subtitle: "Voltage, current, heat, and the simplest passive circuit model"
+description: "Learn how an ideal resistor relates voltage to current, dissipates energy, combines in networks, and behaves under DC and sinusoidal excitation."
+author: "Power Systems Foundation contributors"
+date: "2026-08-09"
+date-modified: "2026-08-09"
+categories: [Circuit analysis, Fundamentals, Resistors, Python]
+reading-time: 12
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+draft: false
+---
+
+## What you will learn
+
+After working through this tutorial, you should be able to:
+
+- define resistance using a consistent voltage and current reference;
+- distinguish resistance from conductance and resistivity;
+- calculate instantaneous power and energy dissipated as heat;
+- combine ideal resistors in series and parallel;
+- explain why resistor voltage and current are in phase in sinusoidal steady state; and
+- recognise the limits and ratings omitted by the ideal model.
+
+## Prerequisites
+
+Only basic algebra and the meanings of voltage, current, power, and energy are required. The [effective-value tutorial](effective-rms-value-in-ac-circuits.qmd) explains RMS quantities, and the [complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd) develops the AC phasor notation used later.
+
+## 1. The short answer
+
+A **resistor** is a two-terminal component or circuit model that opposes current flow and converts electrical energy into heat. For an ideal linear resistor, voltage and current satisfy Ohm's law,
+
+$$
+\boxed{v(t)=R i(t)},
+$$ {#eq-resistor-ohms-law}
+
+where $R>0$ is the resistance in ohms ($\Omega$).
+
+Equation @eq-resistor-ohms-law uses the **passive sign convention**: the reference current $i$ enters the terminal assigned positive voltage $v$. Reversing only one reference changes the sign in the equation; reversing both leaves it unchanged.
+
+The reciprocal quantity is **conductance**,
+
+$$
+G=\frac{1}{R},
+$$ {#eq-resistor-conductance}
+
+measured in siemens ($\mathrm S$). A large resistance means a small conductance and, for a fixed applied voltage, a small current.
+
+::: {.callout-note}
+An ideal resistor is a model, not a statement that every physical component has a perfectly constant $R$. Real resistance can depend on temperature, frequency, voltage, mechanical strain, and manufacturing tolerance.
+:::
+
+## 2. What determines resistance physically?
+
+For a uniform conductor in a simple regime,
+
+$$
+R=\rho\frac{\ell}{A},
+$$ {#eq-resistor-geometry}
+
+where $\rho$ is material **resistivity** in $\Omega\,\mathrm m$, $\ell$ is conductor length, and $A$ is cross-sectional area. A longer path has more resistance; a larger cross-section has less.
+
+Resistance and resistivity are not interchangeable. Resistance describes a particular component geometry, while resistivity is a material property under stated conditions. Temperature matters: over a limited range, a metal resistor is often approximated by
+
+$$
+R(T)=R(T_0)\left[1+\alpha(T-T_0)\right],
+$$ {#eq-resistor-temperature}
+
+where $\alpha$ is a temperature coefficient near reference temperature $T_0$. This linear approximation is useful only over the range for which $\alpha$ is valid.
+
+## 3. A resistor dissipates energy
+
+Instantaneous absorbed power is
+
+$$
+p(t)=v(t)i(t).
+$$ {#eq-resistor-power-definition}
+
+Substituting Ohm's law gives three equivalent forms:
+
+$$
+\boxed{
+p(t)=R i^2(t)=\frac{v^2(t)}{R}=v(t)i(t)
+}.
+$$ {#eq-resistor-power}
+
+For $R>0$, $p(t)\geq0$ regardless of current direction. A passive ideal resistor never returns previously stored energy because it has no energy-storage state. The electrical energy converted to heat from $t_1$ to $t_2$ is
+
+$$
+E=\int_{t_1}^{t_2}p(t)\,\mathrm dt.
+$$ {#eq-resistor-energy}
+
+For constant DC values,
+
+$$
+P=VI=I^2R=\frac{V^2}{R}.
+$$ {#eq-resistor-dc-power}
+
+For any periodic voltage applied to an ideal resistor, the average power is
+
+$$
+P=\frac{V_{\mathrm{rms}}^2}{R}
+=I_{\mathrm{rms}}^2R.
+$$ {#eq-resistor-rms-power}
+
+This heating equivalence is the physical foundation of RMS value. Notice the condition being held fixed: at fixed voltage, increasing $R$ reduces power; at fixed current, increasing $R$ increases power.
+
+::: {.callout-warning}
+The formulas do not grant unlimited power handling. A physical resistor has temperature, voltage, current, and power ratings. Exceeding them can change its value, damage insulation, or cause failure.
+:::
+
+## 4. Series and parallel combinations
+
+### Series resistors
+
+Series elements carry the same current. Kirchhoff's voltage law gives
+
+$$
+v=iR_1+iR_2+\cdots
+=iR_{\mathrm{eq}},
+$$
+
+so
+
+$$
+\boxed{R_{\mathrm{eq,series}}=R_1+R_2+\cdots}.
+$$ {#eq-resistor-series}
+
+For two series resistors across voltage $V$, the voltage across $R_2$ is
+
+$$
+V_2=V\frac{R_2}{R_1+R_2}.
+$$ {#eq-resistor-voltage-divider}
+
+This voltage-divider formula assumes the output is not changed by an additional load. A finite load connected across $R_2$ becomes part of the parallel network and changes the division ratio.
+
+### Parallel resistors
+
+Parallel elements share the same voltage. Kirchhoff's current law gives
+
+$$
+i=\frac{v}{R_1}+\frac{v}{R_2}+\cdots
+=vG_{\mathrm{eq}},
+$$
+
+so conductances add:
+
+$$
+G_{\mathrm{eq}}=G_1+G_2+\cdots.
+$$
+
+Equivalently,
+
+$$
+\boxed{
+\frac{1}{R_{\mathrm{eq,parallel}}}
+=\frac{1}{R_1}+\frac{1}{R_2}+\cdots
+}.
+$$ {#eq-resistor-parallel}
+
+The equivalent resistance of positive resistors in parallel is smaller than the smallest branch resistance because the network provides more paths for current.
+
+## 5. Sinusoidal steady state
+
+An ideal resistor has no derivatives or integrals in its constitutive equation. Replacing time-domain sinusoids by RMS phasors therefore gives
+
+$$
+\underline V=R\underline I,
+\qquad
+\underline Z_R=R.
+$$ {#eq-resistor-impedance}
+
+Its impedance is real and independent of frequency in the ideal model. Voltage and current have the same phase angle. With the passive sign convention, absorbed complex power is
+
+$$
+\underline S
+=\underline V\underline I^*
+=R|\underline I|^2
+=P+\mathrm j0.
+$$ {#eq-resistor-complex-power}
+
+Thus an ideal resistor absorbs active power $P$ and no reactive power $Q$. Its instantaneous power still pulsates under a sinusoidal supply, but its average is positive [@grainger1994].
+
+## 6. Reproduce resistor heating in Python
+
+Apply a $230\ \mathrm V$ RMS, $50\ \mathrm{Hz}$ sinusoid to a $46\ \Omega$ resistor. The expected RMS current is $5\ \mathrm A$ and the expected average power is $1.15\ \mathrm{kW}$.
+
+```{python}
+#| label: lst-resistor-heating
+#| code-summary: "Verify Ohm's law, RMS current, and average resistor power"
+
+import numpy as np
+
+frequency = 50.0  # Hz
+voltage_rms = 230.0  # V
+resistance = 46.0  # ohm
+period_count = 4
+sample_count = 20_000
+
+time = np.linspace(
+    0.0,
+    period_count / frequency,
+    sample_count,
+    endpoint=False,
+)
+voltage = np.sqrt(2.0) * voltage_rms * np.cos(
+    2.0 * np.pi * frequency * time
+)
+current = voltage / resistance
+power = voltage * current
+
+calculated_voltage_rms = np.sqrt(np.mean(voltage**2))
+calculated_current_rms = np.sqrt(np.mean(current**2))
+average_power = np.mean(power)
+expected_power = voltage_rms**2 / resistance
+
+print(f"voltage RMS = {calculated_voltage_rms:.6f} V")
+print(f"current RMS = {calculated_current_rms:.6f} A")
+print(f"average power = {average_power:.6f} W")
+print(f"minimum instantaneous power = {power.min():.6f} W")
+print(f"energy over {period_count} periods = {np.trapezoid(power, time):.6f} J")
+
+np.testing.assert_allclose(calculated_voltage_rms, voltage_rms, atol=1e-12)
+np.testing.assert_allclose(calculated_current_rms, voltage_rms / resistance, atol=1e-12)
+np.testing.assert_allclose(average_power, expected_power, atol=1e-12)
+assert power.min() >= -1e-12
+```
+
+The instantaneous power touches zero whenever voltage and current cross zero together, but it never becomes negative. Change `resistance` while holding `voltage_rms` fixed and predict the new current and average power before rerunning.
+
+## 7. What the ideal model leaves out
+
+A physical resistor can include:
+
+- **tolerance:** the manufactured value differs from its nominal marking;
+- **temperature coefficient and self-heating:** dissipated power changes the resistance;
+- **parasitic inductance and capacitance:** impedance becomes frequency dependent;
+- **voltage and current limits:** even when average power is below its rating;
+- **noise:** thermal agitation produces voltage and current fluctuations; and
+- **nonlinearity:** some devices called resistive loads do not obey one constant slope $v=Ri$.
+
+The ratio $v/i$ is a constant $R$ only for a linear resistor. For a nonlinear $v$--$i$ characteristic, the static ratio $v/i$ and incremental slope $\mathrm dv/\mathrm di$ answer different questions.
+
+## 8. Takeaways
+
+- An ideal linear resistor obeys $v=Ri$ under the passive sign convention.
+- Resistance is measured in ohms; conductance is its reciprocal in siemens.
+- A passive resistor dissipates $p=Ri^2=v^2/R\geq0$ and stores no recoverable energy.
+- Series resistances add; parallel conductances add.
+- Its ideal AC impedance is the real number $R$, so voltage and current are in phase and $Q=0$.
+- Real resistors have tolerance, thermal behavior, ratings, noise, and parasitic reactance.
+
+Next, compare dissipation in a resistor with energy storage in an [inductor](inductor.qmd) and a [capacitor](capacitor.qmd).
+
+## References {.unnumbered}
+
+::: {#refs}
+:::

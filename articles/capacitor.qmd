@@ -1,0 +1,262 @@
+---
+title: "What Is a Capacitor?"
+subtitle: "Voltage, electric energy, and the meaning of capacitance"
+description: "Learn how an ideal capacitor relates current to changing voltage, stores electric energy, and behaves in DC transients and sinusoidal steady state."
+author: "Power Systems Foundation contributors"
+date: "2026-08-09"
+date-modified: "2026-08-09"
+categories: [Circuit analysis, Fundamentals, Capacitors, Python]
+reading-time: 13
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+draft: false
+---
+
+## What you will learn
+
+After this tutorial, you will be able to:
+
+- use the constitutive relations $q=Cv$ and $i=C\,dv/dt$;
+- explain why ideal-capacitor voltage cannot jump instantaneously;
+- calculate electric energy and sinusoidal reactance;
+- interpret a capacitor during a DC charging transient; and
+- recognize important departures from the ideal model.
+
+## Prerequisites
+
+You should be comfortable with voltage, current, power, and basic derivatives. The tutorials on [complex numbers](complex-numbers-in-ac-circuits.qmd) and [RMS values](effective-rms-value-in-ac-circuits.qmd) are useful for the sinusoidal section.
+
+## 1. The ideal capacitor
+
+A **capacitor** is a two-terminal component that stores energy in an electric field. Its defining parameter is the **capacitance** $C$, measured in farads (F).
+
+For an ideal linear capacitor, charge and voltage are related by
+
+$$
+q(t)=C v(t).
+$$ {#eq-capacitor-charge}
+
+Using the passive sign convention—current enters the terminal marked positive—and differentiating Equation @eq-capacitor-charge gives
+
+$$
+i(t)=C\frac{dv(t)}{dt}.
+$$ {#eq-capacitor-law}
+
+One farad is one coulomb per volt, equivalently one ampere-second per volt:
+
+$$
+1\ \mathrm{F}=1\ \frac{\mathrm{C}}{\mathrm{V}}
+=1\ \frac{\mathrm{A\,s}}{\mathrm{V}}.
+$$
+
+Equation @eq-capacitor-law says that current is associated with a **change** in voltage:
+
+- constant voltage gives $i=0$ for an ideal capacitor;
+- a faster voltage change requires a larger current; and
+- for the same current, a larger capacitance makes voltage change more slowly.
+
+Physically, opposite charges accumulate on two conductors separated by an insulating dielectric. Their electric field stores the energy [@grainger1994].
+
+::: {.callout-important}
+## State the reference directions
+
+If current is defined as leaving the positive-voltage terminal, the sign in Equation @eq-capacitor-law changes. The device has not changed; only the reference convention has.
+:::
+
+## 2. Why voltage is continuous
+
+Integrating Equation @eq-capacitor-law over a short interval gives
+
+$$
+v(t_2)-v(t_1)=\frac{1}{C}\int_{t_1}^{t_2}i(t)\,dt.
+$$ {#eq-capacitor-voltage-integral}
+
+For finite current, the integral approaches zero as the interval shrinks. Therefore the voltage across an ideal capacitor cannot change instantaneously:
+
+$$
+v(0^+)=v(0^-).
+$$
+
+An instantaneous finite change in voltage would require an impulse of current. A circuit that connects an ideal voltage source directly across an uncharged ideal capacitor demands such an impulse; practical source resistance, wiring inductance, and capacitor resistance limit the real current.
+
+::: {.callout-warning}
+## “A capacitor is an open circuit at DC” needs a condition
+
+In a settled DC steady state, $dv/dt=0$, so an ideal capacitor carries no current and behaves like an open circuit. At switching time, or when its initial voltage matters, replacing it with an open circuit can discard the transient of interest.
+:::
+
+## 3. Power and stored electric energy
+
+With the passive sign convention, instantaneous power absorbed by a capacitor is
+
+$$
+p(t)=v(t)i(t)=C v(t)\frac{dv(t)}{dt}.
+$$
+
+Integrating from zero voltage to voltage $v$ gives the stored electric energy
+
+$$
+w_C(t)=\frac{1}{2}C v^2(t).
+$$ {#eq-capacitor-energy}
+
+The energy is nonnegative regardless of voltage polarity. When $p>0$, the electric field receives energy; when $p<0$, the ideal capacitor returns energy. Unlike an ideal [resistor](resistor.qmd), an ideal capacitor does not turn this energy into heat.
+
+## 4. Parallel and series combinations
+
+For ideal capacitors:
+
+- parallel capacitances add:
+
+  $$
+  C_{\mathrm{eq}}=C_1+C_2+\cdots;
+  $$
+
+- series capacitances combine reciprocally:
+
+  $$
+  \frac{1}{C_{\mathrm{eq}}}=\frac{1}{C_1}+\frac{1}{C_2}+\cdots.
+  $$
+
+For two series capacitors, $C_{\mathrm{eq}}=C_1C_2/(C_1+C_2)$.
+
+The reciprocal series formula follows because series capacitors receive equal changes in charge in the ideal two-terminal connection. Their individual voltages need not be equal: for equal charge magnitude, the smaller capacitance has the larger voltage. Initial charge, leakage, and external connections can also affect voltage sharing.
+
+## 5. Sinusoidal steady state
+
+For angular frequency $\omega=2\pi f$, differentiation becomes multiplication by $j\omega$ in phasor form. Equation @eq-capacitor-law becomes
+
+$$
+\underline I=j\omega C\,\underline V.
+$$
+
+Therefore the capacitor impedance is
+
+$$
+Z_C=\frac{1}{j\omega C}
+=-j\frac{1}{\omega C}
+=-jX_C,
+\qquad
+X_C=\frac{1}{\omega C}.
+$$ {#eq-capacitor-impedance}
+
+The magnitude of capacitive reactance decreases as frequency increases. Current leads voltage by $90^\circ$.
+
+For RMS voltage $V$, the complex power absorbed by an ideal capacitor is
+
+$$
+\underline S=\underline V\underline I^*=-j\omega C V^2.
+$$
+
+Its average active power is zero, while its reactive power is negative under the usual load convention:
+
+$$
+P=0,
+\qquad
+Q=-\omega C V^2.
+$$
+
+The capacitor receives energy during part of every cycle and returns it during another. Capacitors are therefore widely used to compensate inductive reactive power; see [power factor](power-factor-in-ac-circuits.qmd).
+
+::: {.callout-note}
+## Frequency limits
+
+At $f=0$, Equation @eq-capacitor-impedance has infinite magnitude, matching the open-circuit DC steady-state model. The ideal formula should not be extrapolated to arbitrarily high frequency because real capacitors also contain resistance and inductance.
+:::
+
+## 6. Worked example: an RC charging transient
+
+Consider a $12$ V ideal source applied at $t=0$ to a series combination of $R=10\ \mathrm{k}\Omega$ and $C=100\ \mu\mathrm{F}$. Assume $v_C(0^-)=0$.
+
+The time constant is
+
+$$
+\tau=RC=1\ \mathrm{s}.
+$$
+
+For $t\geq0$,
+
+$$
+v_C(t)=V_s\left(1-e^{-t/\tau}\right),
+$$ {#eq-rc-voltage}
+
+$$
+i(t)=\frac{V_s}{R}e^{-t/\tau},
+\qquad
+v_R(t)=V_s e^{-t/\tau}.
+$$
+
+The following executable example checks voltage continuity, Kirchhoff's voltage law, and the $63.2\%$ time-constant result.
+
+```{python}
+#| label: lst-capacitor-rc-transient
+
+import numpy as np
+
+V_source = 12.0   # V
+R = 10_000.0      # ohm
+C = 100e-6        # F
+
+tau = R * C
+t = np.linspace(0.0, 5.0 * tau, 501)
+
+v_capacitor = V_source * (1.0 - np.exp(-t / tau))
+current = (V_source / R) * np.exp(-t / tau)
+v_resistor = R * current
+energy = 0.5 * C * v_capacitor**2
+
+index_tau = np.argmin(np.abs(t - tau))
+kvl_error = np.max(np.abs(V_source - v_resistor - v_capacitor))
+energy_fully_charged = 0.5 * C * V_source**2
+
+print(f"Time constant: {tau:.2f} s")
+print(f"Voltage at one time constant: {v_capacitor[index_tau]:.3f} V")
+print(f"Fraction of final voltage: {v_capacitor[index_tau] / V_source:.4f}")
+print(f"Maximum KVL residual: {kvl_error:.2e} V")
+print(f"Final stored-energy limit: {1e3 * energy_fully_charged:.3f} mJ")
+
+assert np.isclose(v_capacitor[0], 0.0)
+assert np.isclose(v_capacitor[index_tau] / V_source, 1.0 - np.exp(-1.0))
+assert kvl_error < 1e-12
+
+print("\nSelected points")
+print("t/tau    v_C (V)    current (mA)    v_R (V)")
+for multiple in (0, 1, 2, 5):
+    k = np.argmin(np.abs(t - multiple * tau))
+    print(
+        f"{multiple:>5}    {v_capacitor[k]:>7.3f}"
+        f"    {1e3 * current[k]:>12.3f}    {v_resistor[k]:>7.3f}"
+    )
+```
+
+At $t=0^+$, the capacitor voltage is still zero, so the entire source voltage appears across the resistor and the current is largest. As charge accumulates, capacitor voltage rises while current and resistor voltage fall. Change `C` or `R` in the code to explore the time constant.
+
+## 7. Where the ideal model stops working
+
+A practical capacitor may include:
+
+- **equivalent series resistance (ESR)**, which causes heating and voltage drop;
+- **leakage resistance**, which slowly discharges the capacitor;
+- **equivalent series inductance (ESL)** from leads and internal geometry;
+- capacitance that varies with temperature, frequency, and applied voltage;
+- **dielectric absorption** and dielectric loss; and
+- limits on voltage, ripple current, polarity, and temperature.
+
+Above its self-resonant frequency, a real capacitor can behave more inductively than capacitively. Electrolytic capacitors may also be damaged by incorrect polarity. Component technology and ratings therefore matter alongside the nominal capacitance.
+
+## 8. Takeaways
+
+- An ideal linear capacitor obeys $q=Cv$ and $i=C\,dv/dt$ under the passive sign convention.
+- Finite current cannot change ideal-capacitor voltage instantaneously.
+- It stores electric energy $w_C=Cv^2/2$ and can return that energy to the circuit.
+- In sinusoidal steady state, $Z_C=1/(j\omega C)$; current leads voltage by $90^\circ$.
+- In settled DC steady state it behaves as an open circuit, but not during a transient.
+- Real capacitors also have ESR, leakage, inductance, dielectric effects, and operating limits.
+
+Compare this electric energy-storage element with the magnetic energy storage of an [inductor](inductor.qmd).
+
+## References {.unnumbered}
+
+::: {#refs}
+:::
