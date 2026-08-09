@@ -1,0 +1,19 @@
+---
+title: "Tutorials"
+description: "Browse practical tutorials on power-system modelling, analysis, operation, and control."
+page-layout: full
+listing:
+  contents: "articles/*.qmd"
+  type: grid
+  sort: "date desc"
+  fields: [image, date, title, description, categories, reading-time]
+  categories: true
+  sort-ui: false
+  filter-ui: true
+  grid-columns: 2
+  page-size: 12
+toc: false
+---
+
+Browse the collection or filter it by topic. Each tutorial aims to state its assumptions, define its notation, derive the key results, and leave the reader with a practical way to apply them.
+

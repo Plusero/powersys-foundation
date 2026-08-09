@@ -1,0 +1,51 @@
+---
+title: "Power Systems Foundation"
+subtitle: "Build intuition. Work through the equations. Apply the methods."
+description: "Open, practical tutorials for understanding and analysing electric power systems."
+page-layout: full
+title-block-banner: true
+toc: false
+---
+
+::: {.hero-copy}
+Power systems are easier to understand when physical intuition, mathematical models, and working examples are presented together. This site is an open collection of tutorials designed around that principle.
+
+[Browse tutorials](tutorials.qmd){.btn .btn-primary .btn-lg} [Contribute on GitHub](https://github.com/Plusero/powersys-foundation){.btn .btn-outline-secondary .btn-lg}
+:::
+
+::: {.feature-grid}
+::: {.feature-card}
+### Clear derivations
+
+Follow each model from its assumptions to the final equation, with notation introduced where it is used.
+:::
+
+::: {.feature-card}
+### Engineering intuition
+
+Connect phasors, networks, machines, and controls to the physical behaviour they represent.
+:::
+
+::: {.feature-card}
+### Reproducible examples
+
+Turn theory into algorithms and numerical experiments that readers can inspect and extend.
+:::
+:::
+
+## Start learning
+
+The first worked tutorial introduces the nonlinear AC power-flow problem and derives the Newton--Raphson solution procedure.
+
+::: {.callout-tip appearance="simple" icon=false}
+### Featured tutorial
+
+[Newton--Raphson Power Flow: From Equations to an Algorithm](articles/newton-raphson-power-flow.qmd)
+
+Derive the bus power-balance equations, assemble the Jacobian, and interpret the iteration as a sequence of local linear corrections.
+:::
+
+## Built in the open
+
+Every article lives beside the site code in this repository. Readers can propose corrections, improve explanations, add examples, or contribute an entirely new tutorial through a GitHub pull request. See the [contribution guide](https://github.com/Plusero/powersys-foundation/blob/main/CONTRIBUTING.md) to get started.
+

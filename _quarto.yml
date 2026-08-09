@@ -1,0 +1,65 @@
+project:
+  type: website
+  output-dir: _site
+  render:
+    - index.qmd
+    - tutorials.qmd
+    - about.qmd
+    - "articles/*.qmd"
+
+website:
+  title: "Power Systems Foundation"
+  description: "Open, practical tutorials for understanding and analysing electric power systems."
+  site-url: "https://plusero.github.io/powersys-foundation/"
+  repo-url: "https://github.com/Plusero/powersys-foundation"
+  repo-actions: [edit, issue]
+  page-navigation: true
+  search:
+    location: navbar
+    type: overlay
+  navbar:
+    background: primary
+    logo-alt: "Power Systems Foundation"
+    left:
+      - href: index.qmd
+        text: Home
+      - href: tutorials.qmd
+        text: Tutorials
+      - href: about.qmd
+        text: About
+    right:
+      - icon: github
+        href: "https://github.com/Plusero/powersys-foundation"
+        aria-label: "GitHub repository"
+  page-footer:
+    left: "Power Systems Foundation"
+    center: "Built with [Quarto](https://quarto.org/)"
+    right:
+      - text: "Contribute"
+        href: "https://github.com/Plusero/powersys-foundation/blob/main/CONTRIBUTING.md"
+      - icon: github
+        href: "https://github.com/Plusero/powersys-foundation"
+        aria-label: "GitHub repository"
+
+bibliography: references.bib
+
+format:
+  html:
+    theme:
+      light: [cosmo, theme-light.scss, styles.scss]
+      dark: [cosmo, theme-dark.scss, styles.scss]
+    toc: true
+    toc-depth: 3
+    smooth-scroll: true
+    syntax-highlighting: atom-one
+    code-copy: true
+    code-overflow: wrap
+    link-external-newwindow: true
+    grid:
+      sidebar-width: 260px
+      body-width: 820px
+      margin-width: 280px
+      gutter-width: 1.5rem
+
+execute:
+  freeze: auto

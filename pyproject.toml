@@ -1,0 +1,13 @@
+[project]
+name = "powersys-foundation"
+version = "0.1.0"
+description = "Executable examples for the Power Systems Foundation tutorials"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+  "jupyter>=1.1,<2",
+  "numpy>=2.0,<3",
+]
+
+[tool.uv]
+package = false
+

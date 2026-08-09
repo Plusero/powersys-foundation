@@ -1,0 +1,160 @@
+---
+title: "Newton–Raphson Power Flow"
+subtitle: "From network equations to an iterative algorithm"
+description: "Derive the AC power-flow equations and understand how Newton's method solves them."
+author: "Power Systems Foundation contributors"
+date: "2026-08-09"
+categories: [Power flow, Network analysis, Numerical methods]
+reading-time: 12
+draft: false
+---
+
+## What you will learn
+
+After working through this tutorial, you should be able to:
+
+- write the nonlinear active- and reactive-power balance equations;
+- identify the state variables and specified quantities for each bus type;
+- explain the structure of the Newton--Raphson Jacobian; and
+- implement the core iteration with appropriate convergence checks.
+
+## 1. Network model
+
+Consider a balanced three-phase network represented by its positive-sequence bus-admittance matrix
+
+$$
+\mathbf{I} = \mathbf{Y}_{\mathrm{bus}}\mathbf{V}.
+$$
+
+For bus $i$, write $V_i = |V_i|e^{\mathrm{j}\theta_i}$ and $Y_{ik}=G_{ik}+\mathrm{j}B_{ik}$. The complex power injected into the network is
+
+$$
+S_i = P_i + \mathrm{j}Q_i = V_i I_i^*.
+$$ {#eq-complex-power}
+
+Substituting the network equation into @eq-complex-power gives
+
+$$
+P_i = \sum_{k=1}^{n}|V_i||V_k|
+\left[G_{ik}\cos(\theta_i-\theta_k)
++B_{ik}\sin(\theta_i-\theta_k)\right],
+$$ {#eq-active-power}
+
+and
+
+$$
+Q_i = \sum_{k=1}^{n}|V_i||V_k|
+\left[G_{ik}\sin(\theta_i-\theta_k)
+-B_{ik}\cos(\theta_i-\theta_k)\right].
+$$ {#eq-reactive-power}
+
+These equations are nonlinear because voltage magnitudes multiply one another and the phase angles appear inside trigonometric functions.
+
+## 2. Bus types and unknowns
+
+The equations solved at a bus depend on what is specified.
+
+| Bus type | Specified | Unknown |
+|---|---|---|
+| Slack | $|V|,\ \theta$ | $P,\ Q$ |
+| PV (generator) | $P,\ |V|$ | $\theta,\ Q$ |
+| PQ (load) | $P,\ Q$ | $\theta,\ |V|$ |
+
+: Conventional power-flow bus types {#tbl-bus-types}
+
+The slack-bus angle provides the angular reference. Its active- and reactive-power injections absorb the mismatch between scheduled injections and the network losses.
+
+If there are $n_{\mathrm{PV}}$ PV buses and $n_{\mathrm{PQ}}$ PQ buses, the Newton state vector contains
+
+$$
+(n_{\mathrm{PV}}+n_{\mathrm{PQ}})
++n_{\mathrm{PQ}}
+$$
+
+unknowns: the non-slack voltage angles followed by the PQ-bus voltage magnitudes.
+
+## 3. Mismatch equations
+
+At iteration $r$, evaluate @eq-active-power and @eq-reactive-power using the current voltage estimate. Define the scheduled-minus-calculated mismatches
+
+$$
+\Delta P_i^{(r)} = P_i^{\mathrm{spec}}-P_i(\boldsymbol{\theta}^{(r)},\mathbf{|V|}^{(r)}),
+$$
+
+$$
+\Delta Q_i^{(r)} = Q_i^{\mathrm{spec}}-Q_i(\boldsymbol{\theta}^{(r)},\mathbf{|V|}^{(r)}).
+$$
+
+Only active-power mismatches for non-slack buses and reactive-power mismatches for PQ buses enter the Newton system.
+
+::: {.callout-note}
+The sign convention matters. This tutorial treats positive $P_i$ and $Q_i$ as injections into the network. Loads therefore have negative specified injections.
+:::
+
+## 4. Newton step
+
+Linearise the mismatch equations around the current state:
+
+$$
+\begin{bmatrix}
+\Delta \mathbf{P} \\
+\Delta \mathbf{Q}
+\end{bmatrix}
+=
+\underbrace{
+\begin{bmatrix}
+\dfrac{\partial \mathbf{P}}{\partial \boldsymbol{\theta}} &
+\dfrac{\partial \mathbf{P}}{\partial \mathbf{|V|}} \\
+\dfrac{\partial \mathbf{Q}}{\partial \boldsymbol{\theta}} &
+\dfrac{\partial \mathbf{Q}}{\partial \mathbf{|V|}}
+\end{bmatrix}}_{\mathbf{J}}
+\begin{bmatrix}
+\Delta \boldsymbol{\theta} \\
+\Delta \mathbf{|V|}
+\end{bmatrix}.
+$$ {#eq-newton-system}
+
+The four Jacobian blocks are often denoted $H$, $N$, $M$, and $L$. Solve @eq-newton-system for the state correction and update
+
+$$
+\boldsymbol{\theta}^{(r+1)} = \boldsymbol{\theta}^{(r)}+\Delta\boldsymbol{\theta},
+\qquad
+\mathbf{|V|}^{(r+1)} = \mathbf{|V|}^{(r)}+\Delta\mathbf{|V|}.
+$$
+
+Newton's method uses a local linear model of the nonlinear equations. Near a regular solution, the error typically decreases quadratically, which explains why relatively few iterations are often required [@tinney1967].
+
+## 5. Algorithm
+
+```text
+Choose an initial voltage estimate
+
+repeat
+    calculate P and Q from the current voltages
+    assemble the required P and Q mismatches
+    stop if the largest absolute mismatch is below tolerance
+    assemble the Jacobian
+    solve J Δx = Δs
+    update the voltage angles and PQ-bus magnitudes
+until the iteration limit is reached
+```
+
+A flat start commonly sets non-slack angles to zero and unknown magnitudes to $1$ p.u. This is convenient, but it is not universally reliable. Heavily loaded systems, poor scaling, binding reactive-power limits, or an initial point far from the feasible region can lead to slow convergence or divergence.
+
+## 6. Practical checks
+
+Before trusting a solution, verify that:
+
+1. the maximum retained mismatch is below the chosen tolerance;
+2. generator reactive-power limits have been enforced consistently;
+3. voltage magnitudes and angle differences are physically plausible;
+4. total generation minus total load equals calculated network losses; and
+5. branch flows respect the same sign and per-unit conventions as the bus model.
+
+The Newton--Raphson formulation remains a foundation for modern network analysis because it is accurate, interpretable, and readily extended to constrained and sparse formulations [@grainger1994].
+
+## References {.unnumbered}
+
+::: {#refs}
+:::
+

@@ -1,0 +1,32 @@
+---
+title: "About"
+description: "About the Power Systems Foundation tutorial project."
+---
+
+## Our aim
+
+Power Systems Foundation is an open learning resource for students, researchers, and practising engineers. Its goal is to make important power-system concepts rigorous without making them needlessly difficult to approach.
+
+A strong tutorial should connect four layers:
+
+1. the physical phenomenon;
+2. the modelling assumptions;
+3. the mathematical formulation; and
+4. the computational or engineering application.
+
+## Topics
+
+The collection welcomes tutorials covering areas such as:
+
+- power-flow analysis and network modelling;
+- state estimation and measurement systems;
+- optimisation and electricity markets;
+- dynamics, stability, and control;
+- protection and power-system operation;
+- renewable generation and inverter-based resources; and
+- reproducible power-system software.
+
+## Contributing
+
+This project is developed publicly on GitHub. Corrections, questions, worked examples, and new tutorials are welcome. Read [CONTRIBUTING.md](https://github.com/Plusero/powersys-foundation/blob/main/CONTRIBUTING.md) before opening a pull request.
+

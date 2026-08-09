@@ -1,0 +1,52 @@
+---
+title: "Tutorial title"
+subtitle: "A concise description of the tutorial"
+description: "One sentence used in search results and article listings."
+author: "Your name"
+date: today
+categories: [Topic]
+reading-time: 10
+draft: true
+---
+
+## What you will learn
+
+After working through this tutorial, you should be able to:
+
+- explain the main physical idea;
+- derive the central mathematical result; and
+- apply the result to a small example.
+
+## Prerequisites
+
+Describe what the reader should already know.
+
+## 1. Physical picture
+
+Start with the engineering problem and introduce the assumptions.
+
+## 2. Mathematical model
+
+Define every symbol near its first use. Label important equations so they can be referenced from the text.
+
+$$
+y = f(x).
+$$ {#eq-example}
+
+Equation @eq-example is a minimal cross-reference example.
+
+## 3. Worked example
+
+Use a small, reproducible example and state units and base quantities explicitly.
+
+## 4. Takeaways
+
+- Summarise the central insight.
+- State the main limitation.
+- Suggest a useful next topic.
+
+## References {.unnumbered}
+
+::: {#refs}
+:::
+

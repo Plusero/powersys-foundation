@@ -1,0 +1,39 @@
+/*-- scss:defaults --*/
+
+$primary: #086a78;
+$secondary: #596a75;
+$success: #2f7d67;
+$info: #277890;
+$warning: #c87928;
+$body-color: #26343d;
+$body-bg: #f6f8f9;
+$headings-color: #163a4a;
+$link-color: #086a78;
+$border-color: #dce4e7;
+$code-block-bg: #edf3f5;
+$code-block-bg-padding: 0.9rem;
+$code-block-border-left: #086a78;
+$code-block-border-left-size: 3px;
+$code-block-padding-left: 0.9em;
+$border-radius: 0.6rem;
+$font-family-sans-serif: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+$font-family-monospace: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+$headings-font-weight: 650;
+
+/*-- scss:rules --*/
+
+:root {
+  --psf-accent: #086a78;
+  --psf-accent-soft: rgba(8, 106, 120, 0.08);
+  --psf-surface: #fff;
+  --psf-border: #dce4e7;
+  --psf-shadow: 0 9px 26px rgba(22, 58, 74, 0.07);
+  --psf-warning: #c87928;
+  --psf-code-bg: #edf3f5;
+  --psf-code-border: #cedce1;
+  --psf-code-text: #21343d;
+  --psf-output-bg: #f9fbfc;
+  --psf-output-border: #dce4e7;
+  --psf-output-text: #344852;
+  --psf-code-muted: #637680;
+}

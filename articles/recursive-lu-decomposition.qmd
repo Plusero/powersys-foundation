@@ -1,0 +1,301 @@
+---
+title: "Recursive LU Decomposition"
+subtitle: "From elimination to Schur complements"
+description: "Derive a recursive LU factorisation, implement it in Python, and connect it to power-system linear solves."
+author: "Power Systems Foundation contributors"
+date: "2026-08-09"
+categories: [Linear algebra, Numerical methods, Python]
+reading-time: 14
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+draft: false
+---
+
+## What you will learn
+
+After working through this tutorial, you should be able to:
+
+- derive LU decomposition from a recursive Schur-complement update;
+- implement the unpivoted algorithm in Python;
+- use the factors for forward and backward substitution;
+- verify a factorisation using reconstruction and solution residuals; and
+- explain why production solvers require pivoting and sparse data structures.
+
+## 1. Why LU appears in power-system analysis
+
+Many power-system algorithms repeatedly solve linear systems
+
+$$
+\mathbf{A}\mathbf{x}=\mathbf{b}.
+$$ {#eq-linear-system}
+
+Examples include Newton steps in power-flow analysis, weighted least-squares state estimation, small-signal models, and implicit time integration. If
+
+$$
+\mathbf{A}=\mathbf{L}\mathbf{U},
+$$ {#eq-lu}
+
+where $\mathbf{L}$ is lower triangular and $\mathbf{U}$ is upper triangular, @eq-linear-system can be solved in two stages:
+
+$$
+\mathbf{L}\mathbf{y}=\mathbf{b},
+\qquad
+\mathbf{U}\mathbf{x}=\mathbf{y}.
+$$ {#eq-triangular-solves}
+
+The expensive factorisation is then reusable for every new right-hand side as long as $\mathbf{A}$ does not change.
+
+## 2. The recursive idea
+
+Partition a square matrix around its first row and column:
+
+$$
+\mathbf{A}=
+\begin{bmatrix}
+\alpha & \mathbf{r}^{\mathsf T} \\
+\mathbf{c} & \mathbf{B}
+\end{bmatrix},
+$$ {#eq-partition}
+
+and seek factors of the form
+
+$$
+\mathbf{L}=
+\begin{bmatrix}
+1 & \mathbf{0}^{\mathsf T} \\
+\boldsymbol{\ell} & \mathbf{L}_S
+\end{bmatrix},
+\qquad
+\mathbf{U}=
+\begin{bmatrix}
+u & \mathbf{r}^{\mathsf T} \\
+\mathbf{0} & \mathbf{U}_S
+\end{bmatrix}.
+$$ {#eq-factor-partition}
+
+Multiplying the two factors and comparing the result with @eq-partition gives
+
+$$
+u=\alpha,
+\qquad
+\boldsymbol{\ell}=\frac{\mathbf{c}}{\alpha},
+$$ {#eq-pivot-update}
+
+and
+
+$$
+\mathbf{L}_S\mathbf{U}_S
+=
+\underbrace{\mathbf{B}
+-\boldsymbol{\ell}\mathbf{r}^{\mathsf T}}_{\mathbf{S}}.
+$$ {#eq-schur-complement}
+
+The smaller matrix $\mathbf{S}$ is the **Schur complement** left after eliminating the first variable. Factoring $\mathbf{S}$ is the same problem at size $n-1$, so @eq-schur-complement gives a natural recursion:
+
+1. select the first pivot $\alpha$;
+2. calculate the multipliers $\boldsymbol{\ell}$;
+3. form the Schur complement $\mathbf{S}$;
+4. recursively factor $\mathbf{S}$; and
+5. assemble the larger $\mathbf{L}$ and $\mathbf{U}$ factors.
+
+The base case is a $1\times1$ matrix.
+
+## 3. Python implementation
+
+The following implementation uses NumPy arrays but deliberately follows the mathematics closely. It returns a unit-diagonal $\mathbf{L}$, which is the Doolittle convention.
+
+```{python}
+#| label: lst-recursive-lu
+#| code-summary: "Show the recursive LU implementation"
+
+import numpy as np
+
+
+def recursive_lu(matrix: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Return the unpivoted LU factorisation of a square matrix."""
+    a = np.array(matrix, dtype=float, copy=True)
+
+    if a.ndim != 2 or a.shape[0] != a.shape[1]:
+        raise ValueError("matrix must be square")
+    if a.shape[0] == 0:
+        raise ValueError("matrix must not be empty")
+
+    scale = max(1.0, np.linalg.norm(a, ord=np.inf))
+    tolerance = np.finfo(float).eps * scale
+
+    def factor(block: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        n = block.shape[0]
+        pivot = block[0, 0]
+
+        if abs(pivot) <= tolerance:
+            raise np.linalg.LinAlgError(
+                "zero or numerically small pivot; pivoting is required"
+            )
+
+        if n == 1:
+            return np.ones((1, 1)), np.array([[pivot]])
+
+        upper_row = block[0, 1:].copy()
+        lower_column = block[1:, 0] / pivot
+
+        schur = block[1:, 1:] - np.outer(lower_column, upper_row)
+        lower_schur, upper_schur = factor(schur)
+
+        lower = np.eye(n)
+        upper = np.zeros_like(block)
+
+        lower[1:, 0] = lower_column
+        lower[1:, 1:] = lower_schur
+        upper[0, 0] = pivot
+        upper[0, 1:] = upper_row
+        upper[1:, 1:] = upper_schur
+
+        return lower, upper
+
+    return factor(a)
+```
+
+Although the code creates new arrays to keep the recursion visible, high-performance implementations overwrite storage, operate on larger blocks, and use optimised matrix kernels [@golub2013].
+
+## 4. Verify the factorisation
+
+Consider a small matrix with the sign pattern often seen in network-derived linear systems:
+
+```{python}
+#| label: lst-lu-example
+
+a = np.array(
+    [
+        [10.0, -1.0,  2.0,  0.0],
+        [-1.0, 11.0, -1.0,  3.0],
+        [ 2.0, -1.0, 10.0, -1.0],
+        [ 0.0,  3.0, -1.0,  8.0],
+    ]
+)
+
+lower, upper = recursive_lu(a)
+
+np.set_printoptions(precision=4, suppress=True)
+print("L =\n", lower)
+print("\nU =\n", upper)
+```
+
+A useful scale-independent reconstruction check is
+
+$$
+\eta_{\mathrm{LU}}
+=
+\frac{\lVert\mathbf{A}-\mathbf{L}\mathbf{U}\rVert_{\infty}}
+{\lVert\mathbf{A}\rVert_{\infty}}.
+$$ {#eq-factor-residual}
+
+```{python}
+#| label: lst-factor-residual
+
+factor_residual = (
+    np.linalg.norm(a - lower @ upper, ord=np.inf)
+    / np.linalg.norm(a, ord=np.inf)
+)
+
+print(f"relative factorisation residual: {factor_residual:.3e}")
+```
+
+The residual should be close to machine precision for this well-behaved example. Checking only that $\mathbf{L}$ and $\mathbf{U}$ have the expected triangular shapes is not enough; @eq-factor-residual tests whether they actually reconstruct the original matrix.
+
+## 5. Solve with the factors
+
+Forward substitution solves the lower-triangular system from top to bottom. Backward substitution solves the upper-triangular system in the opposite direction.
+
+```{python}
+#| label: lst-triangular-solves
+#| code-summary: "Show the triangular-solve functions"
+
+def forward_substitution(lower: np.ndarray, rhs: np.ndarray) -> np.ndarray:
+    solution = np.empty_like(rhs, dtype=float)
+
+    for i in range(lower.shape[0]):
+        known = lower[i, :i] @ solution[:i]
+        solution[i] = (rhs[i] - known) / lower[i, i]
+
+    return solution
+
+
+def backward_substitution(upper: np.ndarray, rhs: np.ndarray) -> np.ndarray:
+    solution = np.empty_like(rhs, dtype=float)
+
+    for i in range(upper.shape[0] - 1, -1, -1):
+        known = upper[i, i + 1:] @ solution[i + 1:]
+        solution[i] = (rhs[i] - known) / upper[i, i]
+
+    return solution
+```
+
+Use @eq-triangular-solves to solve for one right-hand side and verify the result against the original system:
+
+```{python}
+#| label: lst-solve-example
+
+b = np.array([6.0, 25.0, -11.0, 15.0])
+
+y = forward_substitution(lower, b)
+x = backward_substitution(upper, y)
+
+solve_residual = np.linalg.norm(a @ x - b, ord=np.inf)
+
+print("x =", x)
+print(f"absolute solve residual: {solve_residual:.3e}")
+```
+
+## 6. Pivoting is not optional in general
+
+The educational implementation assumes every recursive pivot is safely nonzero. That condition can fail even when the original matrix is nonsingular. For example,
+
+$$
+\begin{bmatrix}
+0 & 1 \\
+1 & 0
+\end{bmatrix}
+$$
+
+is nonsingular but has a zero first pivot. A practical dense factorisation therefore introduces a permutation matrix and computes
+
+$$
+\mathbf{P}\mathbf{A}=\mathbf{L}\mathbf{U},
+$$
+
+usually selecting pivots by partial pivoting. Pivoting also controls the growth of rounding errors when a mathematically nonzero pivot is too small relative to other entries [@golub2013].
+
+::: {.callout-warning}
+The function in this tutorial is intended to expose the recursive structure, not to replace a production linear-algebra library. Do not use it for operational studies or large sparse networks.
+:::
+
+## 7. From recursion to sparse power-system solvers
+
+The one-pivot derivation is also the smallest possible block algorithm. Replace the scalar $\alpha$ with a leading matrix block $\mathbf{A}_{11}$ and the same steps become
+
+$$
+\begin{aligned}
+\mathbf{A}_{11} &= \mathbf{L}_{11}\mathbf{U}_{11}, \\
+\mathbf{U}_{12} &= \mathbf{L}_{11}^{-1}\mathbf{A}_{12}, \\
+\mathbf{L}_{21} &= \mathbf{A}_{21}\mathbf{U}_{11}^{-1}, \\
+\mathbf{S} &= \mathbf{A}_{22}-\mathbf{L}_{21}\mathbf{U}_{12}.
+\end{aligned}
+$$ {#eq-block-lu}
+
+Recursive block formulations expose parallel work and turn many scalar operations into matrix operations. Sparse power-system solvers add another critical concern: the elimination order controls **fill-in**, the new nonzeros created in the factors. Good ordering and symbolic analysis can matter as much as the numerical factorisation itself [@davis2006].
+
+## 8. Takeaways
+
+- LU decomposition is Gaussian elimination expressed as reusable triangular factors.
+- Each elimination step produces a smaller Schur-complement problem.
+- The recursive formulation mirrors the mathematics and generalises naturally to blocks.
+- Reconstruction and solve residuals provide complementary correctness checks.
+- Pivoting, ordering, and sparse storage separate a teaching implementation from a production solver.
+
+## References {.unnumbered}
+
+::: {#refs}
+:::
+
