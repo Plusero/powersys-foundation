@@ -170,6 +170,47 @@ def draw_rc_charging_circuit(path: Path) -> None:
     )
 
 
+def draw_rl_switching_circuit(path: Path) -> None:
+    diagram = drawing(fontsize=13, margin=0.75)
+
+    source = elm.SourceV().up()
+    diagram += source
+    diagram += elm.Switch().right().label(
+        "closes at t = 0", loc="bottom", ofst=0.45
+    )
+    resistor = elm.ResistorIEC().right().label("R = 6 Ω", loc="bottom", ofst=0.3)
+    diagram += resistor
+    diagram += elm.Line().right().length(0.8)
+    inductor = elm.Inductor().down()
+    diagram += inductor
+    diagram += elm.Line().left().tox(source.start)
+
+    diagram += (
+        elm.CurrentLabel(length=1.4, ofst=0.55)
+        .at(resistor)
+        .label("i(t)", color=ACCENT)
+        .color(ACCENT)
+    )
+    diagram += elm.Label("V_s = 24 V").at((-1.15, source.center.y))
+    diagram += elm.Label("L = 0.12 H").at((5.55, inductor.center.y))
+    diagram += elm.Label("+").at((7.25, 2.55))
+    diagram += elm.Label("−").at((7.25, 0.45))
+    diagram += elm.Label("v_L(t)").at((7.85, inductor.center.y))
+    diagram += elm.Label("i(0⁻) = 0").at((inductor.center.x, -0.55))
+
+    save_svg(
+        diagram,
+        path,
+        title="Series RL switching circuit",
+        description=(
+            "A switch closes at time zero and connects a 24 volt ideal voltage "
+            "source in series with a 6 ohm resistor and an initially unenergized "
+            "0.12 henry inductor. Current flows clockwise, and the inductor "
+            "voltage is positive at its upper terminal."
+        ),
+    )
+
+
 def draw_practical_capacitor_model(path: Path) -> None:
     diagram = drawing(fontsize=13, margin=0.8)
 
@@ -209,6 +250,41 @@ def draw_practical_capacitor_model(path: Path) -> None:
     )
 
 
+def draw_practical_inductor_model(path: Path) -> None:
+    diagram = drawing(fontsize=13, margin=0.8)
+
+    left_terminal = elm.Dot(open=True).label("terminal", loc="bottom", ofst=0.35)
+    diagram += left_terminal
+    diagram += elm.Line().right().length(0.55)
+    branch_start = diagram.here
+    diagram += elm.Dot()
+    diagram += elm.ResistorIEC().right().label("R_w", loc="bottom", ofst=0.3)
+    diagram += elm.Inductor().right().label("L", loc="bottom", ofst=0.3)
+    branch_end = diagram.here
+    diagram += elm.Dot()
+    diagram += elm.Line().right().length(0.55)
+    diagram += elm.Dot(open=True).label("terminal", loc="bottom", ofst=0.35)
+
+    diagram += elm.Line().at(branch_start).up().length(1.45)
+    diagram += (
+        elm.Capacitor()
+        .right()
+        .tox(branch_end[0])
+        .label("C_p", loc="top", ofst=0.3)
+    )
+    diagram += elm.Line().down().toy(branch_end[1])
+
+    save_svg(
+        diagram,
+        path,
+        title="First-order practical inductor model",
+        description=(
+            "A two-terminal equivalent circuit with winding resistance and ideal "
+            "inductance in series, shunted by a parasitic capacitance."
+        ),
+    )
+
+
 FIGURES = (
     FigureSpec(
         "capacitor-iec-symbol.svg",
@@ -235,10 +311,22 @@ FIGURES = (
         draw_rc_charging_circuit,
     ),
     FigureSpec(
+        "rl-switching-circuit.svg",
+        "Series RL switching circuit",
+        "A switched 24 volt source, resistor, and initially unenergized inductor.",
+        draw_rl_switching_circuit,
+    ),
+    FigureSpec(
         "practical-capacitor-model.svg",
         "First-order practical capacitor model",
         "Series ESL and ESR followed by capacitance shunted by leakage resistance.",
         draw_practical_capacitor_model,
+    ),
+    FigureSpec(
+        "practical-inductor-model.svg",
+        "First-order practical inductor model",
+        "Series winding resistance and inductance shunted by parasitic capacitance.",
+        draw_practical_inductor_model,
     ),
 )
 

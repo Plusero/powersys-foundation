@@ -30,7 +30,7 @@ You should be comfortable with voltage, current, power, and basic derivatives. T
 
 ## 1. The ideal inductor
 
-An **inductor** is a two-terminal component that stores energy in a magnetic field. Its defining parameter is the **inductance** $L$, measured in henries (H).
+An **inductor** is a two-terminal component that stores energy in a magnetic field. Its defining parameter is the **inductance** $L$, measured in the [SI unit henries (H)](https://en.wikipedia.org/wiki/Henry_(unit)).
 
 ![IEC general symbol for a coil or inductor (symbol S00583) [@iec60617].](figures/generated/inductor-iec-symbol.svg){#fig-inductor-iec-symbol fig-align="center" width="38%"}
 
@@ -106,41 +106,96 @@ The energy is nonnegative regardless of current direction. When $p>0$, energy en
 
 ## 4. Series and parallel combinations
 
-For ideal, uncoupled inductors:
+The following rules apply to ideal, linear inductors that have no magnetic coupling.
 
-- series inductances add:
+**Series connection.** The same current $i$ flows through each inductor. Their voltages add, so
 
-  $$
-  L_{\mathrm{eq}}=L_1+L_2+\cdots;
-  $$
+$$
+v_{\mathrm{total}}=v_1+v_2+\cdots
+=(L_1+L_2+\cdots)\frac{di}{dt}.
+$$
 
-- parallel inductances combine reciprocally:
+Because $v_{\mathrm{total}}=L_{\mathrm{eq}}\,di/dt$, the equivalent inductance is
 
-  $$
-  \frac{1}{L_{\mathrm{eq}}}=\frac{1}{L_1}+\frac{1}{L_2}+\cdots.
-  $$
+$$
+L_{\mathrm{eq}}=L_1+L_2+\cdots.
+$$
 
-For two parallel inductors, $L_{\mathrm{eq}}=L_1L_2/(L_1+L_2)$.
+Adding uncoupled inductors in series therefore increases the inductance.
 
-These formulas assume the inductors are linear and have no magnetic coupling. If their fluxes link one another, mutual inductance terms must be included; simply adding or reciprocally combining the self-inductances can be wrong.
+**Parallel connection.** All inductors have the same voltage $v$. From the integral form of @eq-inductor-law, their current changes are
+
+$$
+\Delta i_k=\frac{1}{L_k}\int_{t_1}^{t_2}v(t)\,dt.
+$$
+
+The branch currents add. Hence,
+
+$$
+\Delta i_{\mathrm{total}}
+=\left(\frac{1}{L_1}+\frac{1}{L_2}+\cdots\right)
+\int_{t_1}^{t_2}v(t)\,dt,
+$$
+
+which gives
+
+$$
+\frac{1}{L_{\mathrm{eq}}}
+=\frac{1}{L_1}+\frac{1}{L_2}+\cdots.
+$$
+
+For two parallel inductors,
+
+$$
+L_{\mathrm{eq}}=\frac{L_1L_2}{L_1+L_2}.
+$$
+
+For $n\geq 2$ positive inductances,
+
+$$
+\frac{1}{L_{\mathrm{eq}}}
+=\sum_{k=1}^{n}\frac{1}{L_k}
+>\frac{1}{L_j}
+\quad\Longrightarrow\quad
+L_{\mathrm{eq}}<L_j,
+\qquad \forall j\in\{1,\ldots,n\}.
+$$
+
+Thus, $L_{\mathrm{eq}}<\min(L_1,\ldots,L_n)$: an uncoupled parallel combination has a smaller inductance than any individual inductor. Initial branch currents affect the total initial current but not the reciprocal relationship between subsequent changes in voltage and current.
+
+If the flux from one coil links another, mutual inductance terms must be included. In that case, simply adding or reciprocally combining the self-inductances can be wrong.
 
 ## 5. Sinusoidal steady state
 
-For angular frequency $\omega=2\pi f$, differentiation becomes multiplication by $j\omega$ in phasor form. Equation @eq-inductor-law becomes
+For angular frequency $\omega=2\pi f$, the [sinusoidal steady-state phasor transformation and its differentiation rule](complex-numbers-in-ac-circuits.qmd#sec-phasor-differentiation) give
+
+$$
+\frac{dx(t)}{dt}
+\quad\longleftrightarrow\quad
+j\omega\underline X.
+$$
+
+Applying this rule to @eq-inductor-law gives
 
 $$
 \underline V=j\omega L\,\underline I,
 $$
 
-so the inductor impedance is
+which shows that the inductor voltage leads its current by $90^\circ$, because multiplication by $j$ rotates a phasor counter-clockwise by $90^\circ$.
+
+Impedance is the ratio of voltage phasor to current phasor. Substituting $\underline V=j\omega L\,\underline I$ gives
 
 $$
-Z_L=j\omega L=jX_L,
+Z_L
+=\frac{\underline V}{\underline I}
+=\frac{j\omega L\,\underline I}{\underline I}
+=j\omega L
+=jX_L,
 \qquad
 X_L=\omega L.
 $$ {#eq-inductor-impedance}
 
-The inductive reactance $X_L$ increases with frequency. Voltage leads current by $90^\circ$, or equivalently current lags voltage by $90^\circ$.
+Here, $X_L$ is the positive magnitude of the inductive reactance. Thus, the impedance is purely positive imaginary, and its magnitude increases as frequency increases.
 
 For RMS current $I$, the complex power absorbed by an ideal inductor is
 
@@ -156,11 +211,19 @@ P=0,
 Q=\omega L I^2.
 $$
 
-The field receives energy during part of every cycle and returns it during another part. See [power factor](power-factor-in-ac-circuits.qmd) for how this exchange affects an AC system.
+The inductor consumes zero active power because it stores energy during part of every cycle and returns it during the rest of the cycle. Because inductive reactance produces lagging current, inductors absorb reactive power from the network. See [power factor](power-factor-in-ac-circuits.qmd) for how this exchange affects an AC system.
+
+::: {.callout-note}
+## Frequency limits
+
+At $f=0$, @eq-inductor-impedance has zero magnitude, matching the short-circuit DC steady-state model. The ideal formula should not be extrapolated to arbitrarily high frequency because real inductors also contain resistance and parasitic capacitance.
+:::
 
 ## 6. Worked example: an RL switching transient
 
-Consider a $24$ V ideal source applied at $t=0$ to a series combination of $R=6\ \Omega$ and $L=0.12$ H. Assume $i(0^-)=0$.
+Consider a $24$ V ideal source applied at $t=0$ to a series combination of $R=6\ \Omega$ and $L=0.12$ H, as shown in @fig-rl-switching-circuit. Assume $i(0^-)=0$.
+
+![Series RL switching circuit. The switch closes at $t=0$, connecting the source to the initially unenergized inductor.](figures/generated/rl-switching-circuit.svg){#fig-rl-switching-circuit fig-align="center" width="85%"}
 
 The time constant and final current are
 
@@ -182,7 +245,213 @@ v_L(t)=V_s e^{-t/\tau},
 v_R(t)=V_s\left(1-e^{-t/\tau}\right).
 $$
 
-The following executable example checks current continuity, Kirchhoff's voltage law, and the familiar $63.2\%$ time-constant result.
+### Explore the transient interactively
+
+Adjust $R$ and $L$ below. The plots compare the selected circuit with the original $R=6\ \Omega$, $L=0.12$ H example. The horizontal axis uses the same absolute time scale in both plots, so a larger $L/R$ ratio visibly slows the response.
+
+::: {.transient-explorer}
+::: {.transient-controls}
+```{ojs}
+//| echo: false
+viewof resistance_ohm = Inputs.range([1, 20], {
+  value: 6,
+  step: 1,
+  label: "Resistance R (Ω)"
+})
+```
+
+```{ojs}
+//| echo: false
+viewof inductance_mh = Inputs.range([20, 500], {
+  value: 120,
+  step: 10,
+  label: "Inductance L (mH)"
+})
+```
+:::
+
+```{ojs}
+//| echo: false
+rl = {
+  const sourceVoltage = 24;
+  const resistance = resistance_ohm;
+  const inductance = inductance_mh * 1e-3;
+  const tau = inductance / resistance;
+  const baselineTau = 0.12 / 6;
+  const finalCurrent = sourceVoltage / resistance;
+
+  return {
+    sourceVoltage,
+    resistance,
+    inductance,
+    tau,
+    baselineTau,
+    finalCurrent,
+    currentAtTau: finalCurrent * (1 - Math.exp(-1)),
+    finalEnergy: 0.5 * inductance * finalCurrent ** 2
+  };
+}
+```
+
+```{ojs}
+//| echo: false
+html`<div class="transient-metrics" aria-live="polite">
+  <div class="transient-metric"><span>Time constant</span><strong>${(1e3 * rl.tau).toFixed(2)} ms</strong></div>
+  <div class="transient-metric"><span>Final current</span><strong>${rl.finalCurrent.toFixed(3)} A</strong></div>
+  <div class="transient-metric"><span>Current at <i>t</i> = <i>τ</i></span><strong>${rl.currentAtTau.toFixed(3)} A</strong></div>
+  <div class="transient-metric"><span>Final stored energy</span><strong>${rl.finalEnergy.toFixed(3)} J</strong></div>
+</div>`
+```
+
+```{ojs}
+//| echo: false
+rl_data = {
+  const pointCount = 321;
+  const timeMaximum = 5 * Math.max(rl.tau, rl.baselineTau);
+  const times = Array.from(
+    {length: pointCount},
+    (_, index) => index * timeMaximum / (pointCount - 1)
+  );
+
+  const current = times.map((time) => ({
+    timeMs: 1e3 * time,
+    value: rl.finalCurrent * (1 - Math.exp(-time / rl.tau))
+  }));
+
+  const baselineCurrent = times.map((time) => ({
+    timeMs: 1e3 * time,
+    value: 4 * (1 - Math.exp(-time / rl.baselineTau))
+  }));
+
+  const voltage = times.flatMap((time) => {
+    const decay = Math.exp(-time / rl.tau);
+    return [
+      {timeMs: 1e3 * time, value: rl.sourceVoltage * decay, series: "Inductor voltage v_L"},
+      {timeMs: 1e3 * time, value: rl.sourceVoltage * (1 - decay), series: "Resistor voltage v_R"}
+    ];
+  });
+
+  const baselineVoltage = times.map((time) => ({
+    timeMs: 1e3 * time,
+    value: rl.sourceVoltage * (1 - Math.exp(-time / rl.baselineTau))
+  }));
+
+  return {timeMaximumMs: 1e3 * timeMaximum, current, baselineCurrent, voltage, baselineVoltage};
+}
+```
+
+#### Current response
+
+<div class="transient-plot-legend" aria-label="Current-response legend">
+  <span class="transient-legend-item"><span class="transient-legend-line transient-legend-line--state"></span>Selected $i(t)$</span>
+  <span class="transient-legend-item"><span class="transient-legend-line transient-legend-line--baseline"></span>Baseline $i(t)$</span>
+  <span class="transient-legend-item"><span class="transient-legend-tau"></span>Selected $\tau$</span>
+</div>
+
+```{ojs}
+//| echo: false
+Plot.plot({
+  width,
+  height: 300,
+  marginLeft: 58,
+  style: {background: "transparent"},
+  ariaLabel: "RL switching current response",
+  ariaDescription: "Inductor current rises from zero toward the source voltage divided by resistance after the switch closes.",
+  x: {
+    domain: [0, rl_data.timeMaximumMs],
+    label: "Time t (ms)",
+    grid: true
+  },
+  y: {
+    domain: [0, Math.max(rl.finalCurrent, 4)],
+    label: "Current (A)",
+    grid: true
+  },
+  marks: [
+    Plot.ruleY([0]),
+    Plot.line(rl_data.baselineCurrent, {
+      x: "timeMs",
+      y: "value",
+      stroke: "#7b8790",
+      strokeDasharray: "6,4",
+      strokeWidth: 2
+    }),
+    Plot.line(rl_data.current, {
+      x: "timeMs",
+      y: "value",
+      stroke: "#087f8c",
+      strokeWidth: 2.5
+    }),
+    Plot.ruleX([1e3 * rl.tau], {
+      stroke: "#087f8c",
+      strokeDasharray: "3,3",
+      strokeWidth: 1.5
+    })
+  ]
+})
+```
+
+#### Voltage response
+
+<div class="transient-plot-legend" aria-label="Voltage-response legend">
+  <span class="transient-legend-item"><span class="transient-legend-line transient-legend-line--state"></span>Selected $v_L(t)$</span>
+  <span class="transient-legend-item"><span class="transient-legend-line transient-legend-line--resistor"></span>Selected $v_R(t)$</span>
+  <span class="transient-legend-item"><span class="transient-legend-line transient-legend-line--baseline"></span>Baseline $v_R(t)$</span>
+  <span class="transient-legend-item"><span class="transient-legend-tau"></span>Selected $\tau$</span>
+</div>
+
+```{ojs}
+//| echo: false
+Plot.plot({
+  width,
+  height: 270,
+  marginLeft: 58,
+  style: {background: "transparent"},
+  ariaLabel: "RL switching voltage response",
+  ariaDescription: "Inductor voltage falls while resistor voltage rises after the switch closes.",
+  x: {
+    domain: [0, rl_data.timeMaximumMs],
+    label: "Time t (ms)",
+    grid: true
+  },
+  y: {
+    domain: [0, rl.sourceVoltage],
+    label: "Voltage (V)",
+    grid: true
+  },
+  color: {
+    domain: ["Inductor voltage v_L", "Resistor voltage v_R"],
+    range: ["#087f8c", "#d97706"],
+    legend: false
+  },
+  marks: [
+    Plot.ruleY([0]),
+    Plot.line(rl_data.baselineVoltage, {
+      x: "timeMs",
+      y: "value",
+      stroke: "#7b8790",
+      strokeDasharray: "6,4",
+      strokeWidth: 2
+    }),
+    Plot.line(rl_data.voltage, {
+      x: "timeMs",
+      y: "value",
+      stroke: "series",
+      strokeWidth: 2.5
+    }),
+    Plot.ruleX([1e3 * rl.tau], {
+      stroke: "#087f8c",
+      strokeDasharray: "3,3",
+      strokeWidth: 1.5
+    })
+  ]
+})
+```
+
+The vertical teal line marks the selected time constant $\tau$. At $t=\tau$, the inductor has reached $1-e^{-1}\approx63.2\%$ of its final current, regardless of the chosen values of $R$ and $L$.
+:::
+
+The following Python example reproduces the original $6\ \Omega$, $0.12$ H case and checks current continuity, Kirchhoff's voltage law, and the $63.2\%$ time-constant result.
 
 ```{python}
 #| label: lst-inductor-rl-transient
@@ -225,19 +494,24 @@ for multiple in (0, 1, 2, 5):
     )
 ```
 
-At $t=0^+$, the current is still zero, so the resistor voltage is zero and the entire source voltage appears across the inductor. As the magnetic field builds, the current and resistor voltage rise while the inductor voltage falls. Change `L` or `R` in the code to see how the time constant changes.
+At $t=0^+$, the current is still zero, so the resistor voltage is zero and the entire source voltage appears across the inductor. As the magnetic field builds, the current and resistor voltage rise while the inductor voltage falls.
 
 ## 7. Where the ideal model stops working
 
-A practical inductor may include:
+A common first-order equivalent circuit places winding resistance in series with the ideal inductance and parasitic capacitance across the two terminals, as shown in @fig-practical-inductor-model.
+
+![First-order practical inductor model. Winding resistance is in series with the ideal inductance, and parasitic capacitance shunts the series branch.](figures/generated/practical-inductor-model.svg){#fig-practical-inductor-model fig-align="center" width="85%"}
+
+The elements in this practical model and further nonideal effects represent:
 
 - **winding resistance**, which dissipates $I^2R$ heat;
 - **core loss**, caused by hysteresis and eddy currents;
 - **saturation**, which makes incremental inductance fall at high flux or current;
-- **parasitic capacitance**, which matters at high frequency; and
+- **parasitic capacitance**, which creates a self-resonant frequency;
+- inductance and loss that vary with frequency, current, and temperature; and
 - limits on current, insulation voltage, and temperature.
 
-Consequently, a real coil is neither a perfect short circuit at low frequency nor an ever-increasing reactance at arbitrarily high frequency. The ideal model remains valuable when its frequency, current, and voltage assumptions are appropriate.
+Above its self-resonant frequency, a real inductor can behave more capacitively than inductively. A practical coil also has a nonzero DC voltage drop whenever its winding carries current. Component construction, core material, and ratings therefore matter alongside the nominal inductance.
 
 ## 8. Takeaways
 
