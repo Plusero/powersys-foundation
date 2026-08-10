@@ -4,7 +4,7 @@ subtitle: "From rotating sinusoids to impedance and complex power"
 description: "Learn how complex numbers turn sinusoidal steady-state circuit equations into algebra, then solve and verify a series RLC circuit in Python."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
-date-modified: "2026-08-09"
+date-modified: "2026-08-10"
 categories: [Circuit analysis, Fundamentals, Phasors, Python]
 reading-time: 18
 jupyter: python3
@@ -117,17 +117,97 @@ For example, $\underline V=230\angle 30^\circ\ \mathrm{V}$ represents an RMS mag
 Do not silently mix peak and RMS phasors, or sine and cosine references. The circuit current has the same scale convention as the voltage, but the familiar power formula $\underline S=\underline V\underline I^*$ gives power directly only when $\underline V$ and $\underline I$ are RMS phasors.
 :::
 
-### 2.1 Why derivatives become multiplication by $\mathrm{j}\omega$
+### 2.1 Why derivatives become multiplication by $\mathrm{j}\omega$ {#sec-phasor-differentiation}
 
-Differentiating the complex exponential gives
+Consider a sinusoid represented by its RMS phasor $\underline X$:
 
 $$
-\frac{\mathrm d}{\mathrm dt}
-\left(\underline V e^{\mathrm{j}\omega t}\right)
-=\mathrm{j}\omega\underline V e^{\mathrm{j}\omega t}.
+x(t)=\sqrt{2}\,\Re\!\left\{\underline X e^{\mathrm{j}\omega t}\right\}.
 $$
 
-The time-domain derivative therefore corresponds to multiplying the phasor by $\mathrm{j}\omega$. Multiplication by $\mathrm{j}=e^{\mathrm{j}\pi/2}$ also rotates a complex number counter-clockwise by $90^\circ$. These two facts produce the familiar inductor and capacitor impedances.
+The phasor is constant; all time dependence is contained in $e^{\mathrm{j}\omega t}$. Differentiating gives
+
+$$
+\begin{aligned}
+\frac{\mathrm d x(t)}{\mathrm dt}
+&=\sqrt{2}\,\Re\!\left\{
+\underline X\frac{\mathrm d}{\mathrm dt}e^{\mathrm{j}\omega t}
+\right\} \\
+&=\sqrt{2}\,\Re\!\left\{
+(\mathrm{j}\omega\underline X)e^{\mathrm{j}\omega t}
+\right\}.
+\end{aligned}
+$$
+
+Therefore, the time-domain derivative is represented by the phasor $\mathrm{j}\omega\underline X$:
+
+$$
+\frac{\mathrm d x(t)}{\mathrm dt}
+\quad\longleftrightarrow\quad
+\mathrm{j}\omega\underline X.
+$$ {#eq-phasor-derivative}
+
+The factor $\omega$ multiplies the RMS magnitude, while $\mathrm{j}=e^{\mathrm{j}\pi/2}$ advances the phase by $90^\circ$. The derivative remains a sinusoid at the same frequency, so it can be represented within the same phasor model.
+
+This rule is related to, but more restricted than, the Laplace derivative rule
+
+$$
+\mathcal L\!\left\{\frac{\mathrm d x}{\mathrm dt}\right\}
+=sX(s)-x(0^-).
+$$
+
+With zero initial conditions, differentiation becomes multiplication by $s$ in the Laplace domain. Evaluating a linear circuit's Laplace-domain relation on the imaginary axis, $s=\mathrm{j}\omega$, gives the sinusoidal steady-state phasor rule. The full Laplace method can retain initial conditions and transient behavior; the phasor method describes one frequency after those transients have disappeared.
+
+This differentiation property produces the familiar inductor and capacitor impedances.
+
+### 2.2 Why integrals become division by $\mathrm{j}\omega$ {#sec-phasor-integration}
+
+Again consider a sinusoid represented by its RMS phasor $\underline X$:
+
+$$
+x(t)=\sqrt{2}\,\Re\!\left\{\underline X e^{\mathrm{j}\omega t}\right\}.
+$$
+
+For $\omega\neq 0$, integrating its complex representation gives the sinusoidal part of an antiderivative:
+
+$$
+\begin{aligned}
+y_{\mathrm{ac}}(t)
+&=\sqrt{2}\,\Re\!\left\{
+\underline X\int e^{\mathrm{j}\omega t}\,\mathrm dt
+\right\} \\
+&=\sqrt{2}\,\Re\!\left\{
+\left(\frac{\underline X}{\mathrm{j}\omega}\right)
+e^{\mathrm{j}\omega t}
+\right\}.
+\end{aligned}
+$$
+
+Therefore, time-domain integration is represented by division of the phasor by $\mathrm{j}\omega$:
+
+$$
+\int x(t)\,\mathrm dt
+\quad\longleftrightarrow\quad
+\frac{\underline X}{\mathrm{j}\omega}.
+$$ {#eq-phasor-integral}
+
+Because $1/\mathrm{j}=-\mathrm{j}=e^{-\mathrm{j}\pi/2}$, integration divides the RMS magnitude by $\omega$ and delays the phase by $90^\circ$.
+
+An indefinite integral also contains an arbitrary constant:
+
+$$
+y(t)=y_{\mathrm{ac}}(t)+K.
+$$
+
+The constant $K$ is a zero-frequency, or DC, component and is not part of the phasor at the nonzero frequency $\omega$. This is why the phasor rule describes the sinusoidal component but does not determine an initial condition.
+
+The corresponding Laplace-domain relation makes this distinction explicit. If $\mathrm dy/\mathrm dt=x$, then
+
+$$
+Y(s)=\frac{X(s)}{s}+\frac{y(0^-)}{s}.
+$$
+
+The term $y(0^-)/s$ carries the initial condition. Dropping the transient and DC contributions and evaluating the sinusoidal response at $s=\mathrm{j}\omega$ leaves $\underline Y=\underline X/(\mathrm{j}\omega)$.
 
 ## 3. Impedance: Ohm's law for phasors
 
