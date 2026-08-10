@@ -33,7 +33,7 @@ Only basic algebra and the meanings of voltage, current, power, and energy are r
 
 A **resistor** is a two-terminal component or circuit model that opposes current flow and converts electrical energy into heat.
 
-![IEC general symbol for a resistor (symbol S00555) [@iec60617].](figures/resistor-iec-symbol.svg){#fig-resistor-iec-symbol fig-align="center" width="38%"}
+![IEC general symbol for a resistor (symbol S00555) [@iec60617].](figures/generated/resistor-iec-symbol.svg){#fig-resistor-iec-symbol fig-align="center" width="38%"}
 
 For an ideal linear resistor, voltage and current satisfy Ohm's law,
 

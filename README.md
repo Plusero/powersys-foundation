@@ -32,6 +32,34 @@ uv run python scripts/check_tutorial_python.py
 
 The same check runs in GitHub Actions before the website is rendered, preventing a tutorial without runnable Python from being merged unnoticed.
 
+## Visualizations
+
+Use the tool that matches the type of visual evidence being presented:
+
+| Visualization | Preferred tool | Best use |
+|---|---|---|
+| Electrical circuits | [Schemdraw](https://schemdraw.readthedocs.io/) | Standards-based circuit schematics and component symbols |
+| Process and conceptual flows | [Mermaid](https://mermaid.js.org/) | Flowcharts, sequences, states, and explanatory relationships |
+| Network and topology graphs | [Graphviz](https://graphviz.org/) | Automatically laid-out node-and-edge structures |
+| Quantitative plots | [Matplotlib](https://matplotlib.org/) | Data, equations, simulations, and numerical comparisons |
+| LaTeX-first publications | [Circuitikz](https://ctan.org/pkg/circuitikz) | Publication-quality circuits when LaTeX/PDF is the primary output |
+
+Quarto supports Mermaid and Graphviz directly, but they do not provide standards-based electrical component libraries. Use Schemdraw for circuit diagrams in this HTML-first project and configure IEC-style elements where applicable.
+
+Circuit figures are generated from `scripts/figures/generate_circuit_figures.py` into `articles/figures/generated/`. Treat the Python generator as the source of truth and do not edit generated SVG files by hand. Regenerate them with:
+
+```sh
+uv run python scripts/figures/generate_circuit_figures.py
+```
+
+Verify that committed figures are current with:
+
+```sh
+uv run python scripts/figures/generate_circuit_figures.py --check
+```
+
+Commit both the generator changes and regenerated SVG files. This keeps figures reproducible while allowing Quarto to render the site without generating assets during every build.
+
 ## Add a tutorial
 
 Copy `templates/article.qmd.template` into `articles/` with a `.qmd` extension, give it a descriptive kebab-case filename, and replace the placeholder content and Python example. The tutorials page discovers article files automatically.

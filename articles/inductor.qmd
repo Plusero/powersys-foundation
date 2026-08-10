@@ -32,7 +32,7 @@ You should be comfortable with voltage, current, power, and basic derivatives. T
 
 An **inductor** is a two-terminal component that stores energy in a magnetic field. Its defining parameter is the **inductance** $L$, measured in henries (H).
 
-![IEC general symbol for a coil or inductor (symbol S00583) [@iec60617].](figures/inductor-iec-symbol.svg){#fig-inductor-iec-symbol fig-align="center" width="38%"}
+![IEC general symbol for a coil or inductor (symbol S00583) [@iec60617].](figures/generated/inductor-iec-symbol.svg){#fig-inductor-iec-symbol fig-align="center" width="38%"}
 
 Using the passive sign convention—current enters the terminal marked positive—the ideal linear inductor satisfies
 

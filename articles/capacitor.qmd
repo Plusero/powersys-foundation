@@ -4,7 +4,7 @@ subtitle: "Voltage, electric energy, and the meaning of capacitance"
 description: "Learn how an ideal capacitor relates current to changing voltage, stores electric energy, and behaves in DC transients and sinusoidal steady state."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
-date-modified: "2026-08-09"
+date-modified: "2026-08-10"
 categories: [Circuit analysis, Fundamentals, Capacitors, Python]
 reading-time: 13
 jupyter: python3
@@ -19,10 +19,10 @@ draft: false
 After this tutorial, you will be able to:
 
 - use the constitutive relations $q=Cv$ and $i=C\,dv/dt$;
-- explain why ideal-capacitor voltage cannot jump instantaneously;
+- explain why voltage of an ideal-capacitor cannot jump instantaneously;
 - calculate electric energy and sinusoidal reactance;
 - interpret a capacitor during a DC charging transient; and
-- recognize important departures from the ideal model.
+- recognize the limitations of the ideal model.
 
 ## Prerequisites
 
@@ -30,7 +30,7 @@ You should be comfortable with voltage, current, power, and basic derivatives. T
 
 ## 1. The ideal capacitor
 
-A **capacitor** is a two-terminal component that stores energy in an electric field. Its defining parameter is the **capacitance** $C$, measured in farads (F).
+A **capacitor** is a two-terminal component that stores energy in an electric field. Its defining parameter is the **capacitance** $C$, measured in the [SI unit farads (F)](https://en.wikipedia.org/wiki/Farad).
 
 For an ideal linear capacitor, charge and voltage are related by
 
@@ -38,46 +38,28 @@ $$
 q(t)=C v(t).
 $$ {#eq-capacitor-charge}
 
-Using the passive sign convention—current enters the terminal marked positive—and differentiating Equation @eq-capacitor-charge gives
+Here, $q(t)$ is the **instantaneous charge at time $t$**. The integral of current gives the change in charge:
+
+$$
+q(t)=q(t_0)+\int_{t_0}^{t}i(\tau)\,d\tau.
+$$
+
+Differentiating Equation @eq-capacitor-charge gives
 
 $$
 i(t)=C\frac{dv(t)}{dt}.
 $$ {#eq-capacitor-law}
 
-One farad is one coulomb per volt, equivalently one ampere-second per volt:
-
-$$
-1\ \mathrm{F}=1\ \frac{\mathrm{C}}{\mathrm{V}}
-=1\ \frac{\mathrm{A\,s}}{\mathrm{V}}.
-$$
-
-Equation @eq-capacitor-law says that current is associated with a **change** in voltage:
-
-- constant voltage gives $i=0$ for an ideal capacitor;
-- a faster voltage change requires a larger current; and
-- for the same current, a larger capacitance makes voltage change more slowly.
-
-Physically, opposite charges accumulate on two conductors separated by an insulating dielectric. Their electric field stores the energy [@grainger1994].
-
-::: {.callout-important}
-## State the reference directions
-
-If current is defined as leaving the positive-voltage terminal, the sign in Equation @eq-capacitor-law changes. The device has not changed; only the reference convention has.
-:::
 
 ## 2. Why voltage is continuous
 
-Integrating Equation @eq-capacitor-law over a short interval gives
+Integrating Equation @eq-capacitor-law over a short interval $[t_1,t_2]$ gives
 
 $$
 v(t_2)-v(t_1)=\frac{1}{C}\int_{t_1}^{t_2}i(t)\,dt.
 $$ {#eq-capacitor-voltage-integral}
 
-For finite current, the integral approaches zero as the interval shrinks. Therefore the voltage across an ideal capacitor cannot change instantaneously:
-
-$$
-v(0^+)=v(0^-).
-$$
+For finite current, the integral approaches zero as the interval $\Delta t = t_2-t_1$ approaches zero. Therefore the voltage across an ideal capacitor cannot change instantaneously.
 
 An instantaneous finite change in voltage would require an impulse of current. A circuit that connects an ideal voltage source directly across an uncharged ideal capacitor demands such an impulse; practical source resistance, wiring inductance, and capacitor resistance limit the real current.
 
@@ -89,7 +71,7 @@ In a settled DC steady state, $dv/dt=0$, so an ideal capacitor carries no curren
 
 ## 3. Power and stored electric energy
 
-With the passive sign convention, instantaneous power absorbed by a capacitor is
+Instantaneous power absorbed by a capacitor is
 
 $$
 p(t)=v(t)i(t)=C v(t)\frac{dv(t)}{dt}.
@@ -105,43 +87,86 @@ The energy is nonnegative regardless of voltage polarity. When $p>0$, the electr
 
 ## 4. Parallel and series combinations
 
-For ideal capacitors:
+**Parallel connection.** All capacitors have the same voltage $v$. Their charges add, so
 
-- parallel capacitances add:
+$$
+q_{\mathrm{total}}=q_1+q_2+\cdots
+=(C_1+C_2+\cdots)v.
+$$
 
-  $$
-  C_{\mathrm{eq}}=C_1+C_2+\cdots;
-  $$
+Because $q_{\mathrm{total}}=C_{\mathrm{eq}}v$, the equivalent capacitance is
 
-- series capacitances combine reciprocally:
+$$
+C_{\mathrm{eq}}=C_1+C_2+\cdots.
+$$
 
-  $$
-  \frac{1}{C_{\mathrm{eq}}}=\frac{1}{C_1}+\frac{1}{C_2}+\cdots.
-  $$
+Adding capacitors in parallel therefore increases the capacitance.
 
-For two series capacitors, $C_{\mathrm{eq}}=C_1C_2/(C_1+C_2)$.
+**Series connection.** The same current flows through each capacitor, so each receives the same change in charge. For initially uncharged capacitors, the charge magnitude $q$ is the same on each, while their voltages add:
 
-The reciprocal series formula follows because series capacitors receive equal changes in charge in the ideal two-terminal connection. Their individual voltages need not be equal: for equal charge magnitude, the smaller capacitance has the larger voltage. Initial charge, leakage, and external connections can also affect voltage sharing.
+$$
+v_{\mathrm{total}}=v_1+v_2+\cdots
+=q\left(\frac{1}{C_1}+\frac{1}{C_2}+\cdots\right).
+$$
+
+Using $q=C_{\mathrm{eq}}v_{\mathrm{total}}$ gives
+
+$$
+\frac{1}{C_{\mathrm{eq}}}=\frac{1}{C_1}+\frac{1}{C_2}+\cdots.
+$$
+
+For two capacitors,
+
+$$
+C_{\mathrm{eq}}=\frac{C_1C_2}{C_1+C_2}.
+$$
+
+For $n\geq 2$ positive capacitances,
+
+$$
+\frac{1}{C_{\mathrm{eq}}}
+=\sum_{k=1}^{n}\frac{1}{C_k}
+>\frac{1}{C_j}
+\quad\Longrightarrow\quad
+C_{\mathrm{eq}}<C_j,
+\qquad \forall j\in\{1,\ldots,n\}.
+$$
+
+Hence, $C_{\mathrm{eq}}<\min(C_1,\ldots,C_n)$: a series combination has a smaller capacitance than any individual capacitor. If the capacitors have initial charge, the reciprocal formula still describes changes in charge and voltage, but the initial charge affects the voltage across each capacitor.
+
 
 ## 5. Sinusoidal steady state
 
-For angular frequency $\omega=2\pi f$, differentiation becomes multiplication by $j\omega$ in phasor form. Equation @eq-capacitor-law becomes
+For angular frequency $\omega=2\pi f$, the [sinusoidal steady-state phasor transformation and its differentiation rule](complex-numbers-in-ac-circuits.qmd#sec-phasor-differentiation) give
+
+$$
+\frac{dx(t)}{dt}
+\quad\longleftrightarrow\quad
+j\omega\underline X.
+$$
+
+Applying this rule to @eq-capacitor-law gives
 
 $$
 \underline I=j\omega C\,\underline V.
 $$
 
-Therefore the capacitor impedance is
+This equation shows that the capacitor current leads its voltage by $90^\circ$, because multiplication by $j$ rotates a phasor counter-clockwise by $90^\circ$.
+
+Impedance is the ratio of voltage phasor to current phasor. Substituting $\underline I=j\omega C\,\underline V$ gives
 
 $$
-Z_C=\frac{1}{j\omega C}
+Z_C
+=\frac{\underline V}{\underline I}
+=\frac{\underline V}{j\omega C\,\underline V}
+=\frac{1}{j\omega C}
 =-j\frac{1}{\omega C}
 =-jX_C,
 \qquad
 X_C=\frac{1}{\omega C}.
 $$ {#eq-capacitor-impedance}
 
-The magnitude of capacitive reactance decreases as frequency increases. Current leads voltage by $90^\circ$.
+Here, $X_C$ is the positive magnitude of the capacitive reactance. Thus, the impedance is purely negative imaginary. Magnitude $X_C$ decreases as frequency increases.
 
 For RMS voltage $V$, the complex power absorbed by an ideal capacitor is
 
@@ -157,17 +182,20 @@ P=0,
 Q=-\omega C V^2.
 $$
 
-The capacitor receives energy during part of every cycle and returns it during another. Capacitors are therefore widely used to compensate inductive reactive power; see [power factor](power-factor-in-ac-circuits.qmd).
+The capacitor consumes zero active power because it stores energy during part of every cycle and returns it during the rest of the cycle. Because capacitive reactance generates leading current, capacitors supply (or inject) reactive power into the network.
+
 
 ::: {.callout-note}
 ## Frequency limits
 
-At $f=0$, Equation @eq-capacitor-impedance has infinite magnitude, matching the open-circuit DC steady-state model. The ideal formula should not be extrapolated to arbitrarily high frequency because real capacitors also contain resistance and inductance.
+At $f=0$, @eq-capacitor-impedance has infinite magnitude, matching the open-circuit DC steady-state model. The ideal formula should not be extrapolated to arbitrarily high frequency because real capacitors also contain resistance and inductance.
 :::
 
 ## 6. Worked example: an RC charging transient
 
-Consider a $12$ V ideal source applied at $t=0$ to a series combination of $R=10\ \mathrm{k}\Omega$ and $C=100\ \mu\mathrm{F}$. Assume $v_C(0^-)=0$.
+Consider a $12$ V ideal source applied at $t=0$ to a series combination of $R=10\ \mathrm{k}\Omega$ and $C=100\ \mu\mathrm{F}$, as shown in @fig-rc-charging-circuit. Assume $v_C(0^-)=0$.
+
+![Series RC charging circuit. The switch closes at $t=0$, connecting the source to the initially uncharged capacitor.](figures/generated/rc-charging-circuit.svg){#fig-rc-charging-circuit fig-align="center" width="85%"}
 
 The time constant is
 
@@ -187,7 +215,212 @@ i(t)=\frac{V_s}{R}e^{-t/\tau},
 v_R(t)=V_s e^{-t/\tau}.
 $$
 
-The following executable example checks voltage continuity, Kirchhoff's voltage law, and the $63.2\%$ time-constant result.
+### Explore the transient interactively
+
+Adjust $R$ and $C$ below. The plots compare the selected circuit with the original $R=10\ \mathrm{k}\Omega$, $C=100\ \mu\mathrm{F}$ example. The horizontal axis uses the same absolute time scale in both plots, so a larger $RC$ product visibly slows the response.
+
+::: {.rc-explorer}
+::: {.rc-controls}
+```{ojs}
+//| echo: false
+viewof resistance_kohm = Inputs.range([1, 50], {
+  value: 10,
+  step: 1,
+  label: "Resistance R (kΩ)"
+})
+```
+
+```{ojs}
+//| echo: false
+viewof capacitance_uf = Inputs.range([10, 500], {
+  value: 100,
+  step: 10,
+  label: "Capacitance C (µF)"
+})
+```
+:::
+
+```{ojs}
+//| echo: false
+rc = {
+  const sourceVoltage = 12;
+  const resistance = resistance_kohm * 1e3;
+  const capacitance = capacitance_uf * 1e-6;
+  const tau = resistance * capacitance;
+  const baselineTau = 10e3 * 100e-6;
+
+  return {
+    sourceVoltage,
+    resistance,
+    capacitance,
+    tau,
+    baselineTau,
+    initialCurrentMa: 1e3 * sourceVoltage / resistance,
+    voltageAtTau: sourceVoltage * (1 - Math.exp(-1)),
+    finalEnergyMj: 1e3 * 0.5 * capacitance * sourceVoltage ** 2
+  };
+}
+```
+
+```{ojs}
+//| echo: false
+html`<div class="rc-metrics" aria-live="polite">
+  <div class="rc-metric"><span>Time constant</span><strong>${rc.tau.toFixed(3)} s</strong></div>
+  <div class="rc-metric"><span>Initial current</span><strong>${rc.initialCurrentMa.toFixed(3)} mA</strong></div>
+  <div class="rc-metric"><span>Voltage at <i>t</i> = <i>τ</i></span><strong>${rc.voltageAtTau.toFixed(3)} V</strong></div>
+  <div class="rc-metric"><span>Final stored energy</span><strong>${rc.finalEnergyMj.toFixed(3)} mJ</strong></div>
+</div>`
+```
+
+```{ojs}
+//| echo: false
+rc_data = {
+  const pointCount = 321;
+  const timeMaximum = 5 * Math.max(rc.tau, rc.baselineTau);
+  const times = Array.from(
+    {length: pointCount},
+    (_, index) => index * timeMaximum / (pointCount - 1)
+  );
+
+  const voltage = times.flatMap((time) => {
+    const decay = Math.exp(-time / rc.tau);
+    return [
+      {time, value: rc.sourceVoltage * (1 - decay), series: "Capacitor voltage v_C"},
+      {time, value: rc.sourceVoltage * decay, series: "Resistor voltage v_R"}
+    ];
+  });
+
+  const baselineVoltage = times.map((time) => ({
+    time,
+    value: rc.sourceVoltage * (1 - Math.exp(-time / rc.baselineTau))
+  }));
+
+  const current = times.map((time) => ({
+    time,
+    value: rc.initialCurrentMa * Math.exp(-time / rc.tau)
+  }));
+
+  const baselineCurrent = times.map((time) => ({
+    time,
+    value: 1.2 * Math.exp(-time / rc.baselineTau)
+  }));
+
+  return {timeMaximum, voltage, baselineVoltage, current, baselineCurrent};
+}
+```
+
+#### Voltage response
+
+<div class="rc-plot-legend" aria-label="Voltage-response legend">
+  <span class="rc-legend-item"><span class="rc-legend-line rc-legend-line--capacitor"></span>Selected $v_C(t)$</span>
+  <span class="rc-legend-item"><span class="rc-legend-line rc-legend-line--resistor"></span>Selected $v_R(t)$</span>
+  <span class="rc-legend-item"><span class="rc-legend-line rc-legend-line--baseline"></span>Baseline $v_C(t)$</span>
+  <span class="rc-legend-item"><span class="rc-legend-tau"></span>Selected $\tau$</span>
+</div>
+
+```{ojs}
+//| echo: false
+Plot.plot({
+  width,
+  height: 300,
+  marginLeft: 58,
+  style: {background: "transparent"},
+  ariaLabel: "RC charging voltage response",
+  ariaDescription: "Capacitor voltage rises and resistor voltage falls after the switch closes.",
+  x: {
+    domain: [0, rc_data.timeMaximum],
+    label: "Time t (s)",
+    grid: true
+  },
+  y: {
+    domain: [0, rc.sourceVoltage],
+    label: "Voltage (V)",
+    grid: true
+  },
+  color: {
+    domain: ["Capacitor voltage v_C", "Resistor voltage v_R"],
+    range: ["#087f8c", "#d97706"],
+    legend: false
+  },
+  marks: [
+    Plot.ruleY([0]),
+    Plot.line(rc_data.baselineVoltage, {
+      x: "time",
+      y: "value",
+      stroke: "#7b8790",
+      strokeDasharray: "6,4",
+      strokeWidth: 2
+    }),
+    Plot.line(rc_data.voltage, {
+      x: "time",
+      y: "value",
+      stroke: "series",
+      strokeWidth: 2.5
+    }),
+    Plot.ruleX([rc.tau], {
+      stroke: "#087f8c",
+      strokeDasharray: "3,3",
+      strokeWidth: 1.5
+    })
+  ]
+})
+```
+
+#### Current response
+
+<div class="rc-plot-legend" aria-label="Current-response legend">
+  <span class="rc-legend-item"><span class="rc-legend-line rc-legend-line--capacitor"></span>Selected $i(t)$</span>
+  <span class="rc-legend-item"><span class="rc-legend-line rc-legend-line--baseline"></span>Baseline $i(t)$</span>
+  <span class="rc-legend-item"><span class="rc-legend-tau"></span>Selected $\tau$</span>
+</div>
+
+```{ojs}
+//| echo: false
+Plot.plot({
+  width,
+  height: 270,
+  marginLeft: 58,
+  style: {background: "transparent"},
+  ariaLabel: "RC charging current response",
+  ariaDescription: "Charging current begins at the source voltage divided by resistance and decays toward zero.",
+  x: {
+    domain: [0, rc_data.timeMaximum],
+    label: "Time t (s)",
+    grid: true
+  },
+  y: {
+    domain: [0, Math.max(rc.initialCurrentMa, 1.2)],
+    label: "Current (mA)",
+    grid: true
+  },
+  marks: [
+    Plot.ruleY([0]),
+    Plot.line(rc_data.baselineCurrent, {
+      x: "time",
+      y: "value",
+      stroke: "#7b8790",
+      strokeDasharray: "6,4",
+      strokeWidth: 2
+    }),
+    Plot.line(rc_data.current, {
+      x: "time",
+      y: "value",
+      stroke: "#087f8c",
+      strokeWidth: 2.5
+    }),
+    Plot.ruleX([rc.tau], {
+      stroke: "#087f8c",
+      strokeDasharray: "3,3",
+      strokeWidth: 1.5
+    })
+  ]
+})
+```
+
+The vertical teal line marks the selected time constant $\tau$. At $t=\tau$, the capacitor has reached $1-e^{-1}\approx63.2\%$ of its final voltage, regardless of the chosen values of $R$ and $C$.
+:::
+
+The following Python example reproduces the original $10\ \mathrm{k}\Omega$, $100\ \mu\mathrm{F}$ case and checks voltage continuity, Kirchhoff's voltage law, and the $63.2\%$ time-constant result.
 
 ```{python}
 #| label: lst-capacitor-rc-transient
@@ -195,7 +428,7 @@ The following executable example checks voltage continuity, Kirchhoff's voltage 
 import numpy as np
 
 V_source = 12.0   # V
-R = 10_000.0      # ohm
+R = 10e3      # ohm
 C = 100e-6        # F
 
 tau = R * C
@@ -230,11 +463,15 @@ for multiple in (0, 1, 2, 5):
     )
 ```
 
-At $t=0^+$, the capacitor voltage is still zero, so the entire source voltage appears across the resistor and the current is largest. As charge accumulates, capacitor voltage rises while current and resistor voltage fall. Change `C` or `R` in the code to explore the time constant.
+At $t=0^+$, the capacitor voltage is still zero, so the entire source voltage appears across the resistor and the current is largest. As charge accumulates, capacitor voltage rises while current and resistor voltage fall.
 
 ## 7. Where the ideal model stops working
 
-A practical capacitor may include:
+A common first-order equivalent circuit places the equivalent series inductance and resistance in series with a capacitance shunted by a leakage resistance, as shown in @fig-practical-capacitor-model.
+
+![First-order practical capacitor model. The ESL and ESR are in series with the parallel combination of the ideal capacitance and leakage resistance.](figures/generated/practical-capacitor-model.svg){#fig-practical-capacitor-model fig-align="center" width="85%"}
+
+The elements in this practical model represent:
 
 - **equivalent series resistance (ESR)**, which causes heating and voltage drop;
 - **leakage resistance**, which slowly discharges the capacitor;
