@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 140" role="img" aria-labelledby="title description">
+  <title id="title">IEC general symbol for a coil or inductor</title>
+  <desc id="description">Four connected semicircular arcs with one terminal lead connected to each end.</desc>
+  <rect width="320" height="140" fill="#ffffff"/>
+  <path
+    d="M20 90 H70
+       a22.5 22.5 0 0 1 45 0
+       a22.5 22.5 0 0 1 45 0
+       a22.5 22.5 0 0 1 45 0
+       a22.5 22.5 0 0 1 45 0
+       H300"
+    fill="none"
+    stroke="#172b36"
+    stroke-width="5"
+    stroke-linecap="square"
+    stroke-linejoin="round"/>
+</svg>

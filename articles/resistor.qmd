@@ -4,7 +4,7 @@ subtitle: "Voltage, current, heat, and the simplest passive circuit model"
 description: "Learn how an ideal resistor relates voltage to current, dissipates energy, combines in networks, and behaves under DC and sinusoidal excitation."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
-date-modified: "2026-08-09"
+date-modified: "2026-08-10"
 categories: [Circuit analysis, Fundamentals, Resistors, Python]
 reading-time: 12
 jupyter: python3
@@ -31,7 +31,11 @@ Only basic algebra and the meanings of voltage, current, power, and energy are r
 
 ## 1. The short answer
 
-A **resistor** is a two-terminal component or circuit model that opposes current flow and converts electrical energy into heat. For an ideal linear resistor, voltage and current satisfy Ohm's law,
+A **resistor** is a two-terminal component or circuit model that opposes current flow and converts electrical energy into heat.
+
+![IEC general symbol for a resistor (symbol S00555) [@iec60617].](figures/resistor-iec-symbol.svg){#fig-resistor-iec-symbol fig-align="center" width="38%"}
+
+For an ideal linear resistor, voltage and current satisfy Ohm's law,
 
 $$
 \boxed{v(t)=R i(t)},

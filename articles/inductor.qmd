@@ -4,7 +4,7 @@ subtitle: "Current, magnetic energy, and the meaning of inductance"
 description: "Learn how an ideal inductor relates voltage to changing current, stores magnetic energy, and behaves in DC transients and sinusoidal steady state."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
-date-modified: "2026-08-09"
+date-modified: "2026-08-10"
 categories: [Circuit analysis, Fundamentals, Inductors, Python]
 reading-time: 13
 jupyter: python3
@@ -31,6 +31,8 @@ You should be comfortable with voltage, current, power, and basic derivatives. T
 ## 1. The ideal inductor
 
 An **inductor** is a two-terminal component that stores energy in a magnetic field. Its defining parameter is the **inductance** $L$, measured in henries (H).
+
+![IEC general symbol for a coil or inductor (symbol S00583) [@iec60617].](figures/inductor-iec-symbol.svg){#fig-inductor-iec-symbol fig-align="center" width="38%"}
 
 Using the passive sign convention—current enters the terminal marked positive—the ideal linear inductor satisfies
 

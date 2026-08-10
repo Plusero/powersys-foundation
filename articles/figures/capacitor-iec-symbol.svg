@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 140" role="img" aria-labelledby="title description">
+  <title id="title">IEC general symbol for a capacitor</title>
+  <desc id="description">Two parallel plates separated by a gap, with one terminal lead connected to each plate.</desc>
+  <rect width="320" height="140" fill="#ffffff"/>
+  <g fill="none" stroke="#172b36" stroke-width="5" stroke-linecap="square">
+    <path d="M20 70 H130"/>
+    <path d="M130 25 V115"/>
+    <path d="M190 25 V115"/>
+    <path d="M190 70 H300"/>
+  </g>
+</svg>
