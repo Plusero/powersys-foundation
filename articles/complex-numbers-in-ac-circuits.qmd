@@ -131,39 +131,59 @@ $$
 \end{aligned}
 $$ {#eq-complex-arithmetic}
 
-The complex conjugate $z^*=a-\mathrm{j}b$ reflects $z$ across the real axis. Because $zz^*=|z|^2$, it is useful for division and, later, for complex power.
-
 ::: {.callout-tip}
 Angles in equations may be shown in degrees for intuition, but NumPy's trigonometric and exponential functions expect radians. Convert explicitly with `np.deg2rad` and `np.rad2deg`.
 :::
 
 ## 2. From a sinusoid to a phasor
 
-Write a sinusoid as the real part of a rotating complex exponential:
+A sinusoid is characterised by its frequency, magnitude, and phase. In a sinusoidal steady-state circuit, all voltages and currents have the same known frequency, so only their magnitudes and phases differ. A **phasor** is a complex number that records the magnitude and the phase. Geometrically, it is a fixed arrow in the complex plane: its length represents the sinusoid's RMS magnitude, and its angle represents the phase. The phasor itself does not vary with time. The common rotation at angular frequency $\omega$ is omitted.
+
+This geometric interpretation is shown in @fig-phasor-geometry. The dashed projections are the real and imaginary components of the same complex number; they are not additional phasors. The curved arrow indicates the angular frequency $\omega$ of the time-dependent rotation that the phasor omits.
+
+![A phasor as a fixed arrow in the complex plane. Its length is the RMS magnitude $V$, its angle is the phase $\theta_v$, and its real and imaginary components are $V\cos\theta_v$ and $V\sin\theta_v$.](figures/generated/phasor-geometry.svg){#fig-phasor-geometry fig-align="center" width="62%"}
+
+Before constructing a phasor, we must specify how its phase is measured. A sinusoid can be written using either cosine or sine, and the numerical phase angle changes with that choice. This tutorial uses cosine as the reference:
+
+$$
+v(t)=\sqrt{2}V\cos(\omega t+\theta_v).
+$$
+
+Here $V$ is the RMS magnitude, so $\sqrt{2}V$ is the peak magnitude, and $\theta_v$ is the phase measured relative to a cosine. This is what a **cosine-based RMS phasor** means.
+
+Euler's identity gives $\Re\{e^{\mathrm{j}x}\}=\cos x$, allowing the same waveform to be written as the real part of a rotating complex exponential:
 
 $$
 v(t)
 =\sqrt{2}\,\Re\!\left\{V e^{\mathrm{j}\theta_v}e^{\mathrm{j}\omega t}\right\}.
 $$ {#eq-sinusoid-complex-exponential}
 
-Every voltage and current in a linear steady-state circuit at the same frequency contains the common factor $e^{\mathrm{j}\omega t}$. Suppressing that factor leaves the **phasor**
+In a linear circuit operating in sinusoidal steady state at frequency $\omega$, the complex-exponential representation of every voltage and current contains the same factor $e^{\mathrm{j}\omega t}$. Omitting this common time-dependent factor gives the commonly used notation for a phasor:
 
 $$
 \underline V=V e^{\mathrm{j}\theta_v}=V\angle\theta_v.
 $$ {#eq-voltage-phasor}
 
-This tutorial marks phasors with an underline in equations. Python's built-in complex type carries the same information without special notation.
-
-The reference convention matters. We use cosine-based RMS phasors throughout, so the inverse mapping is
+This tutorial marks phasors with an underline in equations. To reconstruct the waveform, restore $e^{\mathrm{j}\omega t}$, take the real part, and convert the RMS magnitude to a peak magnitude:
 
 $$
-v(t)=\sqrt{2}\,\Re\!\left\{\underline V e^{\mathrm{j}\omega t}\right\}.
+\begin{aligned}
+v(t)
+&=\sqrt{2}\,\Re\!\left\{\underline V e^{\mathrm{j}\omega t}\right\}\\
+&=\sqrt{2}V\cos(\omega t+\theta_v).
+\end{aligned}
 $$ {#eq-phasor-to-time}
 
-For example, $\underline V=230\angle 30^\circ\ \mathrm{V}$ represents an RMS magnitude of $230\ \mathrm{V}$, a peak magnitude of $\sqrt{2}(230)\ \mathrm{V}$, and a cosine phase of $30^\circ$.
+For example, $\underline V=230\angle 30^\circ\ \mathrm{V}$ represents
 
-::: {.callout-warning}
-Do not silently mix peak and RMS phasors, or sine and cosine references. The circuit current has the same scale convention as the voltage, but the familiar power formula $\underline S=\underline V\underline I^*$ gives power directly only when $\underline V$ and $\underline I$ are RMS phasors.
+$$
+v(t)=\sqrt{2}(230)\cos(\omega t+30^\circ)\ \mathrm{V}.
+$$
+
+Its RMS magnitude is $230\ \mathrm{V}$, its peak magnitude is $\sqrt{2}(230)\ \mathrm{V}$, and its cosine phase is $30^\circ$.
+
+::: {.callout-warning title="Keep the convention consistent"}
+Neither a cosine nor a sine reference is inherently more correct. The example waveform can also be written as a sine because $\cos x=\sin(x+90^\circ)$, but its sine-referenced phase would be $120^\circ$, not $30^\circ$. Do not mix these references within one calculation. Likewise, do not mix peak and RMS phasors: every voltage and current phasor must use the same reference and scale conventions. This tutorial uses cosine-based RMS phasors throughout.
 :::
 
 ### 2.1 Why derivatives become multiplication by $\mathrm{j}\omega$ {#sec-phasor-differentiation}
@@ -174,7 +194,7 @@ $$
 x(t)=\sqrt{2}\,\Re\!\left\{\underline X e^{\mathrm{j}\omega t}\right\}.
 $$
 
-The phasor is constant; all time dependence is contained in $e^{\mathrm{j}\omega t}$. Differentiating gives
+Differentiation of $x(t)$ gives:
 
 $$
 \begin{aligned}
@@ -196,7 +216,9 @@ $$
 \mathrm{j}\omega\underline X.
 $$ {#eq-phasor-derivative}
 
-The factor $\omega$ multiplies the RMS magnitude, while $\mathrm{j}=e^{\mathrm{j}\pi/2}$ advances the phase by $90^\circ$. The derivative remains a sinusoid at the same frequency, so it can be represented within the same phasor model.
+The factor $\omega$ multiplies the RMS magnitude, while $\mathrm{j}=e^{\mathrm{j}\pi/2}$ advances the phase by $90^\circ$. @fig-phasor-derivative-phase-advance separates these two effects geometrically. First, multiplication by $\mathrm{j}$ rotates $\underline X$ counterclockwise by $90^\circ$ without changing its magnitude. Multiplication by the positive scalar $\omega$ then changes only the length, producing $\mathrm{j}\omega\underline X$. The derivative remains a sinusoid at the same frequency, so it can be represented within the same phasor model.
+
+![Multiplication by $\mathrm{j}$ rotates $\underline X$ counterclockwise by $90^\circ$ without changing its magnitude; multiplication by $\omega$ then scales the magnitude to $\omega|\underline X|$.](figures/generated/phasor-derivative-phase-advance.svg){#fig-phasor-derivative-phase-advance fig-align="center" width="70%"}
 
 This rule is related to, but more restricted than, the Laplace derivative rule
 
@@ -240,7 +262,9 @@ $$
 \frac{\underline X}{\mathrm{j}\omega}.
 $$ {#eq-phasor-integral}
 
-Because $1/\mathrm{j}=-\mathrm{j}=e^{-\mathrm{j}\pi/2}$, integration divides the RMS magnitude by $\omega$ and delays the phase by $90^\circ$.
+Because $1/\mathrm{j}=-\mathrm{j}=e^{-\mathrm{j}\pi/2}$, integration divides the RMS magnitude by $\omega$ and delays the phase by $90^\circ$. @fig-phasor-integral-phase-delay separates these effects geometrically. Division by $\mathrm{j}$ first rotates $\underline X$ clockwise by $90^\circ$ without changing its magnitude. Division by the positive scalar $\omega$ then changes only the length, producing $\underline X/(\mathrm{j}\omega)$.
+
+![Division by $\mathrm{j}$ rotates $\underline X$ clockwise by $90^\circ$ without changing its magnitude; division by $\omega$ then scales the magnitude to $|\underline X|/\omega$.](figures/generated/phasor-integral-phase-delay.svg){#fig-phasor-integral-phase-delay fig-align="center" width="70%"}
 
 An indefinite integral also contains an arbitrary constant:
 
@@ -300,12 +324,14 @@ $$
 because parallel admittances add. $G$ is conductance and $B$ is susceptance.
 
 ::: {.callout-note}
-The symbols $R$, $L$, and $C$ are physical component values. Impedance is frequency dependent: changing $f$ changes $Z_L$ and $Z_C$, even though $L$ and $C$ themselves stay fixed in this ideal model.
+The symbols $R$, $L$, and $C$ are determined by the physical component, regardless of the frequency. Impedance is frequency dependent: changing $f$ changes $Z_L$ and $Z_C$, even though $L$ and $C$ themselves stay fixed in this ideal model.
 :::
 
 ## 4. Worked series RLC circuit
 
-Consider a $230\ \mathrm{V}$ RMS, $50\ \mathrm{Hz}$ source feeding a series circuit with
+In this example, we will represent the resistor, inductor, and capacitor with their complex impedances. With the complex values, we find series current, calculate each element's voltage drop, and verify Kirchhoff's voltage law. The purpose is to show how phasors turn a sinusoidal time-domain problem into complex algebra while retaining the magnitudes and phase relationships of the physical waveforms.
+
+Consider a $230\ \mathrm{V}$ RMS, $50\ \mathrm{Hz}$ voltage source and a series RLC circuit with
 
 $$
 R=12\ \Omega,
@@ -315,15 +341,86 @@ L=80\ \mathrm{mH},
 C=100\ \mu\mathrm{F}.
 $$
 
-Take the source as the angular reference, $\underline V_s=230\angle0^\circ\ \mathrm{V}$. The total impedance is
+The circuit topology and the clockwise reference direction for the common series current are shown in @fig-series-rlc-ac-circuit.
+
+![Series RLC circuit used in the worked example. The source is $230\ \mathrm{V}$ RMS at $50\ \mathrm{Hz}$, and the reference current flows clockwise through all three elements.](figures/generated/series-rlc-ac-circuit.svg){#fig-series-rlc-ac-circuit fig-align="center" width="82%"}
+
+Take the source as the angular reference, $\underline V_s=230\angle0^\circ\ \mathrm{V}$. At $f=50\ \mathrm{Hz}$, the angular frequency is
 
 $$
+\omega=2\pi f=2\pi(50)=314.159\ \mathrm{rad/s}.
+$$
+
+The three component impedances are therefore
+
+$$
+\begin{aligned}
+\underline Z_R &= R
+  = 12\ \Omega,\\
+\underline Z_L &= \mathrm{j}\omega L
+  = \mathrm{j}(314.159)(0.080)
+  = \mathrm{j}25.133\ \Omega,\\
+\underline Z_C &= \frac{1}{\mathrm{j}\omega C}
+  = \frac{1}{\mathrm{j}(314.159)(100\times10^{-6})}
+  = -\mathrm{j}31.831\ \Omega.
+\end{aligned}
+$$ {#eq-series-rlc-component-impedances}
+
+Series impedances add, giving
+
+$$
+\begin{aligned}
 \underline Z
-=R+\mathrm{j}\omega L+\frac{1}{\mathrm{j}\omega C}
-=R+\mathrm{j}\left(\omega L-\frac{1}{\omega C}\right).
+&=R+\mathrm{j}\omega L+\frac{1}{\mathrm{j}\omega C}\\
+&=R+\mathrm{j}\left(\omega L-\frac{1}{\omega C}\right)\\
+&=12-\mathrm{j}6.698\ \Omega
+ =13.743\angle-29.17^\circ\ \Omega.
+\end{aligned}
 $$ {#eq-series-rlc-impedance}
 
-The resistance is the real part and the net reactance is the imaginary part. Once $\underline Z$ is known, @eq-complex-ohm gives the common series current. Individual voltage drops then follow from $\underline V_k=\underline I\underline Z_k$.
+The resistance is the real part and the net reactance is the imaginary part. Applying complex Ohm's law gives the common series current:
+
+$$
+\begin{aligned}
+\underline I
+&=\frac{\underline V_s}{\underline Z}
+ =\frac{230\angle0^\circ}{13.743\angle-29.17^\circ}\\
+&=16.736\angle29.17^\circ\ \mathrm{A}
+ =14.613+\mathrm{j}8.157\ \mathrm{A}.
+\end{aligned}
+$$ {#eq-series-rlc-current}
+
+The same current flows through every element, so each voltage drop follows from $\underline V_k=\underline I\underline Z_k$:
+
+$$
+\begin{aligned}
+\underline V_R
+  &=\underline I\underline Z_R
+   =200.831\angle29.17^\circ\ \mathrm{V}
+   =175.362+\mathrm{j}97.885\ \mathrm{V},\\
+\underline V_L
+  &=\underline I\underline Z_L
+   =420.620\angle119.17^\circ\ \mathrm{V}
+   =-205.009+\mathrm{j}367.277\ \mathrm{V},\\
+\underline V_C
+  &=\underline I\underline Z_C
+   =532.722\angle-60.83^\circ\ \mathrm{V}
+   =259.648-\mathrm{j}465.162\ \mathrm{V}.
+\end{aligned}
+$$ {#eq-series-rlc-voltage-drops}
+
+In exact arithmetic, these voltage phasors satisfy Kirchhoff's voltage law:
+
+$$
+\begin{aligned}
+\underline V_R+\underline V_L+\underline V_C
+&=\underline I(\underline Z_R+\underline Z_L+\underline Z_C)\\
+&=\underline I\underline Z
+ =\underline V_s.
+\end{aligned}
+$$ {#eq-rlc-kvl}
+
+The Python calculation below follows this same sequence and prints each result in rectangular and polar form. Its final residual measures the small floating-point error in @eq-rlc-kvl.
 
 ```{python}
 #| label: lst-complex-rlc-solution
@@ -376,24 +473,84 @@ voltage_residual = source_voltage - (v_r + v_l + v_c)
 print(f"\nKVL residual magnitude = {abs(voltage_residual):.3e} V")
 ```
 
-At $50\ \mathrm{Hz}$, the capacitive reactance magnitude is larger than the inductive reactance, so $\operatorname{Im}(\underline Z)<0$. The circuit is net capacitive and the current leads the source voltage. The resistor voltage is in phase with the current; the inductor and capacitor voltages are respectively $90^\circ$ ahead of and behind it.
-
-The magnitudes $|\underline V_L|$ and $|\underline V_C|$ should **not** be added as ordinary scalars. Their phasors point in opposite directions, so they partially cancel. The small printed KVL residual verifies the vector sum
-
-$$
-\underline V_s=\underline V_R+\underline V_L+\underline V_C.
-$$ {#eq-rlc-kvl}
-
-::: {.callout-tip}
-Change `frequency` to $40\ \mathrm{Hz}$ and then to $80\ \mathrm{Hz}$. Before rerunning, predict whether the circuit is net capacitive or inductive and whether the current leads or lags the voltage.
+::: {.callout-note title="Exercise: explore frequency dependence"}
+1. Set `frequency = 40.0`. Before running the code, predict whether the circuit is net capacitive or inductive and whether the current leads or lags the source voltage.
+2. Run the calculation and check your prediction against the sign of $\operatorname{Im}(\underline Z)$ and the angle of $\underline I$.
+3. Repeat the prediction and calculation for `frequency = 80.0`.
+4. Explain the change between the two cases using $X_L=\omega L$ and $X_C=-1/(\omega C)$.
 :::
 
 ## 5. Complex power and the conjugate
 
-Adopt the passive sign convention: current enters the terminal marked with positive voltage. With RMS phasors, the absorbed complex power is
+Complex power is the first calculation in this tutorial that requires the complex conjugate. For $z=a+\mathrm{j}b$, its conjugate is $z^*=a-\mathrm{j}b$: geometrically, this reflects $z$ across the real axis and reverses the sign of its angle, as shown in @fig-complex-conjugate-geometry.
+
+::: {#fig-complex-conjugate-geometry}
+![](figures/generated/complex-conjugate-geometry.svg){fig-alt="A complex number and its conjugate reflected across the real axis, with equal magnitudes and opposite angles and imaginary components." fig-align="center" width="64%"}
+
+The conjugate $z^*$ is the reflection of $z$ across the real axis. The two numbers have the same magnitude and real component, while their angles and imaginary components have opposite signs.
+:::
+
+Both numbers have magnitude $|z|$, while their angles are $\theta$ and $-\theta$. Their product therefore has magnitude $|z|^2$ and zero angle:
 
 $$
-\underline S=\underline V\underline I^*=P+\mathrm{j}Q.
+zz^*
+=\left(|z|\angle\theta\right)
+ \left(|z|\angle(-\theta)\right)
+=|z|^2\angle0
+=|z|^2.
+$$
+
+Adopt the [passive sign convention](https://en.wikipedia.org/wiki/Passive_sign_convention): current enters the terminal marked with positive voltage. To see why power uses the conjugate of the current phasor, begin with the corresponding time-domain waveforms:
+
+$$
+v(t)=\sqrt{2}V\cos(\omega t+\theta_v),
+\qquad
+i(t)=\sqrt{2}I\cos(\omega t+\theta_i).
+$$
+
+Their instantaneous product is
+
+$$
+\begin{aligned}
+p(t)=v(t)i(t)
+&=2VI\cos(\omega t+\theta_v)\cos(\omega t+\theta_i)\\
+&=VI\cos(\theta_v-\theta_i)
+  +VI\cos(2\omega t+\theta_v+\theta_i).
+\end{aligned}
+$$
+
+::: {.callout-tip title="Product-to-sum formula"}
+The second line follows from
+
+$$
+2\cos A\cos B=\cos(A-B)+\cos(A+B),
+$$
+
+with $A=\omega t+\theta_v$ and $B=\omega t+\theta_i$. Therefore,
+
+$$
+A-B=\theta_v-\theta_i,
+\qquad
+A+B=2\omega t+\theta_v+\theta_i.
+$$
+:::
+
+The second term averages to zero over one cycle. Therefore, the average power is
+
+$$
+P=VI\cos(\theta_v-\theta_i).
+$$
+
+Physical power thus depends on the **phase difference** between voltage and current. Complex power is defined to preserve this difference while also recording the quadrature component. Because conjugation reverses the current angle,
+
+$$
+\begin{aligned}
+\underline S
+=\underline V\underline I^*
+&=(V\angle\theta_v)(I\angle(-\theta_i))\\
+&=VI\angle(\theta_v-\theta_i)
+=P+\mathrm{j}Q.
+\end{aligned}
 $$ {#eq-complex-power-basics}
 
 Its components are
@@ -407,7 +564,7 @@ Its components are
 
 : Quantities derived from complex power {#tbl-complex-power-quantities}
 
-If $\phi=\theta_v-\theta_i$ is the voltage angle minus the current angle, then
+If $\phi=\theta_v-\theta_i$ is the voltage angle minus the current angle, the rectangular components of this product are
 
 $$
 \underline S=VI\angle\phi,
@@ -417,9 +574,9 @@ P=VI\cos\phi,
 Q=VI\sin\phi.
 $$ {#eq-power-angle}
 
-The conjugate produces the required **difference** of voltage and current angles. Without it, multiplication would incorrectly add the angles.
+By contrast, $\underline V\underline I=VI\angle(\theta_v+\theta_i)$ would add the angles. That sum changes if the time reference is shifted, even though the physical relationship between voltage and current does not. It therefore cannot represent power; the conjugated product can because the phase difference is independent of the chosen reference.
 
-Under the passive sign convention, an inductive load has lagging current and $Q>0$; a capacitive load has leading current and $Q<0$. Apply @eq-complex-power-basics to the worked circuit:
+Under the [passive sign convention](https://en.wikipedia.org/wiki/Passive_sign_convention), an inductive load has lagging current and $Q>0$; a capacitive load has leading current and $Q<0$. Apply @eq-complex-power-basics to the worked circuit:
 
 ```{python}
 #| label: lst-complex-rlc-power
@@ -443,13 +600,23 @@ print(f"P = {active_power:.2f} W")
 print(f"Q = {reactive_power:.2f} var")
 print(f"|S| = {apparent_power:.2f} VA")
 print(f"power factor = {power_factor:.4f} {power_factor_type}")
+
+print("\nComponent complex powers:")
+for label, complex_power in [("R", s_r), ("L", s_l), ("C", s_c)]:
+    component_p = 0.0 if abs(complex_power.real) < 5e-3 else complex_power.real
+    component_q = 0.0 if abs(complex_power.imag) < 5e-3 else complex_power.imag
+    print(
+        f"S_{label} = {component_p:.2f} {component_q:+.2f}j VA  "
+        f"(P = {component_p:.2f} W, Q = {component_q:+.2f} var)"
+    )
+
 print(f"power-balance residual = {abs(s_source_delivered - s_elements):.3e} VA")
 ```
 
-Only the ideal resistor absorbs average power. The ideal inductor and capacitor have zero average power, but their positive and negative reactive powers do not vanish individually. Their net reactive power is negative here because the circuit is net capacitive. The final residual checks that the source-delivered complex power equals the total complex power absorbed by the three elements.
+Only the ideal resistor absorbs active power. The ideal inductor and capacitor have zero active power.
 
 ::: {.callout-important}
-Power signs depend on the chosen current direction. @Eq-complex-power-basics describes **absorbed** power when current enters the positive-voltage terminal. If current is instead defined as leaving that terminal, insert a minus sign or reinterpret positive power as injection. State the convention before comparing results.
+Power signs depend on the chosen current direction. @Eq-complex-power-basics describes **absorbed** power when current enters the positive-voltage terminal. If current is instead defined as leaving that terminal, insert a minus sign or reinterpret positive power as injection. The signs should be consistent throughout all calculations to avoid mistakes.
 :::
 
 ## 6. Frequency changes the circuit
@@ -462,7 +629,7 @@ $$
 f_0=\frac{1}{2\pi\sqrt{LC}}.
 $$ {#eq-series-resonance}
 
-At $f_0$, the ideal series impedance is purely resistive, the current is in phase with the source, and its magnitude reaches $V/R$. Below resonance the circuit is net capacitive; above resonance it is net inductive.
+At $f_0$, the ideal series impedance is purely resistive, the current is in phase with the source, and its magnitude reaches $V/R$. Below resonance frequency the circuit is net capacitive and above resonance frequency it is net inductive.
 
 ```{python}
 #| label: lst-complex-frequency-sweep
@@ -494,7 +661,7 @@ for f in frequencies:
     )
 ```
 
-This sweep is a reminder that a phasor solution belongs to one frequency. Each row represents a different steady-state problem; a single phasor cannot combine those frequencies.
+This section is a reminder that a phasor solution belongs to one frequency. Each row represents a different steady-state problem.
 
 ## 7. Common mistakes
 
@@ -512,20 +679,20 @@ Use a two-argument angle function such as $\operatorname{atan2}(b,a)$ or `np.ang
 
 ### Forgetting the power conjugate
 
-For RMS phasors under the passive sign convention, use $\underline S=\underline V\underline I^*$. The unconjugated product has the wrong phase angle.
+For RMS phasors under the [passive sign convention](https://en.wikipedia.org/wiki/Passive_sign_convention), use $\underline S=\underline V\underline I^*$. The unconjugated product has the wrong phase angle.
 
 ### Applying phasors outside their assumptions
 
-The impedance method used here assumes a linear circuit in sinusoidal steady state at a single frequency. Switching transients, nonlinear devices, saturation, and waveforms containing several frequencies require time-domain analysis or a separate phasor calculation for each frequency when superposition is valid.
+The impedance method used here assumes a linear circuit in sinusoidal steady state at a single frequency. If a linear circuit is excited at several frequencies, each frequency component can be analysed separately using its own phasor and frequency-dependent impedance; the resulting time-domain responses are then added. This procedure, called superposition, does not apply directly to nonlinear devices or saturation. Switching transients require a time-domain treatment.
 
 ## 8. Takeaways
 
-- A phasor stores the RMS magnitude and phase of a sinusoid while suppressing its common time factor.
-- Complex impedance converts differential RLC relations into algebraic equations at a specified frequency.
-- Rectangular form is convenient for sums; polar form exposes magnitude multiplication and phase addition.
-- Voltages and currents obey Kirchhoff's laws as complex quantities, not as magnitudes alone.
-- The conjugate in $\underline S=\underline V\underline I^*$ makes power depend on the voltage-current angle difference.
-- Phasors describe single-frequency sinusoidal steady state, not arbitrary waveforms or transients.
+- A phasor stores a sinusoid's RMS magnitude and phase while suppressing the common rotation factor $e^{\mathrm{j}\omega t}$.
+- Rectangular form of complex numbers simplifies addition; polar form simplifies multiplication and division.
+- Differentiation and integration become multiplication and division by $\mathrm{j}\omega$.
+- Impedance converts RLC differential relations into algebraic equations, and Kirchhoff's laws apply to the complex phasors.
+- Under the [passive sign convention](https://en.wikipedia.org/wiki/Passive_sign_convention), $\underline S=\underline V\underline I^*=P+\mathrm{j}Q$, and component powers add to the total.
+- A phasor solution applies to one frequency. Linear multi-frequency responses can be superposed. Transients and nonlinear circuits require time-domain analysis.
 
 The same ideas scale from one circuit to an entire power network. The [Y-bus matrix tutorial](y-bus-matrix.qmd) assembles complex branch admittances into a network equation, and the [Newton--Raphson power-flow tutorial](newton-raphson-power-flow.qmd) uses complex bus voltages to calculate active and reactive power.
 

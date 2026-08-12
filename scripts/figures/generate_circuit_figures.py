@@ -211,6 +211,48 @@ def draw_rl_switching_circuit(path: Path) -> None:
     )
 
 
+def draw_series_rlc_circuit(path: Path) -> None:
+    diagram = drawing(fontsize=13, margin=0.8)
+
+    source = elm.SourceSin().up()
+    diagram += source
+    resistor = elm.ResistorIEC().right().label(
+        "R = 12 Ω", loc="bottom", ofst=0.3
+    )
+    diagram += resistor
+    inductor = elm.Inductor().right().label(
+        "L = 80 mH", loc="bottom", ofst=0.3
+    )
+    diagram += inductor
+    capacitor = elm.Capacitor().down()
+    diagram += capacitor
+    diagram += elm.Line().left().tox(source.start)
+
+    diagram += (
+        elm.CurrentLabel(length=1.4, ofst=0.55)
+        .at(resistor)
+        .label("I", color=ACCENT)
+        .color(ACCENT)
+    )
+    diagram += elm.Label("Vₛ = 230∠0° V RMS").at((-2.65, 1.75))
+    diagram += elm.Label("f = 50 Hz").at((-2.65, 1.25))
+    diagram += elm.Label("+").at((-0.48, 2.35))
+    diagram += elm.Label("−").at((-0.48, 0.65))
+    diagram += elm.Label("C = 100 µF").at((7.45, capacitor.center.y))
+
+    save_svg(
+        diagram,
+        path,
+        title="Series RLC circuit for the worked AC example",
+        description=(
+            "A 230 volt RMS, 50 hertz sinusoidal voltage source supplies a "
+            "12 ohm resistor, an 80 millihenry inductor, and a 100 microfarad "
+            "capacitor connected in series. The source voltage is positive at "
+            "its upper terminal, and the reference current flows clockwise."
+        ),
+    )
+
+
 def draw_practical_capacitor_model(path: Path) -> None:
     diagram = drawing(fontsize=13, margin=0.8)
 
@@ -315,6 +357,12 @@ FIGURES = (
         "Series RL switching circuit",
         "A switched 24 volt source, resistor, and initially unenergized inductor.",
         draw_rl_switching_circuit,
+    ),
+    FigureSpec(
+        "series-rlc-ac-circuit.svg",
+        "Series RLC circuit for the worked AC example",
+        "A sinusoidal source supplying a resistor, inductor, and capacitor in series.",
+        draw_series_rlc_circuit,
     ),
     FigureSpec(
         "practical-capacitor-model.svg",
