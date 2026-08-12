@@ -27,17 +27,62 @@ After working through this tutorial, you should be able to:
 
 ## 1. Why AC calculations use complex numbers
 
-Suppose a voltage and current have the same angular frequency $\omega$ but different amplitudes and phases:
+To solve a circuit, we combine the voltage--current law of each component with Kirchhoff's current law at nodes and Kirchhoff's voltage law around loops. The component laws describe the individual resistors, inductors, and capacitors; Kirchhoff's laws connect them into a system of equations for the unknown voltages and currents.
+
+In sinusoidal steady state, the voltages in a Kirchhoff voltage-law equation have the same angular frequency $\omega$ but can have different amplitudes and phases. Consider two of them:
 
 $$
-v(t)=\sqrt{2}V\cos(\omega t+\theta_v),
+v_1(t)=\sqrt{2}V_1\cos(\omega t+\theta_1),
 \qquad
-i(t)=\sqrt{2}I\cos(\omega t+\theta_i).
+v_2(t)=\sqrt{2}V_2\cos(\omega t+\theta_2).
 $$ {#eq-ac-waveforms}
 
-Here $V$ and $I$ are root-mean-square (RMS) values. Directly applying Kirchhoff's laws to sinusoids requires repeated trigonometric manipulations. Complex numbers package each amplitude and phase into one quantity, so differentiation, integration, and phase shifts become multiplication or division.
+Here $V_1$ and $V_2$ are root-mean-square (RMS) values. Kirchhoff's voltage law adds the instantaneous waveforms $v_1(t)$ and $v_2(t)$, but their RMS amplitudes cannot simply be added because their phases differ. In the time domain, their sum must first be expanded into common cosine and sine components:
 
-Electrical engineering uses $\mathrm{j}$ for the imaginary unit because $i$ is normally reserved for current:
+$$
+\begin{aligned}
+v_1(t)+v_2(t)
+={}&\sqrt{2}\big[(V_1\cos\theta_1+V_2\cos\theta_2)\cos\omega t\\
+&\quad -(V_1\sin\theta_1+V_2\sin\theta_2)\sin\omega t\big].
+\end{aligned}
+$$
+
+Define the cosine and sine coefficients as
+
+$$
+C=V_1\cos\theta_1+V_2\cos\theta_2,
+\qquad
+D=V_1\sin\theta_1+V_2\sin\theta_2.
+$$
+
+To recombine them, compare $C\cos\omega t-D\sin\omega t$ with the angle-addition identity
+
+$$
+V_\Sigma\cos(\omega t+\theta_\Sigma)
+=V_\Sigma\cos\theta_\Sigma\cos\omega t
+-V_\Sigma\sin\theta_\Sigma\sin\omega t.
+$$
+
+Matching coefficients gives
+
+$$
+V_\Sigma=\sqrt{C^2+D^2},
+\qquad
+\theta_\Sigma=\operatorname{atan2}(D,C),
+$$
+
+and therefore
+
+$$
+v_1(t)+v_2(t)
+=\sqrt{2}V_\Sigma\cos(\omega t+\theta_\Sigma).
+$$
+
+Thus even one addition requires expansion, coefficient addition, a square root, and an inverse trigonometric function. Kirchhoff's current law creates the same problem when it adds currents with different phases. Inductor and capacitor equations also introduce derivatives or integrals, increasing the complexity of AC calculations in the time domain.
+
+To solve this problem, complex numbers are introduced to represent the electrical quantities.
+
+In electrical engineering we use $\mathrm{j}$ for the imaginary unit because $i$ is normally reserved for current:
 
 $$
 \mathrm{j}^2=-1.
@@ -61,15 +106,19 @@ $$
 \theta=\operatorname{atan2}(b,a).
 $$ {#eq-magnitude-angle}
 
-The two rectangular components are $a=|z|\cos\theta$ and $b=|z|\sin\theta$. Euler's identity,
+::: {.callout-tip title="Why use atan2 instead of arctan?"}
+The ratio $b/a$ gives the slope but loses the separate signs of $a$ and $b$, so it cannot determine the quadrant and is undefined when $a=0$. For example, $z=-1+\mathrm{j}$ lies in quadrant II, but $\arctan(1/-1)=-45^\circ$ gives a quadrant-IV angle. Using both coordinates, $\operatorname{atan2}(1,-1)=135^\circ$ returns the correct angle and also handles points on the imaginary axis. Only $z=0$ has no defined angle.
+:::
+
+Substituting Euler's identity into the exponential form connects the polar and rectangular descriptions:
 
 $$
-e^{\mathrm{j}\theta}=\cos\theta+\mathrm{j}\sin\theta,
+z=|z|e^{\mathrm{j}\theta}=|z| (\cos\theta+\mathrm{j}\sin\theta)=a+\mathrm{j}b,
 $$
 
-connects the rectangular and polar descriptions.
+Comparing real and imaginary parts shows that the rectangular components are $a=|z|\cos\theta$ and $b=|z|\sin\theta$. These forms describe the same complex number, but each exposes different information.
 
-Use rectangular form for addition and subtraction. Use polar form for multiplication and division:
+The most convenient form therefore depends on the operation. Rectangular form separates the real and imaginary components, which can be added or subtracted independently. Polar form separates magnitude and angle, so multiplication and division reduce to multiplying or dividing magnitudes and adding or subtracting angles. Consequently, use rectangular form for addition and subtraction, and polar form for multiplication and division:
 
 $$
 \begin{aligned}
