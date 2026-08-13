@@ -18,16 +18,17 @@ draft: false
 
 After working through this tutorial, you should be able to:
 
-- explain why effective value and root mean square describe the same quantity;
-- derive the RMS value of a periodic waveform from resistor heating;
-- show why a sinusoid has RMS magnitude equal to its peak divided by $\sqrt{2}$;
-- separate the DC and AC contributions to total RMS;
-- calculate RMS values from uniformly sampled data; and
-- recognise windowing, bandwidth, crest-factor, and meter-calibration pitfalls.
+- derive the RMS definition from the equivalent-heating effect of a DC voltage on an ideal resistor;
+- derive $V_{\mathrm{rms}}=V_{\mathrm{pk}}/\sqrt{2}$ for a sinusoid;
+- convert between the nominal RMS and peak voltages of sinusoidal household supplies;
+- compare the RMS values of sinusoidal, square, triangular, and rectified waveforms;
+- combine DC and zero-mean AC components using their mean-square contributions;
+- calculate RMS from uniformly sampled data and explain why the observation-window duration matters; and
+- distinguish RMS voltage and current from active power in a general AC circuit.
 
 ## Prerequisites
 
-Only basic algebra, integration, and sinusoidal waveforms are required. The [complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd) uses RMS phasors to solve AC circuits; this tutorial explains why that amplitude convention is useful and how it extends beyond sinusoids.
+Only basic algebra, integration, and sinusoidal waveforms are required. 
 
 ## 1. Effective value means equivalent heating in a resistor
 
@@ -44,39 +45,39 @@ P
 =\frac{1}{T}\int_{t_0}^{t_0+T}\frac{v^2(t)}{R}\,\mathrm dt.
 $$ {#eq-rms-resistor-average-power}
 
-Now ask which constant DC voltage would produce the same average power in that resistor. Calling that nonnegative voltage $V_{\mathrm{rms}}$ gives
+::: {.callout-important title="Definition: Effective Value"}
+The **effective value** of a periodic AC voltage or current is the constant DC value that would produce the **same average power—and therefore the same heating—in an ideal resistor**.
+
+Because we define the effective value with an ideal resistor, the effective value is also called the **root mean square (RMS) value**.
+:::
+
+Equating the resistor power produced by $V_{\mathrm{rms}}$ with @eq-rms-resistor-average-power gives
 
 $$
 \frac{V_{\mathrm{rms}}^2}{R}
 =\frac{1}{T}\int_{t_0}^{t_0+T}\frac{v^2(t)}{R}\,\mathrm dt.
 $$
 
-The resistance cancels, leaving the **root mean square** definition
+Cancelling the resistance gives the RMS voltage:
 
 $$
 V_{\mathrm{rms}}
 =\sqrt{\frac{1}{T}\int_{t_0}^{t_0+T}v^2(t)\,\mathrm dt}.
 $$ {#eq-rms-periodic-voltage}
 
-The three words describe the calculation literally: square the waveform, take its mean, and then take the nonnegative square root. The same definition applies to current and to any other quantity $x(t)$:
+RMS literally means square the waveform, take its mean, and then take the nonnegative square root. The same definition applies to current and to any other electrical quantity $x(t)$ in power system analysis:
 
 $$
 X_{\mathrm{rms}}
 =\sqrt{\frac{1}{T}\int_{t_0}^{t_0+T}x^2(t)\,\mathrm dt}.
 $$ {#eq-rms-general-periodic}
 
-For a resistor, @eq-rms-periodic-voltage gives the compact relations
+For an ideal resistor, combining the average-power expression with the RMS definition gives
 
 $$
 P=\frac{V_{\mathrm{rms}}^2}{R}
 =I_{\mathrm{rms}}^2R.
 $$ {#eq-rms-resistor-power}
-
-Squaring removes the sign, so positive and negative half-cycles both contribute to heating. This is why the ordinary average of a symmetric AC waveform can be zero while its effective value is not.
-
-::: {.callout-important}
-The equal-heating interpretation is exact for the ideal resistor used in the derivation. RMS remains a well-defined waveform measure for other loads, but $V_{\mathrm{rms}}$ alone does not determine their active power. Phase, waveform shape, frequency response, and the current waveform can also matter.
-:::
 
 ## 2. RMS of a sinusoid
 
@@ -86,24 +87,73 @@ $$
 v(t)=V_{\mathrm{pk}}\cos(\omega t+\theta).
 $$ {#eq-rms-peak-sinusoid}
 
-Substitute this waveform into @eq-rms-periodic-voltage and use
 
-$$
-\cos^2\alpha=\frac{1+\cos(2\alpha)}{2}.
-$$
 
-The double-frequency cosine averages to zero over a complete period, so
+Start with the squared RMS definition, substitute $v(t)=V_{\mathrm{pk}}\cos(\omega t+\theta)$, and then apply the half-angle formula:
 
 $$
 \begin{aligned}
 V_{\mathrm{rms}}^2
-&=\frac{V_{\mathrm{pk}}^2}{T}
-\int_{t_0}^{t_0+T}\cos^2(\omega t+\theta)\,\mathrm dt\\
-&=\frac{V_{\mathrm{pk}}^2}{2},
+&=\frac{1}{T}\int_{t_0}^{t_0+T}v^2(t)\,\mathrm dt\\
+&=\frac{V_{\mathrm{pk}}^2}{T}\int_{t_0}^{t_0+T}
+\cos^2(\omega t+\theta)\,\mathrm dt\\
+&=\frac{V_{\mathrm{pk}}^2}{T}\int_{t_0}^{t_0+T}
+\frac{1+\cos\!\left(2(\omega t+\theta)\right)}{2}\,\mathrm dt\\
+&=\frac{V_{\mathrm{pk}}^2}{2T}\int_{t_0}^{t_0+T}
+\left[1+\cos(2\omega t+2\theta)\right]\,\mathrm dt.
 \end{aligned}
 $$
 
-and therefore
+Using the linearity of integration to split the two terms gives
+
+$$
+V_{\mathrm{rms}}^2
+=\frac{V_{\mathrm{pk}}^2}{2T}
+\left[
+\int_{t_0}^{t_0+T}1\,\mathrm dt
++\int_{t_0}^{t_0+T}\cos(2\omega t+2\theta)\,\mathrm dt
+\right].
+$$ {#eq-rms-sinusoid-split-integrals}
+
+::: {.callout-note title="Half-Angle Formula"}
+$$
+\cos^2\alpha=\frac{1+\cos(2\alpha)}{2}.
+$$
+:::
+
+Of the two integral terms in @eq-rms-sinusoid-split-integrals, evaluate the second using the Fundamental Theorem of Calculus:
+
+$$
+\begin{aligned}
+\int_{t_0}^{t_0+T}\cos(2\omega t+2\theta)\,\mathrm dt
+&=\left[\frac{\sin(2\omega t+2\theta)}{2\omega}\right]_{t_0}^{t_0+T}\\
+&=\frac{\sin(2\omega t_0+2\theta+4\pi)
+-\sin(2\omega t_0+2\theta)}{2\omega}\\
+&=\frac{\sin(2\omega t_0+2\theta)
+-\sin(2\omega t_0+2\theta)}{2\omega}\\
+&=0.
+\end{aligned}
+$$
+
+::: {.callout-note title="Fundamental Theorem of Calculus"}
+To evaluate a definite integral, use the **Fundamental Theorem of Calculus**, also called the **Newton--Leibniz formula**. If $F'(t)=f(t)$, then
+
+$$
+\int_a^b f(t)\,\mathrm dt
+=F(b)-F(a)
+=\left[F(t)\right]_a^b.
+$$
+:::
+
+The first integral term in @eq-rms-sinusoid-split-integrals is simply $T$. Combining this result with the zero value of the second integral gives
+
+$$
+V_{\mathrm{rms}}^2
+=\frac{V_{\mathrm{pk}}^2}{2T}T
+=\frac{V_{\mathrm{pk}}^2}{2}.
+$$
+
+Taking the nonnegative square root gives
 
 $$
 V_{\mathrm{rms}}=\frac{V_{\mathrm{pk}}}{\sqrt{2}}.
@@ -115,22 +165,29 @@ $$
 V_{\mathrm{pk}}=\sqrt{2}(230)\approx325.27\ \mathrm{V}.
 $$
 
-<figure>
-<svg viewBox="0 0 680 300" role="img" aria-labelledby="rms-wave-title rms-wave-desc" style="display:block;max-width:680px;width:100%;height:auto;margin:auto">
-  <title id="rms-wave-title">Sinusoidal waveform with RMS reference levels</title>
-  <desc id="rms-wave-desc">A sinusoid alternates above and below zero. Dashed horizontal lines mark positive and negative RMS reference magnitudes, which are closer to zero than the waveform peaks.</desc>
-  <line x1="55" y1="150" x2="630" y2="150" stroke="currentColor" stroke-width="2"/>
-  <line x1="55" y1="82" x2="630" y2="82" stroke="currentColor" stroke-width="1.5" stroke-dasharray="8 7"/>
-  <line x1="55" y1="218" x2="630" y2="218" stroke="currentColor" stroke-width="1.5" stroke-dasharray="8 7"/>
-  <path d="M55,150 C103,52 151,52 199,150 C247,248 295,248 343,150 C391,52 439,52 487,150 C535,248 583,248 631,150" fill="none" stroke="currentColor" stroke-width="3"/>
-  <text x="12" y="156" fill="currentColor" font-size="20">0</text>
-  <text x="458" y="71" fill="currentColor" font-size="20">+V<tspan baseline-shift="sub" font-size="14">rms</tspan></text>
-  <text x="458" y="243" fill="currentColor" font-size="20">−V<tspan baseline-shift="sub" font-size="14">rms</tspan></text>
-  <text x="290" y="30" fill="currentColor" font-size="20">positive peak</text>
-  <text x="292" y="286" fill="currentColor" font-size="20">negative peak</text>
-</svg>
-<figcaption>A sinusoid's RMS magnitude is a constant measure of its size, not another instantaneous waveform.</figcaption>
-</figure>
+::: {.callout-tip title="Nominal Household RMS Voltages"}
+The voltage stated for an AC supply is normally its **nominal RMS voltage**, not its peak voltage. For an ideal sinusoidal supply, the corresponding peak is $V_{\mathrm{pk}}=\sqrt{2}V_{\mathrm{rms}}$.
+
+| Country | Common household supply | Frequency | Corresponding sinusoidal peak |
+|---|---:|---:|---:|
+| Netherlands | $230\ \mathrm{V}$ line-to-neutral | $50\ \mathrm{Hz}$ | $230\sqrt{2}\approx325.3\ \mathrm{V}$ |
+| Germany | $230\ \mathrm{V}$ line-to-neutral | $50\ \mathrm{Hz}$ | $230\sqrt{2}\approx325.3\ \mathrm{V}$ |
+| China (mainland) | $220\ \mathrm{V}$ line-to-neutral | $50\ \mathrm{Hz}$ | $220\sqrt{2}\approx311.1\ \mathrm{V}$ |
+| United States | $120\ \mathrm{V}$ line-to-neutral | $60\ \mathrm{Hz}$ | $120\sqrt{2}\approx169.7\ \mathrm{V}$ |
+| United States | $240\ \mathrm{V}$ line-to-line | $60\ \mathrm{Hz}$ | $240\sqrt{2}\approx339.4\ \mathrm{V}$ |
+
+The two U.S. entries describe the common $120/240\ \mathrm{V}$ split-phase residential service: ordinary receptacles are generally connected line-to-neutral, whereas many high-power appliances are connected line-to-line. These are nominal values; the measured voltage at an outlet varies with supply tolerances and operating conditions.
+
+Sources: [EU mains definition](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02019R2023-20210501), China national standard [GB/T 156-2017, *Standard Voltages*](https://std.samr.gov.cn/gb/search/gbDetailed?id=71F772D82246D3A7E05397BE0A0AB82A), and [U.S. National Institute of Standards and Technology](https://nvlpubs.nist.gov/nistpubs/TechnicalNotes/NIST.TN.2249.pdf).
+:::
+
+The voltage scales are shown to scale in @fig-rms-voltage-scale.
+
+::: {#fig-rms-voltage-scale}
+![](figures/generated/rms-voltage-scale.svg){fig-alt="One period of a 230 volt RMS sinusoid. Dashed lines mark plus and minus 230 volts, while the waveform peaks at plus and minus 230 times the square root of two, approximately 325.3 volts." fig-align="center" width="100%"}
+
+A $230\ \mathrm{V}$ RMS sinusoid reaches $\pm230\sqrt{2}\ \mathrm{V}$, or approximately $\pm325.3\ \mathrm{V}$. The axis is drawn to scale; the dashed lines mark the RMS magnitude rather than instantaneous waveform values.
+:::
 
 ::: {.callout-warning}
 Dividing a peak by $\sqrt{2}$ is valid for a sine or cosine wave. It is not the general definition of RMS. Different waveform shapes have different relationships between peak and RMS values.
@@ -179,19 +236,12 @@ Apply @eq-rms-general-periodic to each waveform rather than assuming the sinusoi
 | Symmetric square wave | levels $\pm X_{\mathrm{pk}}$ | $X_{\mathrm{pk}}$ |
 | Symmetric triangular wave | peaks $\pm X_{\mathrm{pk}}$ | $X_{\mathrm{pk}}/\sqrt{3}$ |
 | Full-wave rectified sinusoid | peak $X_{\mathrm{pk}}$ | $X_{\mathrm{pk}}/\sqrt{2}$ |
-| Unipolar rectangular pulse | level $X_{\mathrm{pk}}$ for fraction $D$ of each period | $X_{\mathrm{pk}}\sqrt{D}$ |
 
 : RMS values of several ideal periodic waveforms {#tbl-rms-common-waveforms}
 
-A full-wave rectified sine has the same RMS value as the original sine because squaring either waveform gives the same result. Its ordinary average is different, which illustrates why average and RMS answer different questions.
+A full-wave rectified sine has the same RMS value as the original sine because squaring either waveform gives the same result. Its ordinary average is different, which illustrates how average and RMS differ from each other.
 
-For the unipolar pulse, the squared waveform equals $X_{\mathrm{pk}}^2$ for time $DT$ and zero for the rest of the period. Thus
 
-$$
-X_{\mathrm{rms}}^2
-=\frac{X_{\mathrm{pk}}^2(DT)}{T}
-=X_{\mathrm{pk}}^2D.
-$$
 
 ## 5. Calculate RMS from uniformly sampled data
 
@@ -220,20 +270,17 @@ def rms(samples: np.ndarray) -> float:
 sample_count = 200_000
 phase = np.linspace(0.0, 2.0 * np.pi, sample_count, endpoint=False)
 peak = np.sqrt(2.0) * 230.0  # V
-duty_cycle = 0.25
 
 sine = peak * np.sin(phase)
 square = np.where(phase < np.pi, peak, -peak)
 triangle = (2.0 * peak / np.pi) * np.arcsin(np.sin(phase))
 full_wave_rectified = np.abs(sine)
-pulse = np.where(phase < 2.0 * np.pi * duty_cycle, peak, 0.0)
 
 waveforms = [
     ("sinusoid", sine, peak / np.sqrt(2.0)),
     ("symmetric square", square, peak),
     ("symmetric triangle", triangle, peak / np.sqrt(3.0)),
     ("full-wave sine", full_wave_rectified, peak / np.sqrt(2.0)),
-    ("25% unipolar pulse", pulse, peak * np.sqrt(duty_cycle)),
 ]
 
 print("waveform                 sampled (V)   analytic (V)   error (V)")
@@ -253,10 +300,6 @@ print(f"component prediction = {component_prediction:.5f} V")
 ```
 
 The square wave reaches the same positive and negative peaks as the sine but stays at those magnitudes throughout the cycle, so its RMS value is larger. Rectification changes the sine's average but not its RMS. The last two lines numerically verify the DC-plus-AC relation in @eq-rms-dc-ac-components.
-
-::: {.callout-tip}
-Change `duty_cycle` to $0.10$ and predict the pulse RMS before rerunning. Halving the duty cycle does not halve RMS; it multiplies RMS by the square root of the duty-cycle ratio.
-:::
 
 ## 6. The observation window matters
 
@@ -280,40 +323,32 @@ def sampled_sine_rms(duration: float) -> tuple[int, float]:
     return time.size, rms(values)
 
 
-for duration in [0.200, 0.193]:
+durations = [
+    0.200,  # 10 complete cycles
+    0.193,  # 9.65 cycles
+    0.025,  # 1.25 cycles
+    0.015,  # 0.75 cycles
+    0.010,  # 0.50 cycle
+    0.005,  # 0.25 cycle
+]
+
+for duration in durations:
     count, value = sampled_sine_rms(duration)
     cycles = duration * frequency
     print(
         f"duration={duration:.3f} s, cycles={cycles:.2f}, "
-        f"samples={count}, RMS={value:.5f} V"
+        f"samples={count:3d}, RMS={value:.5f} V, "
+        f"error={value - 230.0:+.5f} V"
     )
 ```
 
-The $0.200\ \mathrm{s}$ record contains exactly ten $50\ \mathrm{Hz}$ cycles and returns $230\ \mathrm{V}$ apart from rounding. The $0.193\ \mathrm{s}$ record contains $9.65$ cycles, so its result depends slightly on where the record begins and ends.
+The $0.200\ \mathrm{s}$ record contains exactly ten $50\ \mathrm{Hz}$ cycles and returns $230\ \mathrm{V}$ apart from rounding. The $0.010\ \mathrm{s}$ record also returns $230\ \mathrm{V}$ because it spans exactly half a cycle, which is one complete period of the squared sinusoid. Other partial-cycle windows depend on where the record begins and ends. 
 
-For nonuniform sample times, the unweighted mean in @eq-rms-discrete-uniform is generally inappropriate. Approximate the time integral with interval weights instead. Sampling must also be fast enough, and the measurement chain must have enough bandwidth, to capture waveform components that contribute materially to the squared value. Otherwise aliasing or filtering changes the reported RMS.
+For nonuniform sample times, the unweighted mean in @eq-rms-discrete-uniform is generally inappropriate. Approximate the time integral with interval weights instead.
 
-## 7. Average-responding and true-RMS meters
 
-An average-responding meter may rectify a waveform, measure its average magnitude, and multiply by a calibration factor chosen for a sine wave. For a sinusoid,
 
-$$
-\frac{V_{\mathrm{rms}}}
-{\dfrac{1}{T}\int_0^T |v(t)|\,\mathrm dt}
-=\frac{\pi}{2\sqrt{2}}
-\approx1.1107.
-$$ {#eq-rms-average-responding-factor}
-
-This produces the correct displayed RMS for an undistorted sine. It need not be correct for a square wave, pulse train, chopped waveform, or converter current. A true-RMS instrument estimates the mean square more directly, but it still has limits:
-
-- **bandwidth:** high-frequency components outside the measurement band are attenuated;
-- **crest factor:** a high ratio of peak to RMS can overload the input even when RMS is within range;
-- **sampling and observation time:** fast or slowly varying components may be represented poorly; and
-- **AC coupling:** removing the DC component changes total RMS into AC-only RMS.
-
-Instrument specifications therefore belong with an RMS reading. The phrase “true RMS” does not imply unlimited frequency range, amplitude, or crest factor.
-
-## 8. RMS is not active power
+## 7. RMS is not active power
 
 For a resistor, the effective-value definition leads directly to @eq-rms-resistor-power. For a general one-port, active power must be calculated from voltage and current together:
 
@@ -324,7 +359,7 @@ $$ {#eq-rms-general-active-power}
 
 Two currents can have the same RMS value but different phase or harmonic content and therefore transfer different active power against the same voltage. The [power-factor tutorial](power-factor-in-ac-circuits.qmd) connects $P$ with $V_{\mathrm{rms}}I_{\mathrm{rms}}$ and explains this distinction for sinusoidal and distorted waveforms.
 
-## 9. Practical pitfalls
+## 8. Practical pitfalls
 
 ### Confusing RMS with the ordinary average
 
@@ -332,30 +367,28 @@ A symmetric sine has zero ordinary average but a positive RMS value. Squaring be
 
 ### Applying the sine peak factor to every waveform
 
-$X_{\mathrm{pk}}/\sqrt{2}$ is a sinusoidal result. Square waves, triangular waves, pulses, and arbitrary distorted waveforms require the general definition.
+$X_{\mathrm{pk}}/\sqrt{2}$ is a sinusoidal result. Square waves, triangular waves, rectified waveforms, and arbitrary distorted waveforms require the general definition.
 
 ### Adding DC and AC RMS values directly
 
 Use the root-sum-square relation in @eq-rms-dc-ac-components; do not calculate $|\overline{x}|+X_{\mathrm{ac,rms}}$.
 
-### Duplicating a sampled period's endpoint
-
-If the first and last samples represent the same point in a period, including both gives that phase point twice in a simple arithmetic mean. Use a half-open interval, as in the Python example, or appropriate integration weights.
 
 ### Ignoring the measurement chain
 
 An RMS algorithm cannot reconstruct components already removed, clipped, or aliased by sensors, filters, converters, or sampling.
 
-## 10. Takeaways
+## 9. Takeaways
 
-- RMS is the square root of a waveform's mean square and is also called its effective value.
-- It equals the DC value that would cause the same average heating in an ideal resistor.
-- A sinusoid has $X_{\mathrm{rms}}=X_{\mathrm{pk}}/\sqrt{2}$, but that factor is not universal.
-- DC and zero-mean AC components contribute in root-sum-square form.
-- A sampled RMS value describes its observation window; representative timing, sufficient bandwidth, and appropriate weighting matter.
-- RMS voltage and current do not by themselves determine active power in a general AC circuit.
+- RMS is the nonnegative square root of a waveform's mean square; for an ideal resistor, it equals the DC value that produces the same average heating.
+- A sinusoid satisfies $X_{\mathrm{rms}}=X_{\mathrm{pk}}/\sqrt{2}$, so a $230\ \mathrm{V}$ RMS supply has a peak magnitude of approximately $325.3\ \mathrm{V}$.
+- The sinusoidal peak-to-RMS factor is not universal: square, triangular, rectified, and arbitrary waveforms must be evaluated from the general RMS definition.
+- DC and zero-mean AC components add in mean square, giving $X_{\mathrm{rms}}^2=\overline{x}^{2}+X_{\mathrm{ac,rms}}^2$.
+- For uniformly sampled data, RMS is the square root of the arithmetic mean of the squared samples. Nonuniform samples require time-based weighting.
+- A sampled RMS value describes its observation window. Complete periods—and complete periods of the squared waveform—give the steady-state sinusoidal value, whereas other partial-cycle windows can be strongly phase dependent.
+- RMS voltage and RMS current describe waveform magnitudes, but active power depends on the instantaneous product $v(t)i(t)$.
 
-The [complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd) uses RMS values as phasor magnitudes, while the [power-factor tutorial](power-factor-in-ac-circuits.qmd) shows how RMS voltage, RMS current, phase, and distortion combine in power calculations.
+
 
 ## References {.unnumbered}
 
