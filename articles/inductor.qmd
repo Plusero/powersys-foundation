@@ -26,7 +26,7 @@ After this tutorial, you will be able to:
 
 ## Prerequisites
 
-You should be comfortable with voltage, current, power, and basic derivatives. The tutorials on [complex numbers](complex-numbers-in-ac-circuits.qmd) and [RMS values](effective-rms-value-in-ac-circuits.qmd) are useful for the sinusoidal section.
+You should be comfortable with voltage, current, power, and basic calculus. 
 
 ## 1. The ideal inductor
 
@@ -34,11 +34,15 @@ An **inductor** is a two-terminal component that stores energy in a magnetic fie
 
 ![IEC general symbol for a coil or inductor (symbol S00583) [@iec60617].](figures/generated/inductor-iec-symbol.svg){#fig-inductor-iec-symbol fig-align="center" width="38%"}
 
-Using the passive sign convention—current enters the terminal marked positive—the ideal linear inductor satisfies
+With the passive sign convention, the ideal linear inductor satisfies
 
 $$
 v(t)=L\frac{di(t)}{dt}.
 $$ {#eq-inductor-law}
+
+::: {.callout-note title="Passive sign convention"}
+The terminal where the current enters is marked positive.
+:::
 
 One henry is one volt-second per ampere:
 
@@ -46,12 +50,13 @@ $$
 1\ \mathrm{H}=1\ \frac{\mathrm{V\,s}}{\mathrm{A}}.
 $$
 
-Equation @eq-inductor-law says that voltage is associated with a **change** in current, not simply with current itself:
+Examining @eq-inductor-law we find interesting things:
 
 - constant current gives $v=0$ for an ideal inductor;
 - a faster current change requires a larger voltage; and
 - for the same voltage, a larger inductance makes current change more slowly.
 
+Wait, but how is @eq-inductor-law derived? 
 For a linear magnetic system, the flux linkage $\lambda$ is
 
 $$
@@ -60,11 +65,6 @@ $$
 
 and Faraday's law gives $v=d\lambda/dt$. Together these relations lead to Equation @eq-inductor-law [@grainger1994].
 
-::: {.callout-important}
-## State the reference directions
-
-If current is defined as leaving the positive-voltage terminal, the sign in Equation @eq-inductor-law changes. The physics does not; only the chosen references do.
-:::
 
 ## 2. Why current is continuous
 
@@ -80,12 +80,11 @@ $$
 i(0^+)=i(0^-).
 $$
 
-An instantaneous finite change in current would require an impulse of voltage. This is why interrupting current in a practical coil can create a large voltage: the magnetic field tries to maintain the current, while the circuit forces it to change rapidly.
 
 ::: {.callout-warning}
 ## “An inductor is a short circuit at DC” needs a condition
 
-In a settled DC steady state, $di/dt=0$, so an ideal inductor has zero voltage and behaves like a short circuit. During switching, or when it carries stored current, replacing it with a wire discards the transient that often matters most.
+In a settled DC steady state, $di/dt=0$, so an ideal inductor has zero voltage and behaves like a short circuit. However, during switching, or when it carries stored current, replacing it with a short circuit discards the transient.
 :::
 
 ## 3. Power and stored magnetic energy
@@ -96,13 +95,25 @@ $$
 p(t)=v(t)i(t)=L i(t)\frac{di(t)}{dt}.
 $$
 
-Integrating from zero current to current $i$ gives the stored magnetic energy
+For an ideal linear inductor, zero current means no magnetic field and therefore no stored magnetic energy. Choose a reference time $t_0$ at which $i(t_0)=0$; then $w_L(t_0)=0$. The energy absorbed between $t_0$ and $t$ is the time integral of power. Substituting the expression for $p(t)$ and changing the integration variable from time to current gives
 
 $$
-w_L(t)=\frac{1}{2}L i^2(t).
+\begin{aligned}
+w_L(t)
+&=\int_{t_0}^{t}p(\tau)\,d\tau \\
+&=\int_{t_0}^{t}L i(\tau)\frac{di(\tau)}{d\tau}\,d\tau \\
+&=\int_{0}^{i(t)}L\xi\,d\xi \\
+&=\frac{1}{2}L i^2(t).
+\end{aligned}
 $$ {#eq-inductor-energy}
 
-The energy is nonnegative regardless of current direction. When $p>0$, energy enters the magnetic field; when $p<0$, the ideal inductor returns energy to the circuit. Unlike an ideal [resistor](resistor.qmd), an ideal inductor does not convert this energy into heat.
+From the final expression we see that the stored magnetic energy of an ideal linear inductor depends on the instantaneous current $i(t)$, not on its history.
+
+::: {.callout-important title="Stored, not dissipated"}
+Unlike an ideal [resistor](resistor.qmd), an ideal inductor does not convert this energy into heat.
+:::
+
+
 
 ## 4. Series and parallel combinations
 
@@ -161,9 +172,9 @@ L_{\mathrm{eq}}<L_j,
 \qquad \forall j\in\{1,\ldots,n\}.
 $$
 
-Thus, $L_{\mathrm{eq}}<\min(L_1,\ldots,L_n)$: an uncoupled parallel combination has a smaller inductance than any individual inductor. Initial branch currents affect the total initial current but not the reciprocal relationship between subsequent changes in voltage and current.
+Thus, $L_{\mathrm{eq}}<\min(L_1,\ldots,L_n)$: an uncoupled parallel combination has a smaller inductance than any individual inductor. 
 
-If the flux from one coil links another, mutual inductance terms must be included. In that case, simply adding or reciprocally combining the self-inductances can be wrong.
+If the flux from one coil links another, [mutual inductance](https://openstax.org/books/university-physics-volume-2/pages/14-1-mutual-inductance) terms must be included. In that case, simply adding or reciprocally combining the self-inductances can be wrong.
 
 ## 5. Sinusoidal steady state
 
@@ -203,7 +214,7 @@ $$
 \underline S=\underline V\underline I^*=j\omega L I^2.
 $$
 
-Its average active power is zero, while its reactive power is positive under the usual load convention:
+Its average active power is zero, while its reactive power is positive:
 
 $$
 P=0,
@@ -211,7 +222,7 @@ P=0,
 Q=\omega L I^2.
 $$
 
-The inductor consumes zero active power because it stores energy during part of every cycle and returns it during the rest of the cycle. Because inductive reactance produces lagging current, inductors absorb reactive power from the network. See [power factor](power-factor-in-ac-circuits.qmd) for how this exchange affects an AC system.
+The inductor consumes zero active power because it stores energy during part of every cycle and returns it during the rest of the cycle. Because inductive reactance produces lagging current, inductors absorb reactive power from the network. See [power factor](power-factor-in-ac-circuits.qmd) for how an inductor affects an AC system.
 
 ::: {.callout-note}
 ## Frequency limits
@@ -225,25 +236,54 @@ Consider a $24$ V ideal source applied at $t=0$ to a series combination of $R=6\
 
 ![Series RL switching circuit. The switch closes at $t=0$, connecting the source to the initially unenergized inductor.](figures/generated/rl-switching-circuit.svg){#fig-rl-switching-circuit fig-align="center" width="85%"}
 
-The time constant and final current are
+For $t\geq0$, Kirchhoff's voltage law around the loop gives
 
 $$
-\tau=\frac{L}{R}=0.02\ \mathrm{s},
-\qquad
+V_s=Ri(t)+L\frac{di(t)}{dt}.
+$$ {#eq-rl-kvl}
+
+After the transient has settled, $di/dt=0$. The final current is therefore
+
+$$
 I_\infty=\frac{V_s}{R}=4\ \mathrm{A}.
-$$
+$$ {#eq-rl-final-current}
 
-For $t\geq0$,
+Using $V_s=RI_\infty$ in @eq-rl-kvl and defining the time constant $tau=L/R$ gives
+
+$$
+\frac{di(t)}{dt}
+=\frac{R}{L}\left(I_\infty-i(t)\right)
+=\frac{1}{\tau}\left(I_\infty-i(t)\right).
+$$ {#eq-rl-differential-equation}
+
+Inductor current is continuous, so the initial condition $i(0^-)=0$ also gives $i(0^+)=0$. Separating the current and time variables and integrating from the initial state to the state at time $t$ yields
+
+$$
+\int_{0}^{i(t)}\frac{d\xi}{I_\infty-\xi}
+=\int_{0}^{t}\frac{d\eta}{\tau}.
+$$ {#eq-rl-separated-integral}
+
+Evaluating the integrals gives
+
+$$
+\ln\left(\frac{I_\infty}{I_\infty-i(t)}\right)
+=\frac{t}{\tau}.
+$$ {#eq-rl-integrated-response}
+
+Exponentiating and solving for $i(t)$ gives
 
 $$
 i(t)=I_\infty\left(1-e^{-t/\tau}\right),
 $$ {#eq-rl-current}
 
+Ohm's law gives the resistor voltage, and Kirchhoff's voltage law then gives the inductor voltage:
+
 $$
-v_L(t)=V_s e^{-t/\tau},
-\qquad
-v_R(t)=V_s\left(1-e^{-t/\tau}\right).
-$$
+\begin{aligned}
+v_R(t)&=Ri(t)=V_s\left(1-e^{-t/\tau}\right),\\
+v_L(t)&=V_s-v_R(t)=V_s e^{-t/\tau}.
+\end{aligned}
+$$ {#eq-rl-voltages}
 
 ### Explore the transient interactively
 
@@ -498,27 +538,27 @@ At $t=0^+$, the current is still zero, so the resistor voltage is zero and the e
 
 ## 7. Where the ideal model stops working
 
-A common first-order equivalent circuit places winding resistance in series with the ideal inductance and parasitic capacitance across the two terminals, as shown in @fig-practical-inductor-model.
+A common first-order equivalent circuit places winding resistance $R_\mathrm{w}$ in series with the ideal inductance and parasitic capacitance $C_\mathrm{p}$ across the two terminals, as shown in @fig-practical-inductor-model.
 
-![First-order practical inductor model. Winding resistance is in series with the ideal inductance, and parasitic capacitance shunts the series branch.](figures/generated/practical-inductor-model.svg){#fig-practical-inductor-model fig-align="center" width="85%"}
+![First-order practical inductor model. Winding resistance $R_\mathrm{w}$ is in series with the ideal inductance, and parasitic capacitance $C_\mathrm{p}$ shunts the series branch.](figures/generated/practical-inductor-model.svg){#fig-practical-inductor-model fig-align="center" width="85%"}
 
 The elements in this practical model and further nonideal effects represent:
 
-- **winding resistance**, which dissipates $I^2R$ heat;
-- **core loss**, caused by hysteresis and eddy currents;
-- **saturation**, which makes incremental inductance fall at high flux or current;
-- **parasitic capacitance**, which creates a self-resonant frequency;
+- **[winding resistance](https://www.coilcraft.com/en-us/resources/application-notes/getting-started-an-introduction-to-inductor-specif/)** $R_\mathrm{w}$, which dissipates $I^2R_\mathrm{w}$ heat;
+- **[core loss](https://www.we-online.com/en/support/knowledge/application-notes?d=anp029-accurate-inductor-loss-determination-using-redexpert)**, caused by [hysteresis](https://openstax.org/books/university-physics-volume-2/pages/12-7-magnetism-in-matter) and [eddy currents](https://openstax.org/books/university-physics-volume-2/pages/13-5-eddy-currents);
+- **[saturation](https://www.coilcraft.com/en-us/resources/application-notes/basics-of-inductor-selection-%28from-electronic-desi/)**, which makes incremental inductance fall at high flux or current;
+- **[parasitic capacitance](https://www.coilcraft.com/en-us/resources/application-notes/common-mode-filter-inductor-analysis/)** $C_\mathrm{p}$, which creates a [self-resonant frequency](https://www.coilcraft.com/en-us/resources/application-notes/measuring-self-resonant-frequency/);
 - inductance and loss that vary with frequency, current, and temperature; and
-- limits on current, insulation voltage, and temperature.
+- [limits on current and temperature](https://www.coilcraft.com/en-us/resources/application-notes/current-and-temperature-ratings/), together with insulation-voltage limits.
 
 Above its self-resonant frequency, a real inductor can behave more capacitively than inductively. A practical coil also has a nonzero DC voltage drop whenever its winding carries current. Component construction, core material, and ratings therefore matter alongside the nominal inductance.
 
 ## 8. Takeaways
 
-- An ideal linear inductor obeys $v=L\,di/dt$ under the passive sign convention.
+- An ideal linear inductor obeys $v(t)=L\frac{di(t)}{dt}$ under the passive sign convention.
 - Finite voltage cannot change ideal-inductor current instantaneously.
-- It stores magnetic energy $w_L=Li^2/2$ and can return that energy to the circuit.
-- In sinusoidal steady state, $Z_L=j\omega L$; current lags voltage by $90^\circ$.
+- It stores magnetic energy $w_L(t)==\frac{1}{2}L i^2(t)$ and can return that energy to the circuit.
+- In sinusoidal steady state, $Z_L=j\omega L$. Current lags voltage by $90^\circ$.
 - In settled DC steady state it behaves as a short circuit, but not during a transient.
 - Real inductors also have resistance, loss, saturation, capacitance, and operating limits.
 

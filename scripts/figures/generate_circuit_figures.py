@@ -32,6 +32,10 @@ INK = "#172b36"
 ACCENT = "#0b7285"
 BACKGROUND = "#ffffff"
 SVG_NAMESPACE = "http://www.w3.org/2000/svg"
+SVG_SUBSCRIPT_LABELS = {
+    "C_p": ("C", "p"),
+    "R_w": ("R", "w"),
+}
 
 
 @dataclass(frozen=True)
@@ -76,6 +80,30 @@ def save_svg(
     description_id = f"{identifier}-description"
     root.set("role", "img")
     root.set("aria-labelledby", f"{title_id} {description_id}")
+
+    for text_element in root.iter(f"{{{SVG_NAMESPACE}}}text"):
+        for text_span in text_element.findall(f"{{{SVG_NAMESPACE}}}tspan"):
+            if text_span.text not in SVG_SUBSCRIPT_LABELS:
+                continue
+            base, subscript = SVG_SUBSCRIPT_LABELS[text_span.text]
+            label_center = float(text_span.get("x", "0"))
+            text_element.set("font-family", "DejaVu Serif")
+            text_element.set("text-anchor", "start")
+            text_span.set("x", f"{label_center - 7:g}")
+            text_span.text = base
+            text_span.set("font-style", "italic")
+            subscript_span = ET.SubElement(
+                text_element,
+                f"{{{SVG_NAMESPACE}}}tspan",
+                {
+                    "baseline-shift": "sub",
+                    "dx": "3",
+                    "dy": "1",
+                    "font-size": "9",
+                    "font-style": "normal",
+                },
+            )
+            subscript_span.text = subscript
 
     title_element = ET.Element(f"{{{SVG_NAMESPACE}}}title", {"id": title_id})
     title_element.text = title
