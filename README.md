@@ -22,6 +22,41 @@ Visit the [Power Systems Foundation website](https://plusero.github.io/powersys-
 
 Quarto will render the site and refresh the browser when a source file changes.
 
+## How to run the Python scripts in the tutorials
+
+The tutorial calculations are executable Python cells embedded directly in the `.qmd` files, rather than separate `.py` scripts. Each tutorial declares the Jupyter Python engine in its front matter:
+
+```yaml
+jupyter: python3
+```
+
+When Quarto previews or renders a tutorial, it starts that Python kernel and executes the cells from top to bottom in the same session. Later cells can therefore use variables and functions created by earlier cells.
+
+First install the [Quarto CLI](https://quarto.org/docs/get-started/) and [`uv`](https://docs.astral.sh/uv/). Then clone the repository, enter its directory, install the locked Python environment, and preview the tutorial:
+
+```sh
+git clone https://github.com/Plusero/powersys-foundation.git
+cd powersys-foundation
+uv sync --frozen
+uv run quarto preview articles/newton-raphson-power-flow.qmd
+```
+
+Quarto executes the Python cells, displays their results in the rendered page, and refreshes the page after the `.qmd` file is edited and saved. To recalculate an example, change its input values in the `.qmd` file and save it.
+
+For a one-time execution without starting the live preview server, render the tutorial instead:
+
+```sh
+uv run quarto render articles/newton-raphson-power-flow.qmd
+```
+
+The rendered page is written to `_site/articles/newton-raphson-power-flow.html`. To execute and render every tutorial, omit the file path:
+
+```sh
+uv run quarto render
+```
+
+The published website is static: it displays outputs calculated during the site build but does not execute Python in the reader's browser. Recalculation therefore requires a local preview or render.
+
 ## Hands-on Python guarantee
 
 Every file in `articles/` must use the `python3` Jupyter engine and contain at least one executable Quarto Python cell. Check the whole collection locally with:
