@@ -12,7 +12,7 @@ execute:
   echo: true
   warning: false
 draft: false
-proofread: false
+proofread: true
 ---
 
 ## What you will learn
@@ -57,7 +57,7 @@ $$ {#eq-resistor-conductance}
 measured in siemens ($\mathrm S$). A large resistance means a small conductance and, for a fixed applied voltage, a small current.
 
 ::: {.callout-note}
-An ideal resistor is a model, not a statement that every physical component has a perfectly constant $R$. Real resistance can depend on temperature, frequency, voltage, mechanical strain, and manufacturing tolerance.
+An ideal resistor is a model. It does not exist on earth. Real resistance can depend on temperature, frequency, voltage, mechanical strain, and manufacturing tolerance.
 :::
 
 ## 2. What determines resistance physically?
@@ -68,9 +68,11 @@ $$
 R=\rho\frac{\ell}{A},
 $$ {#eq-resistor-geometry}
 
-where $\rho$ is material **resistivity** in $\Omega\,\mathrm m$, $\ell$ is conductor length, and $A$ is cross-sectional area. A longer path has more resistance; a larger cross-section has less.
+where $\rho$ is material **resistivity** in $\Omega\,\mathrm m$, $\ell$ is conductor length, and $A$ is cross-sectional area. 
 
-Resistance and resistivity are not interchangeable. Resistance describes a particular component geometry, while resistivity is a material property under stated conditions. Temperature matters: over a limited range, a metal resistor is often approximated by
+Resistance and resistivity are not interchangeable. Resistance is a characteristic of a particular component, while resistivity is a material property under stated conditions. 
+
+Temperature affects the resistance. Over a limited range, a metal resistor is often approximated by
 
 $$
 R(T)=R(T_0)\left[1+\alpha(T-T_0)\right],
@@ -80,7 +82,7 @@ where $\alpha$ is a temperature coefficient near reference temperature $T_0$. Th
 
 ## 3. A resistor dissipates energy
 
-Instantaneous absorbed power is
+Instantaneous power on a resistor is
 
 $$
 p(t)=v(t)i(t).
@@ -94,7 +96,7 @@ p(t)=R i^2(t)=\frac{v^2(t)}{R}=v(t)i(t)
 }.
 $$ {#eq-resistor-power}
 
-For $R>0$, $p(t)\geq0$ regardless of current direction. A passive ideal resistor never returns previously stored energy because it has no energy-storage state. The electrical energy converted to heat from $t_1$ to $t_2$ is
+For $R>0$, $p(t)\geq0$ regardless of current direction. A passive ideal resistor never returns previously stored energy because does not store energy. The electrical energy converted to heat from $t_1$ to $t_2$ is
 
 $$
 E=\int_{t_1}^{t_2}p(t)\,\mathrm dt.
@@ -113,7 +115,7 @@ P=\frac{V_{\mathrm{rms}}^2}{R}
 =I_{\mathrm{rms}}^2R.
 $$ {#eq-resistor-rms-power}
 
-This heating equivalence is the physical foundation of RMS value. Notice the condition being held fixed: at fixed voltage, increasing $R$ reduces power; at fixed current, increasing $R$ increases power.
+This heating equivalence is the physical foundation of RMS value. See the [effective-value (RMS) tutorial](effective-rms-value-in-ac-circuits.qmd) for the derivation. 
 
 ::: {.callout-warning}
 The formulas do not grant unlimited power handling. A physical resistor has temperature, voltage, current, and power ratings. Exceeding them can change its value, damage insulation, or cause failure.
@@ -168,7 +170,7 @@ $$
 }.
 $$ {#eq-resistor-parallel}
 
-The equivalent resistance of positive resistors in parallel is smaller than the smallest branch resistance because the network provides more paths for current.
+The equivalent resistance of positive resistors in parallel is smaller than the smallest branch resistance. The intuition is that the network provides more paths for current.
 
 ## 5. Sinusoidal steady state
 
@@ -180,7 +182,7 @@ $$
 \underline Z_R=R.
 $$ {#eq-resistor-impedance}
 
-Its impedance is real and independent of frequency in the ideal model. Voltage and current have the same phase angle. With the passive sign convention, absorbed complex power is
+Its impedance is real and independent of frequency in the ideal model. Voltage and current have the same phase angle. With the passive sign convention, the complex power is
 
 $$
 \underline S
@@ -189,7 +191,7 @@ $$
 =P+\mathrm j0.
 $$ {#eq-resistor-complex-power}
 
-Thus an ideal resistor absorbs active power $P$ and no reactive power $Q$. Its instantaneous power still pulsates under a sinusoidal supply, but its average is positive [@grainger1994].
+Thus an ideal resistor absorbs active power $P$ and no reactive power $Q$. Its instantaneous power still varies under a sinusoidal supply, but its average is positive [@grainger1994].
 
 ## 6. Reproduce resistor heating in Python
 
@@ -236,28 +238,32 @@ np.testing.assert_allclose(average_power, expected_power, atol=1e-12)
 assert power.min() >= -1e-12
 ```
 
-The instantaneous power touches zero whenever voltage and current cross zero together, but it never becomes negative. Change `resistance` while holding `voltage_rms` fixed and predict the new current and average power before rerunning.
+The instantaneous power is zero whenever voltage and current cross zero together, but it never becomes negative.
+
+::: {.callout-tip title="Try it"}
+Change `resistance` while holding `voltage_rms` fixed and predict the new current and average power before rerunning.
+:::
 
 ## 7. What the ideal model leaves out
 
 A physical resistor can include:
 
-- **tolerance:** the manufactured value differs from its nominal marking;
-- **temperature coefficient and self-heating:** dissipated power changes the resistance;
-- **parasitic inductance and capacitance:** impedance becomes frequency dependent;
-- **voltage and current limits:** even when average power is below its rating;
-- **noise:** thermal agitation produces voltage and current fluctuations; and
-- **nonlinearity:** some devices called resistive loads do not obey one constant slope $v=Ri$.
+- [**tolerance**](https://en.wikipedia.org/wiki/Resistor#Tolerance,_temperature_coefficient_and_noise): the manufactured value differs from its nominal marking;
+- [**temperature coefficient**](https://en.wikipedia.org/wiki/Temperature_coefficient) and [**self-heating**](https://en.wikipedia.org/wiki/Joule_heating): dissipated power changes the resistance;
+- [**parasitic inductance and capacitance**](https://en.wikipedia.org/wiki/Resistor#Nonideal_properties): impedance becomes frequency dependent;
+- [**voltage and current limits**](https://en.wikipedia.org/wiki/Resistor#Power_rating): even when average power is below its rating;
+- [**noise**](https://en.wikipedia.org/wiki/Johnson%E2%80%93Nyquist_noise): thermal agitation produces voltage and current fluctuations; and
+- [**nonlinearity**](https://en.wikipedia.org/wiki/Nonlinear_system): some devices called resistive loads do not obey one constant slope $v=Ri$.
 
-The ratio $v/i$ is a constant $R$ only for a linear resistor. For a nonlinear $v$--$i$ characteristic, the static ratio $v/i$ and incremental slope $\mathrm dv/\mathrm di$ answer different questions.
+The ratio $v/i$ is a constant $R$ only for a linear resistor. For a nonlinear $v$--$i$ characteristic, the static ratio $v/i$ gives the resistance from the origin to the operating point, while the incremental slope $\mathrm dv/\mathrm di$ gives the local resistance to a small change in current.
 
 ## 8. Takeaways
 
 - An ideal linear resistor obeys $v=Ri$ under the passive sign convention.
-- Resistance is measured in ohms; conductance is its reciprocal in siemens.
-- A passive resistor dissipates $p=Ri^2=v^2/R\geq0$ and stores no recoverable energy.
-- Series resistances add; parallel conductances add.
-- Its ideal AC impedance is the real number $R$, so voltage and current are in phase and $Q=0$.
+- Resistance is measured in ohms. Conductance is its reciprocal in siemens.
+- A passive resistor dissipates $p=Ri^2=v^2/R\geq0$ and stores no energy.
+- Series resistances add. Parallel conductances add.
+- Its ideal AC impedance is the real number $R$, so voltage and current are in phase and reactive power $Q=0$.
 - Real resistors have tolerance, thermal behavior, ratings, noise, and parasitic reactance.
 
 Next, compare dissipation in a resistor with energy storage in an [inductor](inductor.qmd) and a [capacitor](capacitor.qmd).
