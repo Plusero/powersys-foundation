@@ -28,7 +28,8 @@ After working through this tutorial, you should be able to:
 
 ## Prerequisites
 
-The [weighted least-squares state-estimation tutorial](weighted-least-squares-state-estimation.qmd) derives the WLS normal equations, observability condition, and residual diagnostics. The [power-flow versus state-estimation tutorial](power-flow-versus-state-estimation.qmd) explains the role of an estimator in the network-analysis workflow.
+- [Weighted least-squares state-estimation tutorial](weighted-least-squares-state-estimation.qmd): normal equations, observability, and residual diagnostics.
+- [Power-flow versus state-estimation tutorial](power-flow-versus-state-estimation.qmd): estimator role in network analysis.
 
 ## 1. The short answer
 

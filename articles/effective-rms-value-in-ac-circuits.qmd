@@ -29,7 +29,7 @@ After working through this tutorial, you should be able to:
 
 ## Prerequisites
 
-Only basic algebra, integration, and sinusoidal waveforms are required. 
+- Basic algebra, integration, and sinusoidal waveforms.
 
 ## 1. Effective value means equivalent heating in a resistor
 

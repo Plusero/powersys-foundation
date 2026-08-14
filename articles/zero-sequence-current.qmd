@@ -28,7 +28,9 @@ After working through this tutorial, you should be able to:
 
 ## Prerequisites
 
-You should be comfortable with RMS phasors and balanced three-phase sets. The [complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd) introduces phasor notation, while [Why Power Systems Use Three Phases](why-three-phase-power-systems.qmd) and the [star--delta tutorial](star-delta-three-phase-systems.qmd) develop the phase relationships and neutral-current balance used here.
+- RMS phasors and balanced three-phase sets.
+- [Complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd): phasor notation.
+- [Why Power Systems Use Three Phases](why-three-phase-power-systems.qmd) and [star--delta tutorial](star-delta-three-phase-systems.qmd): phase relationships and neutral-current balance.
 
 ## 1. The short answer
 

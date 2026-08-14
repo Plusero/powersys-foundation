@@ -28,7 +28,9 @@ After working through this tutorial, you should be able to:
 
 ## Prerequisites
 
-You should know Ohm's law, complex power, and the difference between line-to-line and line-to-neutral voltage in a balanced three-phase system. The [complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd) reviews phasors and complex power, and the [star--delta tutorial](star-delta-three-phase-systems.qmd) develops the three-phase voltage and current relationships used here.
+- Ohm's law, complex power, and line-to-line versus line-to-neutral voltage in a balanced three-phase system.
+- [Complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd): phasors and complex power.
+- [Star--delta tutorial](star-delta-three-phase-systems.qmd): three-phase voltage and current relationships.
 
 ## 1. One physical value, measured relative to a base
 

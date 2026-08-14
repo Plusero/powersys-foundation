@@ -28,7 +28,9 @@ After working through this tutorial, you should be able to:
 
 ## Prerequisites
 
-Only basic algebra and the meanings of voltage, current, power, and energy are required. The [effective-value tutorial](effective-rms-value-in-ac-circuits.qmd) explains RMS quantities, and the [complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd) develops the AC phasor notation used later.
+- Basic algebra; voltage, current, power, and energy.
+- [Effective-value tutorial](effective-rms-value-in-ac-circuits.qmd): RMS quantities.
+- [Complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd): AC phasor notation.
 
 ## 1. The short answer
 
@@ -44,7 +46,7 @@ $$ {#eq-resistor-ohms-law}
 
 where $R>0$ is the resistance in ohms ($\Omega$).
 
-Equation @eq-resistor-ohms-law uses the **passive sign convention**: the reference current $i$ enters the terminal assigned positive voltage $v$. Reversing only one reference changes the sign in the equation; reversing both leaves it unchanged.
+Equation @eq-resistor-ohms-law uses the **passive sign convention**: the reference current $i$ enters the terminal assigned positive voltage $v$. 
 
 The reciprocal quantity is **conductance**,
 

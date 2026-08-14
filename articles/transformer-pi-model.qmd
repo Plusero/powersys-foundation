@@ -28,7 +28,10 @@ After working through this tutorial, you should be able to:
 
 ## Prerequisites
 
-You should be comfortable with RMS phasors, complex power, and basic nodal analysis. The [complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd) reviews phasor notation, the [Y-bus tutorial](y-bus-matrix.qmd) explains admittance stamping, and the [per-unit tutorial](per-unit-values.qmd) develops the base conversions used below.
+- RMS phasors, complex power, and basic nodal analysis.
+- [Complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd): phasor notation.
+- [Y-bus tutorial](y-bus-matrix.qmd): admittance stamping.
+- [Per-unit tutorial](per-unit-values.qmd): base conversions.
 
 ## 1. Why replace a transformer with a circuit model?
 

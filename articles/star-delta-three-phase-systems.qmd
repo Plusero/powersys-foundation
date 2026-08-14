@@ -29,7 +29,9 @@ After working through this tutorial, you should be able to:
 
 ## Prerequisites
 
-This tutorial uses RMS phasors and complex impedance. Review the [complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd) if those ideas are unfamiliar. [Why Power Systems Use Three Phases](why-three-phase-power-systems.qmd) derives the constant-power, rotating-field, and conductor-economy benefits of a balanced three-phase set.
+- RMS phasors and complex impedance.
+- [Complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd).
+- [Why Power Systems Use Three Phases](why-three-phase-power-systems.qmd): balanced three-phase fundamentals.
 
 ## 1. Begin with precise definitions
 

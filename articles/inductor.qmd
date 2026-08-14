@@ -27,7 +27,7 @@ After this tutorial, you will be able to:
 
 ## Prerequisites
 
-You should be comfortable with voltage, current, power, and basic calculus. 
+- Voltage, current, power, and basic calculus.
 
 ## 1. The ideal inductor
 

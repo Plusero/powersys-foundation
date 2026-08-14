@@ -27,7 +27,12 @@ After working through this tutorial, you should be able to:
 
 ## Prerequisites
 
-You should be comfortable with RMS phasors, complex power, per-unit quantities, and nodal network equations. The [complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd) reviews phasors and complex power, the [per-unit tutorial](per-unit-values.qmd) explains the normalisation used in practical network models, and the [Y-bus tutorial](y-bus-matrix.qmd) develops admittance stamping and the nodal equation $\mathbf I=\mathbf Y_{\mathrm{bus}}\mathbf V$. Basic familiarity with partial derivatives and linear systems will help with the Newton step. Python and NumPy are used for the implementation, and Power Grid Model is used for an independent numerical cross-check.
+- RMS phasors, complex power, per-unit quantities, and nodal network equations.
+- [Complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd): phasors and complex power.
+- [Per-unit tutorial](per-unit-values.qmd): practical network-model normalisation.
+- [Y-bus tutorial](y-bus-matrix.qmd): admittance stamping and $\mathbf I=\mathbf Y_{\mathrm{bus}}\mathbf V$.
+- Partial derivatives and linear systems.
+- Python, NumPy, and Power Grid Model.
 
 ## 1. What is a power-flow calculation?
 

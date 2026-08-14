@@ -28,7 +28,9 @@ After working through this tutorial, you should be able to:
 
 ## Prerequisites
 
-You should be comfortable with sinusoidal waveforms, RMS values, and basic complex numbers. The [complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd) introduces RMS phasors and complex power. The companion [star--delta tutorial](star-delta-three-phase-systems.qmd) develops the line-to-phase voltage and current relationships used in practical three-phase circuits.
+- Sinusoidal waveforms, RMS values, and basic complex numbers.
+- [Complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd): RMS phasors and complex power.
+- [Star--delta tutorial](star-delta-three-phase-systems.qmd): line-to-phase voltage and current relationships.
 
 ## 1. What does “three phase” mean?
 

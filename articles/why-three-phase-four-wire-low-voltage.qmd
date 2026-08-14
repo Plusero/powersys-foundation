@@ -28,7 +28,9 @@ After working through this tutorial, you should be able to:
 
 ## Prerequisites
 
-You should be comfortable with RMS phasors, complex impedance, and Kirchhoff's laws. [Why Power Systems Use Three Phases](why-three-phase-power-systems.qmd) develops the benefits of three phases, while the [star--delta tutorial](star-delta-three-phase-systems.qmd) derives the line-to-phase relationships used here.
+- RMS phasors, complex impedance, and Kirchhoff's laws.
+- [Why Power Systems Use Three Phases](why-three-phase-power-systems.qmd): three-phase fundamentals.
+- [Star--delta tutorial](star-delta-three-phase-systems.qmd): line-to-phase relationships.
 
 ## 1. The short answer
 

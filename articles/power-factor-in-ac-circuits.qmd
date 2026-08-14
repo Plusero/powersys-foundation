@@ -28,7 +28,8 @@ After working through this tutorial, you should be able to:
 
 ## Prerequisites
 
-You should be comfortable with sinusoidal waveforms and RMS values. The [complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd) explains phasors, impedance, and complex power in more detail. Here we build on those ideas to focus on the physical and practical meaning of power factor.
+- Sinusoidal waveforms and RMS values.
+- [Complex-numbers tutorial](complex-numbers-in-ac-circuits.qmd): phasors, impedance, and complex power.
 
 ## 1. Active power is only part of the current story
 

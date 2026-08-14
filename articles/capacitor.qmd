@@ -27,7 +27,8 @@ After this tutorial, you will be able to:
 
 ## Prerequisites
 
-You should be comfortable with voltage, current, power, and basic derivatives. The tutorials on [complex numbers](complex-numbers-in-ac-circuits.qmd) and [RMS values](effective-rms-value-in-ac-circuits.qmd) are useful for the sinusoidal section.
+- Voltage, current, power, and basic derivatives.
+- [Complex numbers](complex-numbers-in-ac-circuits.qmd) and [RMS values](effective-rms-value-in-ac-circuits.qmd) for the sinusoidal section.
 
 ## 1. The ideal capacitor
 

@@ -28,7 +28,8 @@ After working through this tutorial, you should be able to:
 
 ## Prerequisites
 
-The [weighted least-squares state-estimation tutorial](weighted-least-squares-state-estimation.qmd) introduces the measurement model, covariance weights, observability, and Gauss--Newton iteration. The [Y-bus tutorial](y-bus-matrix.qmd) develops the nodal equations used below.
+- [Weighted least-squares state-estimation tutorial](weighted-least-squares-state-estimation.qmd): measurement model, covariance weights, observability, and Gauss--Newton iteration.
+- [Y-bus tutorial](y-bus-matrix.qmd): nodal equations.
 
 ## 1. The short answer
 
