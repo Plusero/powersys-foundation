@@ -281,6 +281,103 @@ def draw_series_rlc_circuit(path: Path) -> None:
     )
 
 
+def draw_pf_inductive_load_circuit(path: Path) -> None:
+    diagram = drawing(fontsize=13, margin=0.8)
+
+    source = elm.SourceSin().up()
+    diagram += source
+    line_resistance = elm.ResistorIEC().right().label(
+        "Rₗᵢₙₑ = 0.40 Ω", loc="bottom", ofst=0.3
+    )
+    diagram += line_resistance
+    diagram += elm.Dot()
+
+    load_resistance = elm.ResistorIEC().down().length(1.5)
+    diagram += load_resistance
+    load_reactance = elm.Inductor().down().length(1.5)
+    diagram += load_reactance
+    diagram += elm.Dot()
+    diagram += elm.Line().left().tox(source.start)
+
+    diagram += (
+        elm.CurrentLabel(length=1.4, ofst=0.55)
+        .at(line_resistance)
+        .label("I", color=ACCENT)
+        .color(ACCENT)
+    )
+    diagram += elm.Label("V = 230∠0° V RMS").at((-2.65, 1.75))
+    diagram += elm.Label("f = 50 Hz").at((-2.65, 1.25))
+    diagram += elm.Label("+").at((-0.48, 2.35))
+    diagram += elm.Label("−").at((-0.48, 0.65))
+    diagram += elm.Label("R = 12 Ω").at((4.2, 2.25))
+    diagram += elm.Label("Xₗ = 9 Ω").at((4.2, 0.75))
+
+    save_svg(
+        diagram,
+        path,
+        title="Worked inductive-load circuit",
+        description=(
+            "A 230 volt RMS sinusoidal source supplies a 0.40 ohm feeder "
+            "resistance and an "
+            "inductive load represented by a 12 ohm resistance and 9 ohm "
+            "inductive reactance in series. The feeder voltage drop reduces "
+            "the load-terminal voltage, and the reference current flows clockwise."
+        ),
+    )
+
+
+def draw_pf_shunt_capacitor_correction(path: Path) -> None:
+    diagram = drawing(fontsize=13, margin=0.8)
+
+    source = elm.SourceSin().up()
+    diagram += source
+    line_resistance = elm.ResistorIEC().right().label(
+        "Rₗᵢₙₑ = 0.40 Ω", loc="bottom", ofst=0.3
+    )
+    diagram += line_resistance
+    top_node = diagram.here
+    diagram += elm.Dot()
+
+    load_resistance = elm.ResistorIEC().down().length(1.5)
+    diagram += load_resistance
+    load_reactance = elm.Inductor().down().length(1.5)
+    diagram += load_reactance
+    load_end = diagram.here
+    diagram += elm.Dot()
+
+    diagram += elm.Line().at(top_node).right().length(3.0)
+    diagram += elm.Dot()
+    capacitor = elm.Capacitor().down()
+    diagram += capacitor
+    capacitor_end = diagram.here
+    diagram += elm.Line().at(capacitor_end).left().tox(source.start)
+
+    diagram += (
+        elm.CurrentLabel(length=1.4, ofst=0.55)
+        .at(line_resistance)
+        .label("Iₛ", color=ACCENT)
+        .color(ACCENT)
+    )
+    diagram += elm.Label("V = 230∠0° V RMS").at((-2.65, 1.75))
+    diagram += elm.Label("f = 50 Hz").at((-2.65, 1.25))
+    diagram += elm.Label("+").at((-0.48, 2.35))
+    diagram += elm.Label("−").at((-0.48, 0.65))
+    diagram += elm.Label("R = 12 Ω").at((4.2, 2.25))
+    diagram += elm.Label("Xₗ = 9 Ω").at((4.2, 0.75))
+    diagram += elm.Label("C").at((6.55, 1.5))
+
+    save_svg(
+        diagram,
+        path,
+        title="Shunt capacitor power-factor correction circuit",
+        description=(
+            "A 230 volt RMS sinusoidal source and 0.40 ohm feeder resistance "
+            "supply an inductive load, with a capacitor connected in parallel "
+            "across the load to supply negative reactive power."
+        ),
+    )
+
+
 def draw_practical_capacitor_model(path: Path) -> None:
     diagram = drawing(fontsize=13, margin=0.8)
 
@@ -391,6 +488,18 @@ FIGURES = (
         "Series RLC circuit for the worked AC example",
         "A sinusoidal source supplying a resistor, inductor, and capacitor in series.",
         draw_series_rlc_circuit,
+    ),
+    FigureSpec(
+        "pf-inductive-load-feeder-circuit.svg",
+        "Worked inductive-load circuit",
+        "A sinusoidal source and feeder resistance supplying a series R-L load.",
+        draw_pf_inductive_load_circuit,
+    ),
+    FigureSpec(
+        "pf-shunt-capacitor-feeder-circuit.svg",
+        "Shunt capacitor power-factor correction circuit",
+        "A feeder supplying an inductive load and parallel correction capacitor.",
+        draw_pf_shunt_capacitor_correction,
     ),
     FigureSpec(
         "practical-capacitor-model.svg",

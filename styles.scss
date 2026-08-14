@@ -311,7 +311,7 @@ table {
   letter-spacing: -0.015em;
 }
 
-:is(.rc-explorer, .transient-explorer) {
+:is(.rc-explorer, .transient-explorer, .pf-explorer) {
   margin: 1.4rem 0 2rem;
   padding: 1rem 1.1rem 0.8rem;
   border: 1px solid var(--psf-border);
@@ -320,33 +320,33 @@ table {
   box-shadow: var(--psf-shadow);
 }
 
-:is(.rc-explorer, .transient-explorer) :is(.rc-controls, .transient-controls) {
+:is(.rc-explorer, .transient-explorer, .pf-explorer) :is(.rc-controls, .transient-controls, .pf-controls) {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.8rem 1.25rem;
   margin-bottom: 1rem;
 }
 
-:is(.rc-explorer, .transient-explorer) :is(.rc-controls, .transient-controls) .observablehq {
+:is(.rc-explorer, .transient-explorer, .pf-explorer) :is(.rc-controls, .transient-controls, .pf-controls) .observablehq {
   margin: 0;
 }
 
-:is(.rc-explorer, .transient-explorer) .code-copy-outer-scaffold {
+:is(.rc-explorer, .transient-explorer, .pf-explorer) .code-copy-outer-scaffold {
   display: none;
 }
 
-:is(.rc-explorer, .transient-explorer) input[type="range"] {
+:is(.rc-explorer, .transient-explorer, .pf-explorer) input[type="range"] {
   accent-color: var(--psf-accent);
 }
 
-:is(.rc-explorer, .transient-explorer) :is(.rc-metrics, .transient-metrics) {
+:is(.rc-explorer, .transient-explorer, .pf-explorer) :is(.rc-metrics, .transient-metrics, .pf-metrics) {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.65rem;
   margin: 0.5rem 0 1.25rem;
 }
 
-:is(.rc-explorer, .transient-explorer) :is(.rc-metric, .transient-metric) {
+:is(.rc-explorer, .transient-explorer, .pf-explorer) :is(.rc-metric, .transient-metric, .pf-metric) {
   min-width: 0;
   padding: 0.65rem 0.75rem;
   border: 1px solid var(--psf-border);
@@ -354,25 +354,25 @@ table {
   background: var(--psf-accent-soft);
 }
 
-:is(.rc-explorer, .transient-explorer) :is(.rc-metric, .transient-metric) span,
-:is(.rc-explorer, .transient-explorer) :is(.rc-metric, .transient-metric) strong {
+:is(.rc-explorer, .transient-explorer, .pf-explorer) :is(.rc-metric, .transient-metric, .pf-metric) span,
+:is(.rc-explorer, .transient-explorer, .pf-explorer) :is(.rc-metric, .transient-metric, .pf-metric) strong {
   display: block;
 }
 
-:is(.rc-explorer, .transient-explorer) :is(.rc-metric, .transient-metric) span {
+:is(.rc-explorer, .transient-explorer, .pf-explorer) :is(.rc-metric, .transient-metric, .pf-metric) span {
   margin-bottom: 0.15rem;
   color: var(--psf-code-muted);
   font-size: 0.76rem;
   line-height: 1.3;
 }
 
-:is(.rc-explorer, .transient-explorer) :is(.rc-metric, .transient-metric) strong {
+:is(.rc-explorer, .transient-explorer, .pf-explorer) :is(.rc-metric, .transient-metric, .pf-metric) strong {
   color: var(--psf-accent);
   font-size: 1rem;
   font-variant-numeric: tabular-nums;
 }
 
-:is(.rc-explorer, .transient-explorer) h4 {
+:is(.rc-explorer, .transient-explorer, .pf-explorer) h4 {
   margin: 1rem 0 0.25rem;
   font-size: 1rem;
 }
@@ -420,13 +420,13 @@ table {
   border-left: 2px dashed #087f8c;
 }
 
-:is(.rc-explorer, .transient-explorer) svg {
+:is(.rc-explorer, .transient-explorer, .pf-explorer) svg {
   display: block;
   max-width: 100%;
   height: auto;
 }
 
-:is(.rc-explorer, .transient-explorer) > p:last-child {
+:is(.rc-explorer, .transient-explorer, .pf-explorer) > p:last-child {
   margin-bottom: 0.2rem;
   color: var(--psf-code-muted);
   font-size: 0.9rem;
@@ -472,14 +472,14 @@ table {
     text-align: left;
   }
 
-  :is(.rc-explorer, .transient-explorer) :is(.rc-metrics, .transient-metrics) {
+  :is(.rc-explorer, .transient-explorer, .pf-explorer) :is(.rc-metrics, .transient-metrics, .pf-metrics) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 520px) {
-  :is(.rc-explorer, .transient-explorer) :is(.rc-controls, .transient-controls),
-  :is(.rc-explorer, .transient-explorer) :is(.rc-metrics, .transient-metrics) {
+  :is(.rc-explorer, .transient-explorer, .pf-explorer) :is(.rc-controls, .transient-controls, .pf-controls),
+  :is(.rc-explorer, .transient-explorer, .pf-explorer) :is(.rc-metrics, .transient-metrics, .pf-metrics) {
     grid-template-columns: 1fr;
   }
 }
