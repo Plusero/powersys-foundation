@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-08-14T00:00:00.000Z" version="24.7.17">
+  <diagram id="three-bus-dc-network" name="Page-1">
+    <mxGraphModel dx="1280" dy="720" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1280" pageHeight="720" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="bus-1" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=0;html=1;endArrow=none;startArrow=none;strokeColor=#111111;strokeWidth=3;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="150" y="170" as="sourcePoint" />
+            <mxPoint x="370" y="170" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="bus-2" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=0;html=1;endArrow=none;startArrow=none;strokeColor=#111111;strokeWidth=3;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="910" y="170" as="sourcePoint" />
+            <mxPoint x="1130" y="170" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="bus-3" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=0;html=1;endArrow=none;startArrow=none;strokeColor=#111111;strokeWidth=3;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="530" y="530" as="sourcePoint" />
+            <mxPoint x="750" y="530" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="branch-12" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=0;html=1;endArrow=none;startArrow=none;strokeColor=#111111;strokeWidth=1.5;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="340" y="170" as="sourcePoint" />
+            <mxPoint x="940" y="170" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="340" y="260" />
+              <mxPoint x="940" y="260" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="branch-13" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=0;html=1;endArrow=none;startArrow=none;strokeColor=#111111;strokeWidth=1.5;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="220" y="170" as="sourcePoint" />
+            <mxPoint x="570" y="530" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="220" y="370" />
+              <mxPoint x="570" y="370" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="branch-23" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;rounded=0;html=1;endArrow=none;startArrow=none;strokeColor=#111111;strokeWidth=1.5;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1060" y="170" as="sourcePoint" />
+            <mxPoint x="710" y="530" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="1060" y="370" />
+              <mxPoint x="710" y="370" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="bus-1-label" value="Bus 1 (reference)" style="text;html=1;strokeColor=none;fillColor=none;verticalAlign=middle;align=center;whiteSpace=wrap;fontFamily=Times New Roman;fontSize=22;fontColor=#263943;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="150" y="76" width="220" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="bus-1-state" value="&#952;&lt;sub&gt;1&lt;/sub&gt; = 0" style="text;html=1;strokeColor=none;fillColor=none;verticalAlign=middle;align=center;whiteSpace=wrap;fontFamily=Times New Roman;fontSize=20;fontColor=#43515a;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="180" y="112" width="160" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="bus-2-label" value="Bus 2" style="text;html=1;strokeColor=none;fillColor=none;verticalAlign=middle;align=center;whiteSpace=wrap;fontFamily=Times New Roman;fontSize=22;fontColor=#263943;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="910" y="76" width="220" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="bus-2-state" value="unknown &#952;&lt;sub&gt;2&lt;/sub&gt;" style="text;html=1;strokeColor=none;fillColor=none;verticalAlign=middle;align=center;whiteSpace=wrap;fontFamily=Times New Roman;fontSize=20;fontColor=#43515a;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="910" y="112" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="bus-3-label" value="Bus 3" style="text;html=1;strokeColor=none;fillColor=none;verticalAlign=middle;align=center;whiteSpace=wrap;fontFamily=Times New Roman;fontSize=22;fontColor=#263943;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="530" y="566" width="220" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="bus-3-state" value="unknown &#952;&lt;sub&gt;3&lt;/sub&gt;" style="text;html=1;strokeColor=none;fillColor=none;verticalAlign=middle;align=center;whiteSpace=wrap;fontFamily=Times New Roman;fontSize=20;fontColor=#43515a;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="530" y="602" width="220" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="branch-12-label" value="b&lt;sub&gt;12&lt;/sub&gt; = 10 p.u." style="text;html=1;strokeColor=none;fillColor=none;verticalAlign=middle;align=center;whiteSpace=wrap;fontFamily=Times New Roman;fontSize=20;fontColor=#43515a;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="500" y="208" width="280" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="branch-13-label" value="b&lt;sub&gt;13&lt;/sub&gt; = 5 p.u." style="text;html=1;strokeColor=none;fillColor=none;verticalAlign=middle;align=center;whiteSpace=wrap;fontFamily=Times New Roman;fontSize=20;fontColor=#43515a;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="250" y="318" width="270" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="branch-23-label" value="b&lt;sub&gt;23&lt;/sub&gt; = 8 p.u." style="text;html=1;strokeColor=none;fillColor=none;verticalAlign=middle;align=center;whiteSpace=wrap;fontFamily=Times New Roman;fontSize=20;fontColor=#43515a;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="760" y="318" width="270" height="32" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

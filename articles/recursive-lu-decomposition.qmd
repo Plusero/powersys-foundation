@@ -4,26 +4,27 @@ subtitle: "From elimination to Schur complements"
 description: "Derive a recursive LU factorisation, implement it in Python, and connect it to power-system linear solves."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
-date-modified: "2026-08-09"
+date-modified: "2026-08-14"
 categories: [Linear algebra, Numerical methods, Python]
-reading-time: 14
+reading-time: 17
 jupyter: python3
 execute:
   echo: true
   warning: false
 draft: false
-proofread: false
+proofread: true
 ---
 
 ## What you will learn
 
 After working through this tutorial, you should be able to:
 
-- derive LU decomposition from a recursive Schur-complement update;
-- implement the unpivoted algorithm in Python;
-- use the factors for forward and backward substitution;
-- verify a factorisation using reconstruction and solution residuals; and
-- explain why production solvers require pivoting and sparse data structures.
+- derive the four block equations for a unit-lower-triangular LU factorisation;
+- identify the Schur complement that defines the smaller recursive problem;
+- implement the same factorisation with explicit recursion and with a `for` loop;
+- explain why the loop implementation avoids recursion-depth failures;
+- store $\mathbf{L}$ and $\mathbf{U}$ together using an in-place packed array; and
+- verify each factorisation by checking $\mathbf{L}\mathbf{U}=\mathbf{A}$.
 
 ## 1. Why LU appears in power-system analysis
 
@@ -33,7 +34,7 @@ $$
 \mathbf{A}\mathbf{x}=\mathbf{b}.
 $$ {#eq-linear-system}
 
-Examples include Newton steps in power-flow analysis, weighted least-squares state estimation, small-signal models, and implicit time integration. If
+Examples include power flow calculation and weighted least squares state estimation. If
 
 $$
 \mathbf{A}=\mathbf{L}\mathbf{U},
@@ -49,54 +50,118 @@ $$ {#eq-triangular-solves}
 
 The expensive factorisation is then reusable for every new right-hand side as long as $\mathbf{A}$ does not change.
 
-## 2. The recursive idea
+## 2. The recursive LU
 
-Partition a square matrix around its first row and column:
+Let $\mathbf{A}\in\mathbb{R}^{n\times n}$ with $n\geq 2$. Partition it around
+its first row and column:
 
 $$
 \mathbf{A}=
 \begin{bmatrix}
-\alpha & \mathbf{r}^{\mathsf T} \\
-\mathbf{c} & \mathbf{B}
+a_{11} & \mathbf{w}^{\mathsf T} \\
+\mathbf{v} & \mathbf{A}^{(n-1)}
 \end{bmatrix},
 $$ {#eq-partition}
 
-and seek factors of the form
+Here $a_{11}\in\mathbb{R}$,
+$\mathbf{v},\mathbf{w}\in\mathbb{R}^{n-1}$, and
+$\mathbf{A}^{(n-1)}\in\mathbb{R}^{(n-1)\times(n-1)}$. The parenthesised
+superscript labels the order of the trailing block; it does not denote a matrix
+power. Thus
+$\mathbf{w}^{\mathsf T}$ is a $1\times(n-1)$ row and $\mathbf{v}$ is an
+$(n-1)\times1$ column.
+
+To determine the factors, impose a unit diagonal on $\mathbf{L}$ and introduce
+unknown blocks $u_{11}$ and $\mathbf{u}^{\mathsf T}$ in the first row of
+$\mathbf{U}$. Partition the factors conformably as
 
 $$
 \mathbf{L}=
 \begin{bmatrix}
-1 & \mathbf{0}^{\mathsf T} \\
+1 & \mathbf{0}_{1\times(n-1)} \\
 \boldsymbol{\ell} & \mathbf{L}_S
 \end{bmatrix},
 \qquad
 \mathbf{U}=
 \begin{bmatrix}
-u & \mathbf{r}^{\mathsf T} \\
-\mathbf{0} & \mathbf{U}_S
+u_{11} & \mathbf{u}^{\mathsf T} \\
+\mathbf{0}_{(n-1)\times1} & \mathbf{U}_S
 \end{bmatrix}.
 $$ {#eq-factor-partition}
 
-Multiplying the two factors and comparing the result with @eq-partition gives
+The factors satisfy $\mathbf{L},\mathbf{U}\in\mathbb{R}^{n\times n}$, with
+$u_{11}\in\mathbb{R}$,
+$\mathbf{u},\boldsymbol{\ell}\in\mathbb{R}^{n-1}$, and
+$\mathbf{L}_S,\mathbf{U}_S\in\mathbb{R}^{(n-1)\times(n-1)}$.
+Here $\boldsymbol{\ell}$ is an $(n-1)\times1$ column and
+$\mathbf{u}^{\mathsf T}$ is a $1\times(n-1)$ row. The subscripts on the zero
+blocks state their dimensions explicitly.
+
+Multiplying the two block matrices explicitly gives
 
 $$
-u=\alpha,
-\qquad
-\boldsymbol{\ell}=\frac{\mathbf{c}}{\alpha},
-$$ {#eq-pivot-update}
+\begin{aligned}
+\mathbf{L}\mathbf{U}
+&=
+\begin{bmatrix}
+1 & \mathbf{0}_{1\times(n-1)} \\
+\boldsymbol{\ell} & \mathbf{L}_S
+\end{bmatrix}
+\begin{bmatrix}
+u_{11} & \mathbf{u}^{\mathsf T} \\
+\mathbf{0}_{(n-1)\times1} & \mathbf{U}_S
+\end{bmatrix} \\
+&=
+\begin{bmatrix}
+u_{11} & \mathbf{u}^{\mathsf T} \\
+u_{11}\boldsymbol{\ell}
+& \boldsymbol{\ell}\mathbf{u}^{\mathsf T}
+  +\mathbf{L}_S\mathbf{U}_S
+\end{bmatrix}.
+\end{aligned}
+$$ {#eq-block-product}
 
-and
+Comparing @eq-block-product with @eq-partition block by block gives all four
+equations:
 
 $$
+\begin{aligned}
+u_{11} &= a_{11},
+&& \text{from block }(1,1), \\
+\mathbf{u}^{\mathsf T} &= \mathbf{w}^{\mathsf T},
+&& \text{from block }(1,2), \\
+u_{11}\boldsymbol{\ell} &= \mathbf{v},
+&& \text{from block }(2,1), \\
+\boldsymbol{\ell}\mathbf{u}^{\mathsf T}
++\mathbf{L}_S\mathbf{U}_S
+&= \mathbf{A}^{(n-1)},
+&& \text{from block }(2,2).
+\end{aligned}
+$$ {#eq-block-comparison}
+
+Rewrite the same four equations with the
+blocks of $\mathbf{L}$ and $\mathbf{U}$ on the left-hand side:
+
+$$
+\begin{aligned}
+u_{11} &= a_{11},
+&& \text{from block }(1,1), \\
+\mathbf{u}^{\mathsf T} &= \mathbf{w}^{\mathsf T},
+&& \text{from block }(1,2), \\
+\boldsymbol{\ell} &= \frac{\mathbf{v}}{u_{11}},
+&& \text{from block }(2,1), \\
 \mathbf{L}_S\mathbf{U}_S
-=
-\underbrace{\mathbf{B}
--\boldsymbol{\ell}\mathbf{r}^{\mathsf T}}_{\mathbf{S}}.
-$$ {#eq-schur-complement}
+&= \underbrace{\mathbf{A}^{(n-1)}
+-\boldsymbol{\ell}\mathbf{u}^{\mathsf T}}_{\mathbf{S}},
+&& \text{from block }(2,2).
+\end{aligned}
+$$ {#eq-factor-construction}
 
-The smaller matrix $\mathbf{S}$ is the **Schur complement** left after eliminating the first variable. Factoring $\mathbf{S}$ is the same problem at size $n-1$, so @eq-schur-complement gives a natural recursion:
+The smaller matrix
+$\mathbf{S}\in\mathbb{R}^{(n-1)\times(n-1)}$ is the **Schur complement**. Factoring $\mathbf{S}$ is the same problem
+at size $n-1$, so @eq-factor-construction gives a natural recursion:
 
-1. select the first pivot $\alpha$;
+1. set $u_{11}=a_{11}$;
 2. calculate the multipliers $\boldsymbol{\ell}$;
 3. form the Schur complement $\mathbf{S}$;
 4. recursively factor $\mathbf{S}$; and
@@ -104,7 +169,7 @@ The smaller matrix $\mathbf{S}$ is the **Schur complement** left after eliminati
 
 The base case is a $1\times1$ matrix.
 
-## 3. Python implementation
+## 3. Python implementation of Recursive LU
 
 The following implementation uses NumPy arrays but deliberately follows the mathematics closely. It returns a unit-diagonal $\mathbf{L}$, which is the Doolittle convention.
 
@@ -116,59 +181,59 @@ import numpy as np
 
 
 def recursive_lu(matrix: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Return the unpivoted LU factorisation of a square matrix."""
-    a = np.array(matrix, dtype=float, copy=True)
+    """Return the LU factorisation of a square matrix."""
+    a_n = np.array(matrix, dtype=float, copy=True)
 
-    if a.ndim != 2 or a.shape[0] != a.shape[1]:
+    if a_n.ndim != 2 or a_n.shape[0] != a_n.shape[1]:
         raise ValueError("matrix must be square")
-    if a.shape[0] == 0:
+    if a_n.shape[0] == 0:
         raise ValueError("matrix must not be empty")
 
-    scale = max(1.0, np.linalg.norm(a, ord=np.inf))
+    scale = max(1.0, np.linalg.norm(a_n, ord=np.inf))
     tolerance = np.finfo(float).eps * scale
 
-    def factor(block: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        n = block.shape[0]
-        pivot = block[0, 0]
+    def factor(a_n: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        n = a_n.shape[0]
+        a_11 = a_n[0, 0]
+        u_11 = a_11
 
-        if abs(pivot) <= tolerance:
+        if abs(u_11) <= tolerance:
             raise np.linalg.LinAlgError(
-                "zero or numerically small pivot; pivoting is required"
+                "zero or numerically small diagonal entry"
             )
 
         if n == 1:
-            return np.ones((1, 1)), np.array([[pivot]])
+            return np.ones((1, 1)), np.array([[u_11]])
 
-        upper_row = block[0, 1:].copy()
-        lower_column = block[1:, 0] / pivot
+        w = a_n[0, 1:].copy()
+        v = a_n[1:, 0].copy()
+        a_n_minus_1 = a_n[1:, 1:]
 
-        schur = block[1:, 1:] - np.outer(lower_column, upper_row)
-        lower_schur, upper_schur = factor(schur)
+        u = w.copy()
+        ell = v / u_11
+        s = a_n_minus_1 - np.outer(ell, u)
+        l_s, u_s = factor(s)
 
-        lower = np.eye(n)
-        upper = np.zeros_like(block)
+        l_n = np.eye(n)
+        u_n = np.zeros_like(a_n)
 
-        lower[1:, 0] = lower_column
-        lower[1:, 1:] = lower_schur
-        upper[0, 0] = pivot
-        upper[0, 1:] = upper_row
-        upper[1:, 1:] = upper_schur
+        l_n[1:, 0] = ell
+        l_n[1:, 1:] = l_s
+        u_n[0, 0] = u_11
+        u_n[0, 1:] = u
+        u_n[1:, 1:] = u_s
 
-        return lower, upper
+        return l_n, u_n
 
-    return factor(a)
+    return factor(a_n)
 ```
 
-Although the code creates new arrays to keep the recursion visible, high-performance implementations overwrite storage, operate on larger blocks, and use optimised matrix kernels [@golub2013].
-
-## 4. Verify the factorisation
-
-Consider a small matrix with the sign pattern often seen in network-derived linear systems:
+### Verify the recursive factorisation
 
 ```{python}
-#| label: lst-lu-example
+#| label: lst-recursive-lu-verification
 
-a = np.array(
+a_n = np.array(
     [
         [10.0, -1.0,  2.0,  0.0],
         [-1.0, 11.0, -1.0,  3.0],
@@ -177,124 +242,211 @@ a = np.array(
     ]
 )
 
-lower, upper = recursive_lu(a)
-
-np.set_printoptions(precision=4, suppress=True)
-print("L =\n", lower)
-print("\nU =\n", upper)
+l_recursive, u_recursive = recursive_lu(a_n)
+print("recursive LU = A:", np.allclose(l_recursive @ u_recursive, a_n))
 ```
 
-A useful scale-independent reconstruction check is
+## 4. Iterative implementation with `for` loops
 
-$$
-\eta_{\mathrm{LU}}
-=
-\frac{\lVert\mathbf{A}-\mathbf{L}\mathbf{U}\rVert_{\infty}}
-{\lVert\mathbf{A}\rVert_{\infty}}.
-$$ {#eq-factor-residual}
+The recursive formulation is useful for deriving the algorithm, but for large
+matrices it runs a high risk of
+[stack overflow](https://docs.python.org/3/library/sys.html#sys.setrecursionlimit).
+Each recursive call reduces the matrix order by one, so a `for` loop can process
+the diagonal positions in exactly the same order.
+
+The following implementation shows the idea.
 
 ```{python}
-#| label: lst-factor-residual
+#| label: lst-loop-lu
+#| code-summary: "Show the loop-based LU implementation"
 
-factor_residual = (
-    np.linalg.norm(a - lower @ upper, ord=np.inf)
-    / np.linalg.norm(a, ord=np.inf)
-)
+def loop_lu(matrix: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    a_n = np.array(matrix, dtype=float, copy=True)
+    l_n = np.eye(a_n.shape[0], dtype=float)
+    u_n = np.zeros_like(a_n, dtype=float)
 
-print(f"relative factorisation residual: {factor_residual:.3e}")
+    if a_n.ndim != 2 or a_n.shape[0] != a_n.shape[1]:
+        raise ValueError("matrix must be square")
+    if a_n.shape[0] == 0:
+        raise ValueError("matrix must not be empty")
+
+
+    for i in range(a_n.shape[0]):
+        n = a_n.shape[0]
+        # base case for recursion
+        if n == 1:
+            u_n[i, i] = a_n[0, 0]
+            break
+        # partition A
+        a_11 = a_n[0, 0]
+        w = a_n[0, 1:].copy()
+        v = a_n[1:, 0].copy()
+        a_n_minus_1 = a_n[1:, 1:]
+
+
+        # the four equations
+        u_11 = a_11
+        u = w.copy()
+        ell = v / u_11
+        s = a_n_minus_1 - np.outer(ell, u)
+
+        # fill L and U matrices
+        l_n[i + 1:, i] = ell
+        u_n[i, i+1:] = u
+        u_n[i, i] = u_11
+
+        # update the matrix for the next LU iteration
+        a_n=s
+
+    return l_n, u_n
 ```
 
-The residual should be close to machine precision for this well-behaved example. Checking only that $\mathbf{L}$ and $\mathbf{U}$ have the expected triangular shapes is not enough; @eq-factor-residual tests whether they actually reconstruct the original matrix.
+### Verify the loop-based factorisation
 
-## 5. Solve with the factors
-
-Forward substitution solves the lower-triangular system from top to bottom. Backward substitution solves the upper-triangular system in the opposite direction.
+Apply `loop_lu` to the same matrix:
 
 ```{python}
-#| label: lst-triangular-solves
-#| code-summary: "Show the triangular-solve functions"
+#| label: lst-loop-lu-verification
 
-def forward_substitution(lower: np.ndarray, rhs: np.ndarray) -> np.ndarray:
-    solution = np.empty_like(rhs, dtype=float)
-
-    for i in range(lower.shape[0]):
-        known = lower[i, :i] @ solution[:i]
-        solution[i] = (rhs[i] - known) / lower[i, i]
-
-    return solution
-
-
-def backward_substitution(upper: np.ndarray, rhs: np.ndarray) -> np.ndarray:
-    solution = np.empty_like(rhs, dtype=float)
-
-    for i in range(upper.shape[0] - 1, -1, -1):
-        known = upper[i, i + 1:] @ solution[i + 1:]
-        solution[i] = (rhs[i] - known) / upper[i, i]
-
-    return solution
+l_loop, u_loop = loop_lu(a_n)
+print("loop LU = A:", np.allclose(l_loop @ u_loop, a_n))
 ```
 
-Use @eq-triangular-solves to solve for one right-hand side and verify the result against the original system:
+For an $n\times n$ matrix, `recursive_lu` reaches a call depth of $n$. Python
+normally stops sufficiently deep recursion with a `RecursionError`; without such
+a guard, continued calls could exhaust the call stack. The loop-based version
+keeps its control state in `i`, so its call depth is constant and it
+does not have this recursion-related size limit. It also avoids retaining a
+sequence of progressively smaller Schur-complement arrays while recursive calls
+return. In this sense, iteration prevents the stack-exhaustion failure caused by
+deep explicit recursion. Both teaching implementations still perform $O(n^3)$
+arithmetic.
 
-```{python}
-#| label: lst-solve-example
+## 5. Think about an in-place `loop_lu`
 
-b = np.array([6.0, 25.0, -11.0, 15.0])
+The current `loop_lu` creates separate arrays for $\mathbf{L}$ and $\mathbf{U}$
+and forms a new Schur complement at every iteration. Can you rewrite the
+algorithm so that one working copy of $\mathbf{A}$ stores both factors?
 
-y = forward_substitution(lower, b)
-x = backward_substitution(upper, y)
-
-solve_residual = np.linalg.norm(a @ x - b, ord=np.inf)
-
-print("x =", x)
-print(f"absolute solve residual: {solve_residual:.3e}")
-```
-
-## 6. Pivoting is not optional in general
-
-The educational implementation assumes every recursive pivot is safely nonzero. That condition can fail even when the original matrix is nonsingular. For example,
-
-$$
-\begin{bmatrix}
-0 & 1 \\
-1 & 0
-\end{bmatrix}
-$$
-
-is nonsingular but has a zero first pivot. A practical dense factorisation therefore introduces a permutation matrix and computes
+Use the strictly lower-triangular part to store the multipliers in $\mathbf{L}$
+and the diagonal and upper-triangular part to store $\mathbf{U}$:
 
 $$
-\mathbf{P}\mathbf{A}=\mathbf{L}\mathbf{U},
-$$
+\widehat{A}_{ij}=
+\begin{cases}
+L_{ij}, & i>j, \\
+U_{ij}, & i\leq j.
+\end{cases}
+$$ {#eq-packed-lu}
 
-usually selecting pivots by partial pivoting. Pivoting also controls the growth of rounding errors when a mathematically nonzero pivot is too small relative to other entries [@golub2013].
+The unit diagonal of $\mathbf{L}$ is implicit and therefore does not need to be
+stored. As you design the update, consider the following questions:
 
-::: {.callout-warning}
-The function in this tutorial is intended to expose the recursive structure, not to replace a production linear-algebra library. Do not use it for operational studies or large sparse networks.
+1. At iteration $k$, which rows and columns of the packed array are already
+   final and must not be overwritten?
+2. Can the multipliers be written into column $k$ before using them to update
+   the trailing submatrix?
+3. Which values from row $k$ must remain available during that update?
+4. Should an in-place function mutate the caller's array, or should it first
+   make one working copy? How should its name and documentation communicate that
+   choice?
+5. How would you recover explicit $\mathbf{L}$ and $\mathbf{U}$ arrays from the
+   packed result and check that $\mathbf{L}\mathbf{U}=\mathbf{A}$?
+
+::: {.callout-tip}
+## Suggested invariant
+
+Before iteration $k$, the entries belonging to the first $k$ columns of
+$\mathbf{L}$ and the first $k$ rows of $\mathbf{U}$ are complete. The trailing
+submatrix contains the Schur complement for the remaining variables.
 :::
 
-## 7. From recursion to sparse power-system solvers
+### One possible answer
 
-The one-pivot derivation is also the smallest possible block algorithm. Replace the scalar $\alpha$ with a leading matrix block $\mathbf{A}_{11}$ and the same steps become
+The following code is folded so that you can attempt the exercise first. This
+version retains the partition-and-update structure of `loop_lu`, but uses views
+of the packed array for $\mathbf{u}$ and $\boldsymbol{\ell}$. A single
+broadcasted expression updates the complete trailing block. The function
+overwrites the floating-point array passed by the caller and returns that same
+array in packed form.
 
-$$
-\begin{aligned}
-\mathbf{A}_{11} &= \mathbf{L}_{11}\mathbf{U}_{11}, \\
-\mathbf{U}_{12} &= \mathbf{L}_{11}^{-1}\mathbf{A}_{12}, \\
-\mathbf{L}_{21} &= \mathbf{A}_{21}\mathbf{U}_{11}^{-1}, \\
-\mathbf{S} &= \mathbf{A}_{22}-\mathbf{L}_{21}\mathbf{U}_{12}.
-\end{aligned}
-$$ {#eq-block-lu}
+```{python}
+#| label: lst-inplace-lu-solution
+#| code-summary: "Show one possible in-place solution"
+#| code-fold: true
 
-Recursive block formulations expose parallel work and turn many scalar operations into matrix operations. Sparse power-system solvers add another critical concern: the elimination order controls **fill-in**, the new nonzeros created in the factors. Good ordering and symbolic analysis can matter as much as the numerical factorisation itself [@davis2006].
+def loop_lu_inplace(a_n: np.ndarray) -> np.ndarray:
+    """Overwrite a floating-point square array with packed L and U factors."""
+    if not isinstance(a_n, np.ndarray):
+        raise TypeError("a_n must be a NumPy array")
+    if a_n.ndim != 2 or a_n.shape[0] != a_n.shape[1]:
+        raise ValueError("a_n must be square")
+    if a_n.shape[0] == 0:
+        raise ValueError("a_n must not be empty")
+    if not np.issubdtype(a_n.dtype, np.floating):
+        raise TypeError("a_n must have a floating-point dtype")
+    if not a_n.flags.writeable:
+        raise ValueError("a_n must be writeable")
 
-## 8. Takeaways
+    matrix_order = a_n.shape[0]
+    scale = max(1.0, np.linalg.norm(a_n, ord=np.inf))
+    tolerance = np.finfo(a_n.dtype).eps * scale
 
-- LU decomposition is Gaussian elimination expressed as reusable triangular factors.
-- Each elimination step produces a smaller Schur-complement problem.
-- The recursive formulation mirrors the mathematics and generalises naturally to blocks.
-- Reconstruction and solve residuals provide complementary correctness checks.
-- Pivoting, ordering, and sparse storage separate a teaching implementation from a production solver.
+    for i in range(matrix_order):
+        n = matrix_order - i
+
+        # Identify the current scalar block.
+        a_11 = a_n[i, i]
+        u_11 = a_11
+        if abs(u_11) <= tolerance:
+            raise np.linalg.LinAlgError(
+                "zero or numerically small diagonal entry"
+            )
+
+        if n == 1:
+            break
+
+        # The U row and L column are views into the packed array.
+        u = a_n[i, i + 1:]
+        ell = a_n[i + 1:, i]
+        ell /= u_11
+
+        # Update the complete trailing block in place.
+        a_n[i + 1:, i + 1:] -= ell[:, None] * u[None, :]
+
+    return a_n
+
+
+def unpack_lu(packed_lu: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Recover explicit L and U factors from a packed LU array."""
+    n = packed_lu.shape[0]
+    l_n = np.tril(packed_lu, k=-1) + np.eye(n, dtype=packed_lu.dtype)
+    u_n = np.triu(packed_lu)
+    return l_n, u_n
+```
+
+### Verify the in-place factorisation
+
+Start from a copy so that the example matrix remains unchanged:
+
+```{python}
+#| label: lst-inplace-lu-verification
+
+packed_lu = a_n.copy()
+packed_result = loop_lu_inplace(packed_lu)
+l_inplace, u_inplace = unpack_lu(packed_result)
+print("in-place LU = A:", np.allclose(l_inplace @ u_inplace, a_n))
+```
+
+## 6. Takeaways
+
+- LU decomposition can be implemented recursively through Schur complements
+  without writing [Gaussian elimination](https://en.wikipedia.org/wiki/Gaussian_elimination)
+  as explicit row operations.
+- Explicit recursion closely follows the derivation but runs the risk of stack overflow.
+- A `for` loop performs the same sequence with constant call depth.
+- $\mathbf{L}$ and $\mathbf{U}$ can be stored in the original matrix $A$. Therefore we can do in-place recursive LU decomposition, reducing the memory footprint.
+
 
 ## References {.unnumbered}
 

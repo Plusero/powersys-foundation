@@ -1,12 +1,12 @@
 ---
 title: "Power Flow Calculation and State Estimation"
 subtitle: "Two network calculations with different questions, data, and diagnostics"
-description: "Compare power flow and state estimation side by side, then reproduce both calculations on the same three-bus DC network."
+description: "Compare power flow and state estimation side by side, then reproduce both calculations on the same three-bus AC network."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
-date-modified: "2026-08-09"
+date-modified: "2026-08-14"
 categories: [Power flow, State estimation, Network analysis, Python]
-reading-time: 12
+reading-time: 14
 jupyter: python3
 execute:
   echo: true
@@ -29,24 +29,25 @@ The [Newton--Raphson power-flow tutorial](newton-raphson-power-flow.qmd) and the
 
 ## 1. The short answer
 
-**Power flow asks:** given a network model, bus types, and specified injections or voltage setpoints, what steady-state voltage satisfies the power-balance equations?
+**Power flow:** given a network model, bus types, and user specified injections or voltages, what steady-state voltage satisfies the power equations?
 
-**State estimation asks:** given a network model and a redundant set of noisy measurements, what voltage state best explains those measurements, and how consistent are the data with that state?
+**State estimation:** given a network model and a redundant set of noisy measurements, what voltage (grid state variables) are most likely to produce measurements?
 
-Both methods return bus-voltage information and use the same network physics, but they solve different inverse problems. A PF calculation treats its scheduled quantities as specifications. An SE calculation treats telemetry and pseudo-measurements as uncertain evidence [@schweppe1970staticstateestimationpart1; @abur2004stateestimation].
+In @tbl-pfse-comparison, we compare the two methods from various perspectives.
+
 
 | Aspect | Power flow calculation | State estimation |
 |---|---|---|
 | Main purpose | Predict or study a steady operating point | Reconstruct the present operating state from data |
 | Typical inputs | Topology, parameters, bus types, scheduled $P$ and $Q$, controlled $|V|$ | Topology, parameters, meter values, pseudo-measurements, uncertainty model |
-| Equation form | Balance equations $\mathbf g(\mathbf x,\mathbf u)=\mathbf 0$ | Measurement model $\mathbf z=\mathbf h(\mathbf x)+\mathbf e$ |
+| Equation form | Balance equations $\mathbf g(\mathbf v,\mathbf s_{\mathrm{spec}})=\mathbf 0$ | Measurement model $\mathbf z=\mathbf h(\mathbf v)+\mathbf e$ |
 | Number of equations | Usually square after bus types and reference are set | Usually overdetermined, $m>n$, to provide redundancy |
 | Treatment of inconsistent data | Specifications define the case; inconsistency may prevent a solution | Residuals are reconciled according to measurement weights |
 | Key structural question | Is the operating point locally solvable? | Is the state observable from the available measurements? |
 | Typical diagnostics | Mismatch norm, iteration count, limits, Jacobian conditioning | Objective, residuals, bad-data tests, rank, state uncertainty |
 | Typical use | Planning, contingency studies, optimisation studies, simulation | Control-room monitoring, topology/error detection, downstream applications |
 
-: Power flow and state estimation side by side {#tbl-pfse-comparison}
+: Power flow and state estimation comparison {#tbl-pfse-comparison}
 
 ::: {.callout-important}
 SE is not simply “power flow with measured injections.” An estimator may include injection measurements, but it can also combine branch flows, voltage magnitudes, currents, and phasors. It seeks a state that best fits all retained evidence rather than enforcing every measured quantity as an exact balance specification.
@@ -54,20 +55,20 @@ SE is not simply “power flow with measured injections.” An estimator may inc
 
 ## 2. Power flow: enforce a specified operating case
 
-Let $\mathbf x$ contain the unknown voltage angles and magnitudes, and let $\mathbf u$ collect the specified injections and controlled voltages. PF solves
+Let $\mathbf v$ denote the unknown voltage-state vector, containing the unfixed voltage angles and magnitudes. Let $\mathbf s_{\mathrm{spec}}$ collect the specified operating-case quantities, such as scheduled injections and controlled voltage magnitudes. PF solves
 
 $$
-\mathbf g(\mathbf x,\mathbf u)=\mathbf0.
+\mathbf g(\mathbf v,\mathbf s_{\mathrm{spec}})=\mathbf0.
 $$ {#eq-pfse-pf-model}
 
 For an AC formulation, $\mathbf g$ contains selected active- and reactive-power mismatches. Bus types decide which quantities are specified and which are unknown. Newton's method linearises the square retained system,
 
 $$
-\mathbf J_k\,\Delta\mathbf x_k
-=-\mathbf g(\mathbf x_k,\mathbf u),
+\mathbf J_k\,\Delta\mathbf v_k
+=-\mathbf g(\mathbf v_k,\mathbf s_{\mathrm{spec}}),
 \qquad
 \mathbf J_k
-=\left.\frac{\partial\mathbf g}{\partial\mathbf x}\right|_{\mathbf x_k}.
+=\left.\frac{\partial\mathbf g}{\partial\mathbf v}\right|_{\mathbf v_k}.
 $$ {#eq-pfse-pf-newton}
 
 A converged solution is a state consistent with the chosen network model and specifications. It is a **model-based operating point**, not proof that a physical system actually occupied that state. Forecast errors, an incorrect topology, or inaccurate parameters can all make a numerically converged case differ from reality.
@@ -76,10 +77,10 @@ The local mathematical question is whether the retained PF Jacobian is nonsingul
 
 ## 3. State estimation: reconcile uncertain evidence
 
-Let $\mathbf z$ contain $m$ measurements and let $\mathbf h(\mathbf x)$ predict those measurements from a candidate state. The static measurement model is
+Let $\mathbf z$ contain $m$ measurements and let $\mathbf h(\mathbf v)$ predict those measurements from a candidate voltage state. The static measurement model is
 
 $$
-\mathbf z=\mathbf h(\mathbf x)+\mathbf e,
+\mathbf z=\mathbf h(\mathbf v)+\mathbf e,
 \qquad
 \mathbb E[\mathbf e]=\mathbf0,
 \qquad
@@ -89,18 +90,18 @@ $$ {#eq-pfse-se-model}
 Weighted least squares (WLS) chooses
 
 $$
-\widehat{\mathbf x}
-=\underset{\mathbf x}{\arg\min}\;
-[\mathbf z-\mathbf h(\mathbf x)]^{\mathsf T}
+\widehat{\mathbf v}
+=\underset{\mathbf v}{\arg\min}\;
+[\mathbf z-\mathbf h(\mathbf v)]^{\mathsf T}
 \mathbf R^{-1}
-[\mathbf z-\mathbf h(\mathbf x)].
+[\mathbf z-\mathbf h(\mathbf v)].
 $$ {#eq-pfse-wls-objective}
 
 At a nonlinear Gauss--Newton iteration, the $m\times n$ measurement Jacobian
 
 $$
 \mathbf H_k
-=\left.\frac{\partial\mathbf h}{\partial\mathbf x}\right|_{\mathbf x_k}
+=\left.\frac{\partial\mathbf h}{\partial\mathbf v}\right|_{\mathbf v_k}
 $$ {#eq-pfse-measurement-jacobian}
 
 maps a state correction to changes in all predicted measurements. The WLS step uses the $n\times n$ gain matrix $\mathbf H_k^{\mathsf T}\mathbf R^{-1}\mathbf H_k$. Unlike the PF Jacobian, $\mathbf H_k$ is normally rectangular because measurement redundancy is valuable.
@@ -109,114 +110,288 @@ After fixing the voltage-angle reference, local observability requires $\mathbf 
 
 ## 4. The same three-bus network, two calculations
 
-To expose the distinction without AC algebra, consider a balanced, lossless DC approximation. Voltage magnitudes are fixed at $1$ p.u., angle differences are small, resistance is neglected, and bus 1 is the reference with $\theta_1=0$. Define positive branch flow by
+Consider the balanced three-bus AC network in @fig-pfse-three-bus-ac. The lines retain both resistance and reactance, and the calculations use complex voltages, active and reactive power, voltage-magnitude variation, and transmission losses. The series impedances are
 
 $$
-P_{ij}=b_{ij}(\theta_i-\theta_j),
-$$ {#eq-pfse-dc-flow}
+z_{12}=0.02+\mathrm j0.06,
+\qquad
+z_{13}=0.08+\mathrm j0.24,
+\qquad
+z_{23}=0.06+\mathrm j0.18
+\quad\text{p.u.}
+$$ {#eq-pfse-ac-impedances}
 
-with $b_{12}=10$, $b_{13}=5$, and $b_{23}=8$ p.u. The unknown state is
+![The meshed three-bus AC network used for both calculations. Bus 1 is the slack bus, bus 2 is a PV bus, and bus 3 is a PQ bus. Branch labels give the per-unit series impedances.](figures/generated/three-bus-power-flow-single-line.svg){#fig-pfse-three-bus-ac fig-align="center" width="100%"}
+
+With $\mathbf Y$ assembled from the three series admittances, the calculated complex-power injection at bus $i$ is
 
 $$
-\mathbf x=
-\begin{bmatrix}\theta_2&\theta_3\end{bmatrix}^{\mathsf T}.
-$$ {#eq-pfse-dc-state}
+S_i(\mathbf V)=P_i+\mathrm jQ_i
+=V_i\left(\sum_{k=1}^{3}Y_{ik}V_k\right)^*.
+$$ {#eq-pfse-ac-injection}
+
+For a series-only branch from bus $i$ to bus $j$, the sending-end flow used below is
+
+$$
+S_{ij}(\mathbf V)
+=P_{ij}+\mathrm jQ_{ij}
+=V_i\left(\frac{V_i-V_j}{z_{ij}}\right)^*.
+$$ {#eq-pfse-ac-branch-flow}
 
 ### 4.1 PF calculation
 
-Suppose the specified non-reference injections are $P_2=-0.26$ p.u. and $P_3=-0.64$ p.u.; negative values denote net load. PF solves the square system
+The operating-case specifications are
+
+| Bus | Type | Specified quantities |
+|---:|---|---|
+| 1 | Slack | $|V_1|=1.04$ p.u., $\theta_1=0$ |
+| 2 | PV | $P_2=0.50$ p.u., $|V_2|=1.01$ p.u. |
+| 3 | PQ | $P_3=-0.60$ p.u., $Q_3=-0.25$ p.u. |
+
+: AC power-flow specifications {#tbl-pfse-ac-specifications}
+
+Negative $P_3$ and $Q_3$ denote consumption. The PF state contains the quantities not fixed by the bus specifications,
 
 $$
-\underbrace{
+\mathbf x_{\mathrm{PF}}
+=\begin{bmatrix}\theta_2&\theta_3&|V_3|\end{bmatrix}^{\mathsf T},
+$$ {#eq-pfse-ac-pf-state}
+
+and Newton's method solves the nonlinear square system
+
+$$
 \begin{bmatrix}
-18&-8\\
--8&13
-\end{bmatrix}}_{\mathbf B_{\mathrm{red}}}
-\begin{bmatrix}\theta_2\\\theta_3\end{bmatrix}
+P_2(\mathbf x_{\mathrm{PF}})\\
+P_3(\mathbf x_{\mathrm{PF}})\\
+Q_3(\mathbf x_{\mathrm{PF}})
+\end{bmatrix}
 =
-\begin{bmatrix}-0.26\\-0.64\end{bmatrix}.
-$$ {#eq-pfse-dc-pf}
+\begin{bmatrix}
+0.50\\-0.60\\-0.25
+\end{bmatrix}.
+$$ {#eq-pfse-ac-pf-system}
+
+The slack-bus powers and $Q_2$ are outputs of PF rather than additional specifications.
 
 ### 4.2 SE calculation
 
-Now suppose meters report $P_{12}$, $P_{13}$, $P_{23}$, $P_2$, and $P_3$. Their linear measurement model is
+The SE calculation uses the same admittance matrix but a different state and different inputs. Only the angle reference $\theta_1=0$ is fixed. The estimator state is
 
 $$
-\mathbf z
-=
-\underbrace{
-\begin{bmatrix}
--10&0\\
-0&-5\\
-8&-8\\
-18&-8\\
--8&13
-\end{bmatrix}}_{\mathbf H}
-\mathbf x+\mathbf e.
-$$ {#eq-pfse-dc-se}
+\mathbf x_{\mathrm{SE}}
+=\begin{bmatrix}
+\theta_2&\theta_3&|V_1|&|V_2|&|V_3|
+\end{bmatrix}^{\mathsf T}.
+$$ {#eq-pfse-ac-se-state}
 
-The following deterministic example first solves PF. It then constructs noisy measurements around that operating point and solves the overdetermined WLS problem. The fixed errors make every render reproducible.
+The redundant measurement vector combines all three voltage magnitudes, the active and reactive injections at buses 2 and 3, and the sending-end active and reactive flows on branches 1--2 and 2--3:
+
+$$
+\mathbf h(\mathbf x)=
+\begin{bmatrix}
+|V_1|&|V_2|&|V_3|&P_2&Q_2&P_3&Q_3&P_{12}&Q_{12}&P_{23}&Q_{23}
+\end{bmatrix}^{\mathsf T}.
+$$ {#eq-pfse-ac-measurement-function}
+
+For this controlled experiment, the converged AC PF result supplies the reference state in the estimator's coordinates,
+
+$$
+\mathbf x_{\mathrm{ref}}=
+\begin{bmatrix}
+\theta_{2,\mathrm{PF}}&\theta_{3,\mathrm{PF}}&
+|V_{1,\mathrm{PF}}|&|V_{2,\mathrm{PF}}|&|V_{3,\mathrm{PF}}|
+\end{bmatrix}^{\mathsf T}.
+$$ {#eq-pfse-ac-reference-state}
+
+The ideal measurement values and the values passed to SE are therefore
+
+$$
+\mathbf z_{\mathrm{ideal}}=\mathbf h(\mathbf x_{\mathrm{ref}}),
+\qquad
+\mathbf z_{\mathrm{SE}}=\mathbf z_{\mathrm{ideal}}+\mathbf e.
+$$ {#eq-pfse-ac-synthetic-measurements}
+
+The fixed errors in the code emulate imperfect meters while keeping every render reproducible. They are not applied to the PF specifications: they are added only after PF has produced the reference voltages and all measurement functions have been evaluated. Nonlinear WLS then repeatedly evaluates $\mathbf h$ and its $11\times5$ Jacobian.
 
 ```{python}
 #| label: lst-pfse-side-by-side
-#| code-summary: "Solve PF and SE on the same three-bus network"
+#| code-summary: "Solve nonlinear AC PF and WLS SE on the same network"
 
 import numpy as np
 
 np.set_printoptions(precision=6, suppress=True)
 
-b12, b13, b23 = 10.0, 5.0, 8.0
+slack_voltage = 1.04
+pv_voltage = 1.01
+lines = [
+    (0, 1, 0.02 + 0.06j),
+    (0, 2, 0.08 + 0.24j),
+    (1, 2, 0.06 + 0.18j),
+]
 
-# PF: two exact balance specifications determine two unknown angles.
-B_reduced = np.array(
+y_bus = np.zeros((3, 3), dtype=complex)
+for from_bus, to_bus, impedance in lines:
+    admittance = 1.0 / impedance
+    y_bus[from_bus, from_bus] += admittance
+    y_bus[to_bus, to_bus] += admittance
+    y_bus[from_bus, to_bus] -= admittance
+    y_bus[to_bus, from_bus] -= admittance
+
+
+def numerical_jacobian(function, state):
+    """Return a central-difference Jacobian."""
+    jacobian = np.empty((function(state).size, state.size))
+    for column in range(state.size):
+        step = 1e-6 * max(1.0, abs(state[column]))
+        forward = state.copy()
+        backward = state.copy()
+        forward[column] += step
+        backward[column] -= step
+        jacobian[:, column] = (function(forward) - function(backward)) / (2.0 * step)
+    return jacobian
+
+
+def bus_power(voltage):
+    """Return positive complex-power injections at all buses."""
+    return voltage * (y_bus @ voltage).conjugate()
+
+
+def pf_voltage(state):
+    """Map [theta2, theta3, |V3|] to the PF voltage phasors."""
+    angle = np.array([0.0, state[0], state[1]])
+    magnitude = np.array([slack_voltage, pv_voltage, state[2]])
+    return magnitude * np.exp(1j * angle)
+
+
+def retained_pf_injections(state):
+    power = bus_power(pf_voltage(state))
+    return np.array([power.real[1], power.real[2], power.imag[2]])
+
+
+# PF: three exact specifications determine three unknown state variables.
+specified = np.array([0.50, -0.60, -0.25])
+x_pf = np.array([0.0, 0.0, 1.0])
+for pf_iteration in range(12):
+    pf_residual = specified - retained_pf_injections(x_pf)
+    if np.linalg.norm(pf_residual, ord=np.inf) < 1e-10:
+        break
+    pf_jacobian = numerical_jacobian(retained_pf_injections, x_pf)
+    x_pf += np.linalg.solve(pf_jacobian, pf_residual)
+else:
+    raise RuntimeError("AC power flow did not converge")
+
+voltage_pf = pf_voltage(x_pf)
+power_pf = bus_power(voltage_pf)
+
+
+def se_voltage(state):
+    """Map [theta2, theta3, |V1|, |V2|, |V3|] to voltage phasors."""
+    angle = np.array([0.0, state[0], state[1]])
+    return state[2:] * np.exp(1j * angle)
+
+
+def branch_power(voltage, from_bus, to_bus, impedance):
+    current = (voltage[from_bus] - voltage[to_bus]) / impedance
+    return voltage[from_bus] * current.conjugate()
+
+
+def measurement_function(state):
+    voltage = se_voltage(state)
+    injection = bus_power(voltage)
+    flow_12 = branch_power(voltage, *lines[0])
+    flow_23 = branch_power(voltage, *lines[2])
+    return np.array(
+        [
+            *np.abs(voltage),
+            injection[1].real,
+            injection[1].imag,
+            injection[2].real,
+            injection[2].imag,
+            flow_12.real,
+            flow_12.imag,
+            flow_23.real,
+            flow_23.imag,
+        ]
+    )
+
+
+# SE: ideal measurements come from the converged PF voltage state.
+x_reference = np.array(
     [
-        [b12 + b23, -b23],
-        [-b23, b13 + b23],
+        np.angle(voltage_pf[1]),
+        np.angle(voltage_pf[2]),
+        *np.abs(voltage_pf),
     ]
 )
-p_specified = np.array([-0.26, -0.64])
-x_pf = np.linalg.solve(B_reduced, p_specified)
-pf_mismatch = p_specified - B_reduced @ x_pf
-
-# SE: five noisy measurements provide redundant evidence for two angles.
-H = np.array(
+measurement_names = np.array(
     [
-        [-b12, 0.0],
-        [0.0, -b13],
-        [b23, -b23],
-        [b12 + b23, -b23],
-        [-b23, b13 + b23],
+        "|V1|",
+        "|V2|",
+        "|V3|",
+        "P2",
+        "Q2",
+        "P3",
+        "Q3",
+        "P12",
+        "Q12",
+        "P23",
+        "Q23",
     ]
 )
-measurement_names = np.array(["P12", "P13", "P23", "P2", "P3"])
-sigma = np.array([0.010, 0.015, 0.012, 0.020, 0.020])
-fixed_error = np.array([0.008, -0.012, 0.006, -0.015, 0.018])
-z_exact = H @ x_pf
-z_measured = z_exact + fixed_error
+sigma = np.array(
+    [0.004, 0.004, 0.004, 0.015, 0.015, 0.015, 0.015, 0.012, 0.012, 0.012, 0.012]
+)
+fixed_error = np.array(
+    [0.002, -0.003, 0.001, 0.008, -0.006, -0.009, 0.007, 0.006, -0.005, -0.004, 0.006]
+)
+z_ideal = measurement_function(x_reference)
+z_measured = z_ideal + fixed_error
 
-H_white = H / sigma[:, None]
-z_white = z_measured / sigma
-x_se, _, se_rank, _ = np.linalg.lstsq(H_white, z_white, rcond=None)
-se_residual = z_measured - H @ x_se
+# Nonlinear WLS from a flat start using a whitened Gauss--Newton step.
+x_se = np.array([0.0, 0.0, 1.0, 1.0, 1.0])
+for se_iteration in range(20):
+    h = measurement_function(x_se)
+    H = numerical_jacobian(measurement_function, x_se)
+    correction, _, _, _ = np.linalg.lstsq(
+        H / sigma[:, None], (z_measured - h) / sigma, rcond=None
+    )
+    x_se += correction
+    if np.linalg.norm(correction, ord=np.inf) < 1e-10:
+        break
+else:
+    raise RuntimeError("AC state estimation did not converge")
 
-print("PF state [theta2, theta3] rad =", x_pf)
-print("maximum PF balance mismatch =", np.max(np.abs(pf_mismatch)))
-print("SE state [theta2, theta3] rad =", x_se)
-print("SE error relative to PF state rad =", x_se - x_pf)
+H = numerical_jacobian(measurement_function, x_se)
+se_prediction = measurement_function(x_se)
+se_residual = z_measured - se_prediction
+se_rank = np.linalg.matrix_rank(H / sigma[:, None])
+
+print("PF iterations =", pf_iteration)
+print("maximum PF residual =", np.linalg.norm(pf_residual, ord=np.inf))
+print("PF voltage magnitudes p.u. =", np.abs(voltage_pf))
+print("PF voltage angles deg =", np.rad2deg(np.angle(voltage_pf)))
+print("PF injections [P1, P2, P3] p.u. =", power_pf.real)
+print("PF injections [Q1, Q2, Q3] p.u. =", power_pf.imag)
+print("SE iterations =", se_iteration)
+print("SE state [theta2, theta3, |V1|, |V2|, |V3|] =", x_se)
+print("SE error relative to PF reference =", x_se - x_reference)
 print("measurement-Jacobian rank =", se_rank)
-print("\nmeasurement  value     SE prediction  residual")
-for name, measured, predicted, residual in zip(
-    measurement_names, z_measured, H @ x_se, se_residual
+print("\nmeasurement   PF-derived  measured    SE prediction  residual")
+for name, ideal, measured, predicted, residual in zip(
+    measurement_names, z_ideal, z_measured, se_prediction, se_residual
 ):
-    print(f"{name:11s} {measured: .6f} {predicted: .6f} {residual: .6f}")
+    print(
+        f"{name:11s} {ideal:10.6f} {measured:10.6f} "
+        f"{predicted:14.6f} {residual:10.6f}"
+    )
 ```
 
-The PF state is exactly $[-0.05,-0.08]^{\mathsf T}$ rad to the displayed precision, and its two retained balance mismatches are at round-off level. The SE state is close but not identical because no state can reproduce all five perturbed measurements exactly. WLS accepts residuals and distributes them according to the stated standard deviations.
+The PF residual confirms that its three retained specifications are satisfied to numerical tolerance. Its solved voltage phasors then determine every ideal value in the measurement table. The SE state is close but not identical to that PF reference because no voltage state can reproduce all 11 perturbed values exactly. WLS accepts residuals and distributes them according to the stated standard deviations.
 
-This example also shows why matching outputs do not imply matching tasks. PF used two injection **specifications** to create an operating point. SE used five uncertain **observations** to infer an operating point.
+This example also shows why similar outputs do not imply identical tasks. PF uses three exact operating-case **specifications** to calculate the reference voltages. SE uses 11 uncertain **observations** derived from those voltages to estimate five state variables.
 
 ::: {.callout-note}
-The DC approximation is useful for exposing matrix structure, but an operational AC estimator normally includes voltage magnitudes, reactive quantities, nonlinear measurement functions, and an iterative solver. The conceptual PF--SE distinction is unchanged.
+This is the full nonlinear AC solution of the stated balanced, positive-sequence, series-impedance model; it is not a DC approximation. A more detailed network model can additionally include transformer taps, shunts, line charging, phase connections, and unbalance without changing the PF--SE distinction.
 :::
 
 ## 5. How the methods work together

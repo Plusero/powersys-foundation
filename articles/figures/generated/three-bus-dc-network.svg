@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="three-bus-dc-title three-bus-dc-description">
+  <title id="three-bus-dc-title">Three-bus network for the DC power-flow and state-estimation examples</title>
+  <desc id="three-bus-dc-description">Three busbars form a meshed triangular network. Bus 1 is the angle reference. Bus angles two and three are unknown. Branch susceptances are ten, five, and eight per unit for branches one-two, one-three, and two-three.</desc>
+  <rect x="0" y="0" width="1280" height="720" fill="white" />
+
+  <g fill="none" stroke="#111111" stroke-linejoin="miter">
+    <path d="M 150 170 H 370" stroke-width="3" />
+    <path d="M 910 170 H 1130" stroke-width="3" />
+    <path d="M 530 530 H 750" stroke-width="3" />
+    <path d="M 340 170 V 260 H 940 V 170" stroke-width="1.5" />
+    <path d="M 220 170 V 370 H 570 V 530" stroke-width="1.5" />
+    <path d="M 1060 170 V 370 H 710 V 530" stroke-width="1.5" />
+  </g>
+
+  <g font-family="Times New Roman, Times, serif" text-anchor="middle">
+    <g fill="#263943" font-size="22" font-weight="bold">
+      <text x="260" y="99">Bus 1 (reference)</text>
+      <text x="1020" y="99">Bus 2</text>
+      <text x="640" y="590">Bus 3</text>
+    </g>
+    <g fill="#43515a" font-size="20">
+      <g text-anchor="start">
+        <text x="230" y="135">θ</text>
+        <text x="244" y="141" font-size="18">1</text>
+        <text x="258" y="135"> = 0</text>
+
+        <text x="962" y="135">unknown θ</text>
+        <text x="1065" y="141" font-size="18">2</text>
+
+        <text x="582" y="626">unknown θ</text>
+        <text x="685" y="632" font-size="18">3</text>
+
+        <text x="576" y="232">b</text>
+        <text x="588" y="238" font-size="18">12</text>
+        <text x="609" y="232"> = 10 p.u.</text>
+
+        <text x="325" y="342">b</text>
+        <text x="337" y="348" font-size="18">13</text>
+        <text x="358" y="342"> = 5 p.u.</text>
+
+        <text x="835" y="342">b</text>
+        <text x="847" y="348" font-size="18">23</text>
+        <text x="868" y="342"> = 8 p.u.</text>
+      </g>
+    </g>
+  </g>
+</svg>
