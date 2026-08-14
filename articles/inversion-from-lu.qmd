@@ -4,7 +4,7 @@ subtitle: "Turn one factorisation into a solve with every unit vector"
 description: "Derive a matrix inverse from known LU factors, implement the triangular solves in Python, and decide when an explicit inverse is actually appropriate."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
-date-modified: "2026-08-09"
+date-modified: "2026-08-14"
 categories: [Linear algebra, Numerical methods, Python]
 reading-time: 13
 jupyter: python3
@@ -19,11 +19,11 @@ draft: false
 After working through this tutorial, you should be able to:
 
 - interpret a matrix inverse as a collection of linear-system solutions;
-- derive the order of the triangular solves when $\mathbf{A}=\mathbf{L}\mathbf{U}$;
-- compute $\mathbf{A}^{-1}$ with triangular solves instead of separately inverting both factors and multiplying them;
-- verify an inverse with left and right residuals;
-- account for a row-permutation matrix in a pivoted LU factorisation; and
-- recognise when solving for a requested right-hand side is preferable to forming an inverse.
+- derive the correct order of the triangular solves when $\mathbf{A}=\mathbf{L}\mathbf{U}$;
+- apply forward and backward substitution to multi-column right-hand sides;
+- implement matrix inversion from known LU factors in Python;
+- verify the computed inverse by checking $\mathbf{A}\mathbf{X}=\mathbf{I}$; and
+- recognise when solving $\mathbf{A}\mathbf{x}=\mathbf{b}$ directly is preferable to forming $\mathbf{A}^{-1}$.
 
 This tutorial starts with known LU factors. The [recursive LU tutorial](recursive-lu-decomposition.qmd) derives and computes those factors.
 
@@ -70,26 +70,50 @@ $$
 \mathbf{L}\mathbf{U}\mathbf{X}=\mathbf{I}.
 $$
 
-Introduce $\mathbf{Y}=\mathbf{U}\mathbf{X}$. The inverse follows from two triangular systems with multiple right-hand sides:
+Introduce $\mathbf{Y}=\mathbf{U}\mathbf{X}$. The inverse follows by applying forward substitution and then backward substitution to two triangular systems with multi-column right-hand sides  [@illinois2024lusystems]:
 
 $$
 \begin{aligned}
-\mathbf{L}\mathbf{Y} &= \mathbf{I}, \\
-\mathbf{U}\mathbf{X} &= \mathbf{Y}.
+\underbrace{\mathbf{L}\mathbf{Y}=\mathbf{I}}_{\text{forward substitution}},
+&\qquad i=1,2,\ldots,n, \\
+\underbrace{\mathbf{U}\mathbf{X}=\mathbf{Y}}_{\text{backward substitution}},
+&\qquad i=n,n-1,\ldots,1.
 \end{aligned}
 $$ {#eq-luinv-two-solves}
+
+Writing $\mathbf{Y}_{i,:}$ and $\mathbf{X}_{i,:}$ for complete rows across all right-hand sides makes the substitutions explicit. Forward substitution computes $\mathbf{Y}$ from top to bottom:
+
+$$
+\mathbf{Y}_{i,:}
+=
+\frac{\mathbf{I}_{i,:}-\displaystyle\sum_{k=1}^{i-1}L_{ik}\mathbf{Y}_{k,:}}
+{L_{ii}},
+\qquad i=1,2,\ldots,n.
+$$ {#eq-luinv-forward-substitution}
+
+Once those rows are known, backward substitution computes $\mathbf{X}$ from bottom to top:
+
+$$
+\mathbf{X}_{i,:}
+=
+\frac{\mathbf{Y}_{i,:}-\displaystyle\sum_{k=i+1}^{n}U_{ik}\mathbf{X}_{k,:}}
+{U_{ii}},
+\qquad i=n,n-1,\ldots,1.
+$$ {#eq-luinv-backward-substitution}
+
+An empty sum is zero, so the first forward-substitution row and the last backward-substitution row require only division by their diagonal entries. Each row formula acts on every right-hand side at once; equivalently, each column is an independent forward/backward solve.
 
 Thus
 
 $$
-\boxed{\mathbf{A}^{-1}=\mathbf{U}^{-1}\mathbf{L}^{-1}}.
+\boxed{\mathbf{X}=\mathbf{A}^{-1}=\mathbf{U}^{-1}\mathbf{L}^{-1}}.
 $$ {#eq-luinv-reversed-order}
 
-The order reverses: the inverse of a product is not $\mathbf{L}^{-1}\mathbf{U}^{-1}$. In an implementation, @eq-luinv-two-solves is preferable to separately constructing both triangular inverses and multiplying them. It performs the required substitutions directly and generalises to any chosen set of right-hand sides.
 
-## 3. Multiple-right-hand-side substitution
 
-The following functions operate on an entire right-hand-side matrix. Each loop iteration updates one row across every right-hand side, so passing $\mathbf{I}$ computes all inverse columns together.
+## 3. Python Example
+
+The two loops below are direct Python translations of @eq-luinv-forward-substitution and @eq-luinv-backward-substitution. The first loop constructs $\mathbf{Y}$ from top to bottom; the second constructs $\mathbf{X}$ from bottom to top.
 
 ```{python}
 #| label: lst-luinv-triangular-solves
@@ -98,182 +122,143 @@ The following functions operate on an entire right-hand-side matrix. Each loop i
 import numpy as np
 
 
-def triangular_solve(
-    triangular: np.ndarray,
-    rhs: np.ndarray,
-    *,
-    lower: bool,
-) -> np.ndarray:
-    """Solve a nonsingular triangular system for one or more columns."""
-    factor = np.asarray(triangular)
-    right_hand_side = np.asarray(rhs)
+def forward_substitution(lower: np.ndarray, rhs: np.ndarray) -> np.ndarray:
+    """Solve lower @ y = rhs from top to bottom."""
+    lower = np.asarray(lower)
+    rhs = np.asarray(rhs)
 
-    if factor.ndim != 2 or factor.shape[0] != factor.shape[1]:
-        raise ValueError("triangular factor must be square")
-    if factor.shape[0] == 0:
-        raise ValueError("triangular factor must not be empty")
-    if right_hand_side.ndim != 2 or right_hand_side.shape[0] != factor.shape[0]:
-        raise ValueError("rhs must be a matrix with the same number of rows")
+    if lower.ndim != 2 or lower.shape[0] != lower.shape[1]:
+        raise ValueError("lower must be square")
+    if rhs.ndim != 2 or rhs.shape[0] != lower.shape[0]:
+        raise ValueError("rhs must have the same number of rows as lower")
+    if not np.allclose(lower, np.tril(lower)):
+        raise ValueError("lower must be lower triangular")
+    if np.any(np.diag(lower) == 0):
+        raise np.linalg.LinAlgError("lower must be nonsingular")
 
-    dtype = np.result_type(factor.dtype, right_hand_side.dtype, np.float64)
-    factor = np.asarray(factor, dtype=dtype)
-    right_hand_side = np.asarray(right_hand_side, dtype=dtype)
+    dtype = np.result_type(lower.dtype, rhs.dtype, np.float64)
+    lower = np.asarray(lower, dtype=dtype)
+    rhs = np.asarray(rhs, dtype=dtype)
 
-    expected_triangle = np.tril(factor) if lower else np.triu(factor)
-    scale = np.linalg.norm(factor, ord=np.inf)
-    real_dtype = np.empty((), dtype=dtype).real.dtype
-    tolerance = np.finfo(real_dtype).eps * factor.shape[0] * scale
+    n = lower.shape[0]
+    y = np.empty_like(rhs)
+    for i in range(n):
+        y[i, :] = (rhs[i, :] - lower[i, :i] @ y[:i, :]) / lower[i, i]
 
-    if not np.allclose(factor, expected_triangle, rtol=0.0, atol=tolerance):
-        raise ValueError("factor is not triangular")
-    if np.any(np.abs(np.diag(factor)) <= tolerance):
-        raise np.linalg.LinAlgError("zero or numerically small diagonal entry")
+    return y
 
-    solution = np.empty_like(right_hand_side, dtype=dtype)
-    indices = (
-        range(factor.shape[0])
-        if lower
-        else range(factor.shape[0] - 1, -1, -1)
-    )
 
-    for i in indices:
-        if lower:
-            known = factor[i, :i] @ solution[:i, :]
-        else:
-            known = factor[i, i + 1 :] @ solution[i + 1 :, :]
-        solution[i, :] = (right_hand_side[i, :] - known) / factor[i, i]
+def backward_substitution(upper: np.ndarray, rhs: np.ndarray) -> np.ndarray:
+    """Solve upper @ x = rhs from bottom to top."""
+    upper = np.asarray(upper)
+    rhs = np.asarray(rhs)
 
-    return solution
+    if upper.ndim != 2 or upper.shape[0] != upper.shape[1]:
+        raise ValueError("upper must be square")
+    if rhs.ndim != 2 or rhs.shape[0] != upper.shape[0]:
+        raise ValueError("rhs must have the same number of rows as upper")
+    if not np.allclose(upper, np.triu(upper)):
+        raise ValueError("upper must be upper triangular")
+    if np.any(np.diag(upper) == 0):
+        raise np.linalg.LinAlgError("upper must be nonsingular")
+
+    dtype = np.result_type(upper.dtype, rhs.dtype, np.float64)
+    upper = np.asarray(upper, dtype=dtype)
+    rhs = np.asarray(rhs, dtype=dtype)
+
+    n = upper.shape[0]
+    x = np.empty_like(rhs)
+    for i in range(n - 1, -1, -1):
+        x[i, :] = (
+            rhs[i, :] - upper[i, i + 1 :] @ x[i + 1 :, :]
+        ) / upper[i, i]
+
+    return x
 
 
 def inverse_from_lu(lower: np.ndarray, upper: np.ndarray) -> np.ndarray:
-    """Return A^{-1} for factors satisfying A = lower @ upper."""
+    """Compute A^{-1} by substitution for A = lower @ upper."""
     lower = np.asarray(lower)
     upper = np.asarray(upper)
 
-    if lower.ndim != 2 or lower.shape != upper.shape:
-        raise ValueError("lower and upper must be square factors of equal shape")
-    if lower.shape[0] != lower.shape[1]:
-        raise ValueError("lower and upper must be square")
+    if lower.ndim != 2 or upper.ndim != 2 or lower.shape != upper.shape:
+        raise ValueError("lower and upper must be matrices with equal shapes")
 
     dtype = np.result_type(lower.dtype, upper.dtype, np.float64)
     identity = np.eye(lower.shape[0], dtype=dtype)
-    lower_inverse = triangular_solve(lower, identity, lower=True)
-    return triangular_solve(upper, lower_inverse, lower=False)
+    y = forward_substitution(lower, identity)
+    return backward_substitution(upper, y)
 ```
 
-The variable `lower_inverse` makes the derivation visible: it is $\mathbf{Y}=\mathbf{L}^{-1}$. The second solve applies $\mathbf{U}^{-1}$ from the left. No call to a general-purpose inverse routine is needed.
 
-## 4. Worked example
+The slice `y[i, :]` or `x[i, :]` updates every right-hand side at once. Because the right-hand side of the first solve is `identity`, the returned `x` contains all columns of $\mathbf{A}^{-1}$.
 
-Use factors with non-unit diagonal entries in $\mathbf{U}$ and a unit diagonal in $\mathbf{L}$, as in the Doolittle convention:
+Let's try the script with some example matrices.
+
+$$
+\mathbf{L}=
+\begin{bmatrix}
+1 & 0 & 0 \\
+2 & 1 & 0 \\
+-1 & 3 & 1
+\end{bmatrix},
+\qquad
+\mathbf{U}=
+\begin{bmatrix}
+1 & 1 & 0 \\
+0 & 1 & 1 \\
+0 & 0 & 1
+\end{bmatrix}.
+$$
+
+The following code exposes both stages rather than calling `inverse_from_lu` immediately:
 
 ```{python}
-#| label: lst-luinv-worked-example
+#| label: lst-luinv-substitution-example
+#| code-summary: "Apply forward and backward substitution to the identity"
 
 lower = np.array(
     [
         [1.0, 0.0, 0.0],
-        [0.2, 1.0, 0.0],
-        [-0.1, 0.3, 1.0],
+        [2.0, 1.0, 0.0],
+        [-1.0, 3.0, 1.0],
     ]
 )
 upper = np.array(
     [
-        [5.0, -1.0, 2.0],
-        [0.0, 4.0, 0.5],
-        [0.0, 0.0, 3.0],
+        [1.0, 1.0, 0.0],
+        [0.0, 1.0, 1.0],
+        [0.0, 0.0, 1.0],
     ]
 )
+identity = np.eye(3)
 
+y = forward_substitution(lower, identity)
+x = backward_substitution(upper, y)
 a = lower @ upper
-a_inverse = inverse_from_lu(lower, upper)
 
-np.set_printoptions(precision=6, suppress=True)
-print("A =\n", a)
-print("\nA^{-1} =\n", a_inverse)
+print("Y from forward substitution:\n", y)
+print("\nX from backward substitution:\n", x)
+print("\nA @ X:\n", a @ x)
 ```
 
-Column $j$ of the printed inverse is the solution produced by a unit input $\mathbf{e}_j$. This interpretation is often more informative than treating the inverse as a table of unrelated numbers.
+Forward substitution gives $\mathbf{Y}=\mathbf{L}^{-1}$. Backward substitution then gives $\mathbf{X}=\mathbf{U}^{-1}\mathbf{Y}=\mathbf{A}^{-1}$, and the final printed product verifies $\mathbf{A}\mathbf{X}=\mathbf{I}$.
 
-## 5. Verify both sides
-
-In exact arithmetic, an inverse satisfies both
-
-$$
-\mathbf{A}\mathbf{X}=\mathbf{I}
-\qquad\text{and}\qquad
-\mathbf{X}\mathbf{A}=\mathbf{I}.
-$$
-
-For a computed inverse $\widehat{\mathbf{X}}$, use scaled residuals. The equation $\mathbf{A}\widehat{\mathbf{X}}=\mathbf{I}$ tests a right inverse, because $\widehat{\mathbf{X}}$ multiplies $\mathbf{A}$ from the right; $\widehat{\mathbf{X}}\mathbf{A}=\mathbf{I}$ tests a left inverse.
-
-$$
-\eta_{\mathrm{right}}
-=
-\frac{\lVert\mathbf{I}-\mathbf{A}\widehat{\mathbf{X}}\rVert_\infty}
-{\lVert\mathbf{A}\rVert_\infty\lVert\widehat{\mathbf{X}}\rVert_\infty},
-\qquad
-\eta_{\mathrm{left}}
-=
-\frac{\lVert\mathbf{I}-\widehat{\mathbf{X}}\mathbf{A}\rVert_\infty}
-{\lVert\widehat{\mathbf{X}}\rVert_\infty\lVert\mathbf{A}\rVert_\infty}.
-$$ {#eq-luinv-residuals}
+In normal use, call `inverse_from_lu` directly with the same factors:
 
 ```{python}
-#| label: lst-luinv-verification
+#| label: lst-luinv-direct-call
+#| code-summary: "Compute the inverse directly from the LU factors"
 
-identity = np.eye(a.shape[0])
-scale = np.linalg.norm(a, ord=np.inf) * np.linalg.norm(a_inverse, ord=np.inf)
+x_direct = inverse_from_lu(lower, upper)
 
-right_inverse_residual = (
-    np.linalg.norm(identity - a @ a_inverse, ord=np.inf) / scale
-)
-left_inverse_residual = (
-    np.linalg.norm(identity - a_inverse @ a, ord=np.inf) / scale
-)
-
-# A separate solve provides a convenient implementation cross-check.
-reference = np.linalg.solve(a, identity)
-relative_difference = (
-    np.linalg.norm(a_inverse - reference, ord=np.inf)
-    / np.linalg.norm(reference, ord=np.inf)
-)
-
-print(f"scaled right-inverse residual: {right_inverse_residual:.3e}")
-print(f"scaled left-inverse residual:  {left_inverse_residual:.3e}")
-print(f"relative difference from NumPy solve: {relative_difference:.3e}")
+print("X from inverse_from_lu:\n", x_direct)
+print("\nMatches the two-stage calculation:", np.allclose(x_direct, x))
 ```
 
-For this well-conditioned example, all three values should be close to floating-point roundoff. A small factorisation residual $\lVert\mathbf{A}-\mathbf{L}\mathbf{U}\rVert$ and small inverse residuals test different stages of the calculation; when the factors came from another algorithm, check both.
 
-As an experiment, change one off-diagonal entry of `upper`, reconstruct `a`, and predict which inverse entries will move before rerunning the residual checks.
 
-## 6. Pivoting changes the right-hand side
-
-Practical LU routines normally pivot. A common convention is
-
-$$
-\mathbf{P}\mathbf{A}=\mathbf{L}\mathbf{U},
-$$ {#eq-luinv-pivoted-factorisation}
-
-where $\mathbf{P}$ permutes rows. Rearranging @eq-luinv-pivoted-factorisation gives
-
-$$
-\boxed{\mathbf{A}^{-1}=\mathbf{U}^{-1}\mathbf{L}^{-1}\mathbf{P}}.
-$$ {#eq-luinv-pivoted-inverse}
-
-The corresponding solves are
-
-$$
-\mathbf{L}\mathbf{Y}=\mathbf{P},
-\qquad
-\mathbf{U}\mathbf{X}=\mathbf{Y}.
-$$
-
-Do not insert $\mathbf{P}$ from memory without checking the library's convention. For example, a routine that reports $\mathbf{A}=\mathbf{P}\mathbf{L}\mathbf{U}$ instead leads to $\mathbf{A}^{-1}=\mathbf{U}^{-1}\mathbf{L}^{-1}\mathbf{P}^{\mathsf T}$. Complex-valued factorizations use the same algebra; a permutation matrix is real, so transpose and conjugate transpose coincide here.
-
-## 7. When should the inverse be formed?
+## 4. Do not Invert that Matrix!
 
 If the goal is only to solve
 
@@ -281,34 +266,17 @@ $$
 \mathbf{A}\mathbf{x}=\mathbf{b},
 $$
 
-apply forward and backward substitution directly to $\mathbf{b}$. Forming all $n$ inverse columns consumes $O(n^2)$ storage and $O(n^3)$ arithmetic, then multiplying the stored inverse by $\mathbf{b}$ adds work and rounding error. Reusable LU factors already provide the desired linear operator [@golub2013].
+apply forward and backward substitution directly to $\mathbf{b}$. Forming $\mathbf{A}^{-1}$ first solves for every inverse column and still requires a subsequent multiplication by $\mathbf{b}$, so it does unnecessary work and can be less numerically accurate than solving the system directly. Gundersen gives a detailed comparison of the computational cost and numerical error [@gundersen2020matrixinversion].
 
-An explicit inverse can still be the intended result. Examples include an impedance matrix, a covariance matrix, all-pairs sensitivities, or selected inverse entries used as uncertainty measures. Even then, ask which entries or columns are actually needed. To obtain columns indexed by a set $J$, replace $\mathbf{I}$ in @eq-luinv-two-solves with $\mathbf{I}_{:,J}$ and avoid computing the other columns.
+Form an explicit inverse only when its entries are themselves the desired result, such as a covariance matrix.
 
-::: {.callout-warning}
-Inversion does not cure ill-conditioning. If $\mathbf{A}$ is nearly singular, small residuals can coexist with a large sensitivity of the result to perturbations in $\mathbf{A}$. Inspect a condition estimate as well as the residuals.
-:::
 
-## 8. Power-system interpretation
+## 5. Takeaways
 
-For a nonsingular network equation
-
-$$
-\mathbf{Y}\mathbf{V}=\mathbf{I}_{\mathrm{inj}},
-$$
-
-the bus-impedance matrix is $\mathbf{Z}=\mathbf{Y}^{-1}$. Column $j$ of $\mathbf{Z}$ gives the bus-voltage response to a unit current injection at bus $j$, under the reference and grounding choices used to make $\mathbf{Y}$ nonsingular. The [Y-bus tutorial](y-bus-matrix.qmd) develops the admittance matrix itself.
-
-If only a few injection scenarios are required, solve with the factors of $\mathbf{Y}$ instead of forming $\mathbf{Z}$. If the complete impedance matrix is required, @eq-luinv-two-solves provides it from one factorisation.
-
-## 9. Takeaways
-
-- The columns of $\mathbf{A}^{-1}$ solve $\mathbf{A}\mathbf{x}_j=\mathbf{e}_j$.
-- For $\mathbf{A}=\mathbf{L}\mathbf{U}$, solve $\mathbf{L}\mathbf{Y}=\mathbf{I}$ and then $\mathbf{U}\mathbf{X}=\mathbf{Y}$.
-- The inverse factors appear in reversed order: $\mathbf{A}^{-1}=\mathbf{U}^{-1}\mathbf{L}^{-1}$.
-- A pivot permutation must be included according to the factorisation convention.
-- Left and right residuals verify the result, while conditioning describes its sensitivity.
-- Prefer solves with selected right-hand sides unless the inverse itself is needed.
+- Computing $\mathbf{A}^{-1}$ is equivalent to solving $\mathbf{A}\mathbf{x}_j=\mathbf{e}_j$ for every column of the identity matrix.
+- For $\mathbf{A}=\mathbf{L}\mathbf{U}$, first use forward substitution to solve $\mathbf{L}\mathbf{Y}=\mathbf{I}$, then use backward substitution to solve $\mathbf{U}\mathbf{X}=\mathbf{Y}$.
+- The solve order gives $\mathbf{X}=\mathbf{A}^{-1}=\mathbf{U}^{-1}\mathbf{L}^{-1}$.
+- If only $\mathbf{A}\mathbf{x}=\mathbf{b}$ is needed, solve directly with the LU factors. Perform an explicit inverse only when its entries are the desired result.
 
 ## References {.unnumbered}
 
