@@ -12,6 +12,7 @@ execute:
   echo: true
   warning: false
 draft: false
+proofread: true
 ---
 
 ## What you will learn
