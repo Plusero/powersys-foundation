@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="three-bus-title three-bus-description">
+  <title id="three-bus-title">Three-bus AC power-flow single-line diagram</title>
+  <desc id="three-bus-description">A meshed three-bus network has a slack generator at bus 1, a generator-controlled PV bus at bus 2, and a PQ load at bus 3. Lines connect every pair of buses and are labelled with their per-unit impedances.</desc>
+  <rect x="0" y="0" width="1280" height="720" fill="white" />
+  <polyline points="150,190 410,190" fill="none" stroke="#111111" stroke-width="3" stroke-linejoin="miter" />
+  <polyline points="870,190 1130,190" fill="none" stroke="#111111" stroke-width="3" stroke-linejoin="miter" />
+  <polyline points="540,500 740,500" fill="none" stroke="#111111" stroke-width="3" stroke-linejoin="miter" />
+  <polyline points="380,190 380,265 900,265 900,190" fill="none" stroke="#111111" stroke-width="1.5" stroke-linejoin="miter" />
+  <polyline points="210,190 210,235 570,470 570,500" fill="none" stroke="#111111" stroke-width="1.5" stroke-linejoin="miter" />
+  <polyline points="1070,190 1070,235 710,470 710,500" fill="none" stroke="#111111" stroke-width="1.5" stroke-linejoin="miter" />
+  <polyline points="280,118 280,190" fill="none" stroke="#111111" stroke-width="1.5" stroke-linejoin="miter" />
+  <polyline points="1000,118 1000,190" fill="none" stroke="#111111" stroke-width="1.5" stroke-linejoin="miter" />
+  <polyline points="640,500 640,610" fill="none" stroke="#111111" stroke-width="1.5" stroke-linejoin="miter" />
+  <circle cx="280" cy="90" r="28" fill="white" stroke="#111111" stroke-width="1.5" />
+  <text x="280" y="99" font-family="Times New Roman" font-size="24" font-weight="bold" text-anchor="middle" fill="#111111">G1</text>
+  <circle cx="1000" cy="90" r="28" fill="white" stroke="#111111" stroke-width="1.5" />
+  <text x="1000" y="99" font-family="Times New Roman" font-size="24" font-weight="bold" text-anchor="middle" fill="#111111">G2</text>
+  <polygon points="624,610 656,610 640,638" fill="#111111" />
+  <text x="218" y="82" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="end" fill="#43515a">|V1| = 1.04 p.u.</text>
+  <text x="218" y="108" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="end" fill="#43515a">θ1 = 0</text>
+  <text x="1050" y="82" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="start" fill="#43515a">P2 = 0.50 p.u.</text>
+  <text x="1050" y="108" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="start" fill="#43515a">|V2| = 1.01 p.u.</text>
+  <text x="138" y="170" font-family="Times New Roman" font-size="20" font-weight="bold" text-anchor="end" fill="#43515a">Bus 1</text>
+  <text x="138" y="194" font-family="Times New Roman" font-size="20" font-weight="bold" text-anchor="end" fill="#43515a">Slack</text>
+  <text x="1142" y="170" font-family="Times New Roman" font-size="20" font-weight="bold" text-anchor="start" fill="#43515a">Bus 2</text>
+  <text x="1142" y="194" font-family="Times New Roman" font-size="20" font-weight="bold" text-anchor="start" fill="#43515a">PV</text>
+  <text x="748" y="506" font-family="Times New Roman" font-size="20" font-weight="bold" text-anchor="start" fill="#43515a">Bus 3 — PQ</text>
+  <text x="748" y="536" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="start" fill="#43515a">P3 = −0.60 p.u.</text>
+  <text x="748" y="562" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="start" fill="#43515a">Q3 = −0.25 p.u.</text>
+  <text x="670" y="630" font-family="Times New Roman" font-size="20" font-weight="bold" text-anchor="start" fill="#43515a">Load 3</text>
+  <text x="640" y="226" font-family="Times New Roman" font-size="20" font-weight="bold" text-anchor="middle" fill="#43515a">Line 1</text>
+  <text x="640" y="252" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="middle" fill="#43515a">z12 = 0.02 + j0.06 p.u.</text>
+  <text x="320" y="374" font-family="Times New Roman" font-size="20" font-weight="bold" text-anchor="middle" fill="#43515a">Line 2</text>
+  <text x="318" y="400" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="middle" fill="#43515a">z13 = 0.08 + j0.24 p.u.</text>
+  <text x="960" y="374" font-family="Times New Roman" font-size="20" font-weight="bold" text-anchor="middle" fill="#43515a">Line 3</text>
+  <text x="962" y="400" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="middle" fill="#43515a">z23 = 0.06 + j0.18 p.u.</text>
+</svg>
