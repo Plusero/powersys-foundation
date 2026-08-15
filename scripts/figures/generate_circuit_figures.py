@@ -32,9 +32,22 @@ INK = "#172b36"
 ACCENT = "#0b7285"
 BACKGROUND = "#ffffff"
 SVG_NAMESPACE = "http://www.w3.org/2000/svg"
+# Trailing-subscript labels: schemdraw plain text -> italic base + subscript.
 SVG_SUBSCRIPT_LABELS = {
     "C_p": ("C", "p"),
     "R_w": ("R", "w"),
+    "V_f": ("V", "f"),
+    "V_t": ("V", "t"),
+    "I_f": ("I", "f"),
+    "I_t": ("I", "t"),
+}
+# Whole-string italic math labels.
+SVG_ITALIC_LABELS = {
+    "y": "y",
+}
+# Multi-part labels when a subscript is not the final character.
+SVG_COMPOUND_LABELS = {
+    "jb_c/2": (("j", "base"), ("b", "base"), ("c", "sub"), ("/2", "base")),
 }
 
 
@@ -62,6 +75,107 @@ def drawing(*, fontsize: float = 14, margin: float = 0.45) -> schemdraw.Drawing:
     return result
 
 
+def _replace_subscript_label(text_element: ET.Element, text_span: ET.Element) -> None:
+    """Rewrite plain text such as V_f as an italic base letter plus a subscript."""
+    base, subscript = SVG_SUBSCRIPT_LABELS[text_span.text]
+    label_center = float(text_span.get("x", text_element.get("x", "0")))
+    first_dy = text_span.get("dy", "13")
+
+    for child in list(text_element):
+        if child.tag == f"{{{SVG_NAMESPACE}}}tspan":
+            text_element.remove(child)
+
+    text_element.set("font-family", "DejaVu Serif")
+    text_element.set("text-anchor", "middle")
+
+    base_span = ET.SubElement(
+        text_element,
+        f"{{{SVG_NAMESPACE}}}tspan",
+        {
+            "x": f"{label_center:g}",
+            "dy": first_dy,
+            "font-style": "italic",
+        },
+    )
+    base_span.text = base
+    subscript_span = ET.SubElement(
+        text_element,
+        f"{{{SVG_NAMESPACE}}}tspan",
+        {
+            "dx": "2",
+            "dy": "4",
+            "font-size": "9",
+            "font-style": "italic",
+        },
+    )
+    subscript_span.text = subscript
+
+
+def _replace_italic_label(text_element: ET.Element, text_span: ET.Element) -> None:
+    """Rewrite a plain label as a single italic math string."""
+    rendered = SVG_ITALIC_LABELS[text_span.text]
+    label_center = float(text_span.get("x", text_element.get("x", "0")))
+    first_dy = text_span.get("dy", "13")
+
+    for child in list(text_element):
+        if child.tag == f"{{{SVG_NAMESPACE}}}tspan":
+            text_element.remove(child)
+
+    text_element.set("font-family", "DejaVu Serif")
+    text_element.set("text-anchor", "middle")
+    span = ET.SubElement(
+        text_element,
+        f"{{{SVG_NAMESPACE}}}tspan",
+        {
+            "x": f"{label_center:g}",
+            "dy": first_dy,
+            "font-style": "italic",
+        },
+    )
+    span.text = rendered
+
+
+def _replace_compound_label(text_element: ET.Element, text_span: ET.Element) -> None:
+    """Rewrite jb_c/2-style labels with a true subscript before trailing text."""
+    parts = SVG_COMPOUND_LABELS[text_span.text]
+    label_center = float(text_span.get("x", text_element.get("x", "0")))
+    first_dy = text_span.get("dy", "13")
+    subscript_dy = 4
+
+    for child in list(text_element):
+        if child.tag == f"{{{SVG_NAMESPACE}}}tspan":
+            text_element.remove(child)
+
+    text_element.set("font-family", "DejaVu Serif")
+    text_element.set("text-anchor", "middle")
+
+    previous_was_subscript = False
+    for index, (content, role) in enumerate(parts):
+        attributes: dict[str, str] = {"font-style": "italic"}
+        if index == 0:
+            attributes["x"] = f"{label_center:g}"
+            attributes["dy"] = first_dy
+        else:
+            attributes["dx"] = "1"
+
+        if role == "sub":
+            attributes["dy"] = str(subscript_dy)
+            attributes["font-size"] = "9"
+            previous_was_subscript = True
+        else:
+            if previous_was_subscript:
+                attributes["dy"] = str(-subscript_dy)
+                attributes["font-size"] = "13"
+            previous_was_subscript = False
+
+        span = ET.SubElement(
+            text_element,
+            f"{{{SVG_NAMESPACE}}}tspan",
+            attributes,
+        )
+        span.text = content
+
+
 def save_svg(
     diagram: schemdraw.Drawing,
     path: Path,
@@ -82,28 +196,16 @@ def save_svg(
     root.set("aria-labelledby", f"{title_id} {description_id}")
 
     for text_element in root.iter(f"{{{SVG_NAMESPACE}}}text"):
-        for text_span in text_element.findall(f"{{{SVG_NAMESPACE}}}tspan"):
-            if text_span.text not in SVG_SUBSCRIPT_LABELS:
-                continue
-            base, subscript = SVG_SUBSCRIPT_LABELS[text_span.text]
-            label_center = float(text_span.get("x", "0"))
-            text_element.set("font-family", "DejaVu Serif")
-            text_element.set("text-anchor", "start")
-            text_span.set("x", f"{label_center - 7:g}")
-            text_span.text = base
-            text_span.set("font-style", "italic")
-            subscript_span = ET.SubElement(
-                text_element,
-                f"{{{SVG_NAMESPACE}}}tspan",
-                {
-                    "baseline-shift": "sub",
-                    "dx": "3",
-                    "dy": "1",
-                    "font-size": "9",
-                    "font-style": "normal",
-                },
-            )
-            subscript_span.text = subscript
+        for text_span in list(text_element.findall(f"{{{SVG_NAMESPACE}}}tspan")):
+            if text_span.text in SVG_SUBSCRIPT_LABELS:
+                _replace_subscript_label(text_element, text_span)
+                break
+            if text_span.text in SVG_COMPOUND_LABELS:
+                _replace_compound_label(text_element, text_span)
+                break
+            if text_span.text in SVG_ITALIC_LABELS:
+                _replace_italic_label(text_element, text_span)
+                break
 
     title_element = ET.Element(f"{{{SVG_NAMESPACE}}}title", {"id": title_id})
     title_element.text = title
@@ -452,6 +554,81 @@ def draw_practical_inductor_model(path: Path) -> None:
     )
 
 
+def draw_nominal_pi_line_model(path: Path) -> None:
+    diagram = drawing(fontsize=13, margin=1.15)
+
+    diagram += elm.Dot(open=True).label("f", loc="left", ofst=0.45)
+    left_lead = elm.Line().right().length(1.5)
+    diagram += left_lead
+    left_node = diagram.here
+    diagram += elm.Dot()
+
+    diagram += (
+        elm.ResistorIEC()
+        .right()
+        .length(5.4)
+        .label("y", loc="top", ofst=0.4)
+    )
+    right_node = diagram.here
+    diagram += elm.Dot()
+    right_lead = elm.Line().right().length(1.5)
+    diagram += right_lead
+    diagram += elm.Dot(open=True).label("t", loc="right", ofst=0.45)
+
+    # Currents enter the branch from each terminal bus.
+    # Draw arrows alone, then place I_f / I_t as separate labels for clearance.
+    diagram += (
+        elm.CurrentLabel(length=0.85, ofst=0.22, top=True)
+        .at(left_lead)
+        .color(ACCENT)
+    )
+    diagram += (
+        elm.CurrentLabel(length=0.85, ofst=0.22, top=True)
+        .at(right_lead)
+        .reverse()
+        .color(ACCENT)
+    )
+    diagram += elm.Label("I_f", color=ACCENT).at(
+        (left_node[0] - 0.75, left_node[1] + 0.95)
+    )
+    diagram += elm.Label("I_t", color=ACCENT).at(
+        (right_node[0] + 0.75, right_node[1] + 0.95)
+    )
+
+    # Shunt labels sit outside each capacitor, clear of the vertical leads.
+    shunt_label_depth = 2.25
+    shunt_label_outset = 1.55
+
+    diagram += elm.Line().at(left_node).down().length(0.55)
+    diagram += elm.Capacitor().down()
+    diagram += elm.Ground()
+    diagram += elm.Label("jb_c/2").at(
+        (left_node[0] - shunt_label_outset, left_node[1] - shunt_label_depth)
+    )
+
+    diagram += elm.Line().at(right_node).down().length(0.55)
+    diagram += elm.Capacitor().down()
+    diagram += elm.Ground()
+    diagram += elm.Label("jb_c/2").at(
+        (right_node[0] + shunt_label_outset, right_node[1] - shunt_label_depth)
+    )
+
+    # Voltage labels sit above the current labels.
+    diagram += elm.Label("V_f").at((left_node[0] - 1.5, left_node[1] + 1.55))
+    diagram += elm.Label("V_t").at((right_node[0] + 1.5, right_node[1] + 1.55))
+
+    save_svg(
+        diagram,
+        path,
+        title="Nominal pi model of a transmission line",
+        description=(
+            "A two-bus equivalent circuit with series admittance y between "
+            "buses f and t, shunt charging jb_c/2 from each bus to the "
+            "reference, and terminal currents I_f and I_t entering the branch."
+        ),
+    )
+
+
 FIGURES = (
     FigureSpec(
         "capacitor-iec-symbol.svg",
@@ -512,6 +689,12 @@ FIGURES = (
         "First-order practical inductor model",
         "Series winding resistance and inductance shunted by parasitic capacitance.",
         draw_practical_inductor_model,
+    ),
+    FigureSpec(
+        "nominal-pi-line-model.svg",
+        "Nominal pi model of a transmission line",
+        "Series admittance y with shunt charging jb_c/2 at each terminal.",
+        draw_nominal_pi_line_model,
     ),
 )
 

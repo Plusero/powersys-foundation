@@ -1,59 +1,46 @@
 ---
 title: "The Y-bus Matrix"
 subtitle: "From branch models to a network equation"
-description: "Build the bus-admittance matrix from lines, shunts, and off-nominal transformers, then verify the result in Python."
+description: "Build the bus-admittance matrix from lines and shunts, then verify the result in Python."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
 date-modified: "2026-08-15"
 categories: [Network analysis, Power flow, Python]
-reading-time: 18
+reading-time: 8
 jupyter: python3
 execute:
   echo: true
   warning: false
 draft: false
-proofread: false
+proofread: true
 ---
 
 ## What you will learn
 
-After working through this tutorial, you should be able to:
+- build the network admittance matrix $\mathbf Y_{\mathrm{bus}}$ from topology and branch data;
+- read connectivity, series and shunt parameters from $\mathbf Y_{\mathrm{bus}}$; 
+- learn the structural properties of $\mathbf Y_{\mathrm{bus}}$; and
+- check a small three-bus example in Python.
 
-- derive a two-terminal branch admittance model;
-- include line charging, fixed shunts, and an off-nominal complex transformer tap;
-- assemble a bus-admittance matrix by stamping branch contributions;
-- recognise which structural properties of the matrix depend on modelling assumptions; and
-- verify a small Y-bus matrix and its power injections with NumPy.
+## 1. The network equation
 
-## 1. From a network diagram to one matrix equation
-
-For a balanced three-phase system, work with positive-sequence, steady-state RMS phasors on a consistent per-unit base. Let $V_i$ be the voltage at bus $i$ and let $I_i$ be the net current flowing **from bus $i$ into the modelled network elements**. Stacking the bus quantities gives
+Work with a balanced three-phase network in positive sequence, using steady-state RMS phasors on one common per-unit base. Write $V_i$ for the voltage at bus $i$, and $I_i$ for the net current that leaves that bus and enters the modelled network. Stacking all buses gives one linear equation:
 
 $$
 \mathbf{I}=\mathbf{Y}_{\mathrm{bus}}\mathbf{V}.
 $$ {#eq-ybus-network}
 
-The entry $Y_{ik}$ answers a local question: how does the current at bus $i$ change when the voltage at bus $k$ changes? A branch touches only its terminal buses, so each branch changes at most four entries of $\mathbf{Y}_{\mathrm{bus}}$. This local-to-global construction is called **stamping**.
+The matrix $\mathbf Y_{\mathrm{bus}}$ is the **bus-admittance matrix**, often called the **Y-bus**. Entry $Y_{ik}$ tells how the current at bus $i$ responds when the voltage at bus $k$ changes.
 
-::: {.callout-important}
-This tutorial uses an injection convention: $S_i=V_i I_i^*$ is positive when a bus injects complex power into the network. A load therefore has a negative specified injection. Changing the direction chosen for $\mathbf I$ changes several signs, so establish the convention before comparing formulas from different sources.
-:::
+Complex power at a bus is $S_i=V_i I_i^*$. Here $S_i$ is positive when the bus injects power into the network, so a load has a negative specified injection. The order of the buses is arbitrary, but $\mathbf V$, $\mathbf I$, and the branch data must all use the same order.
 
-The bus ordering is arbitrary, but it must be used consistently in $\mathbf V$, $\mathbf I$, branch data, and every downstream calculation.
+A branch between buses $f$ and $t$ affects only four matrix entries: $(f,f)$, $(f,t)$, $(t,f)$, and $(t,t)$. Building $\mathbf Y_{\mathrm{bus}}$ means adding each branch's contribution into those entries. 
 
-## 2. Primitive branch models
+## 2. Branch models
 
-### 2.1 A series element
+A transmission line between buses $f$ and $t$ is modelled by a **nominal $\pi$ circuit**. Let $z=r+\mathrm{j}x$ be the series impedance, $y=1/z$ the series admittance, and $b_c$ the line's **total** charging susceptance, with half placed at each end. If $I_f$ and $I_t$ are the currents entering the branch from those two buses,
 
-Consider a branch between buses $f$ and $t$ with series impedance
-
-$$
-z=r+\mathrm{j}x,
-\qquad
-y=\frac{1}{z}=g+\mathrm{j}b.
-$$ {#eq-ybus-series-admittance}
-
-Define $I_f$ and $I_t$ as currents entering the branch from its two terminal buses. Ohm's law gives
+![Nominal $\pi$ model between buses $f$ and $t$: series admittance $y$, shunt charging $\mathrm{j}b_c/2$ at each terminal, and currents $I_f$ and $I_t$ entering the branch.](figures/generated/nominal-pi-line-model.svg){#fig-ybus-nominal-pi fig-align="center" width="72%"}
 
 $$
 \begin{bmatrix}
@@ -61,94 +48,45 @@ I_f\\ I_t
 \end{bmatrix}
 =
 \underbrace{
-\begin{bmatrix}
-y & -y\\
--y & y
-\end{bmatrix}}_{\mathbf Y_{ft}^{\mathrm{series}}}
-\begin{bmatrix}
-V_f\\ V_t
-\end{bmatrix}.
-$$ {#eq-ybus-series-primitive}
-
-The diagonal terms are positive self-admittances; the off-diagonal terms are negative mutual admittances. Reversing the labels $f$ and $t$ does not change this series-only model.
-
-### 2.2 Line charging and bus shunts
-
-For a nominal $\pi$ model, let $b_c$ be the branch's **total** charging susceptance. Half of the charging admittance $\mathrm{j}b_c/2$ is placed at each terminal:
-
-$$
-\mathbf Y_{ft}^{\pi}
-=
 \begin{bmatrix}
 y+\mathrm{j}b_c/2 & -y\\
 -y & y+\mathrm{j}b_c/2
-\end{bmatrix}.
-$$ {#eq-ybus-pi-primitive}
-
-A fixed bus shunt $y_i^{\mathrm{sh}}=g_i^{\mathrm{sh}}+\mathrm{j}b_i^{\mathrm{sh}}$ contributes only to $Y_{ii}$. Under the current convention, a positive susceptance draws the current $\mathrm{j}b_i^{\mathrm{sh}}V_i$ from the bus; its complex power $V_i(\mathrm{j}b_i^{\mathrm{sh}}V_i)^*$ has negative reactive part.
-
-::: {.callout-note}
-Some data formats store the charging value at each end rather than the total value. Applying another factor of one half is then a common source of error.
-:::
-
-### 2.3 Off-nominal and phase-shifting transformers
-
-Place a complex tap
-
-$$
-t=\tau e^{\mathrm{j}\phi},
-\qquad \tau>0,
-$$ {#eq-ybus-complex-tap}
-
-on the $f$ side of the branch, and take the voltage at the internal series terminal to be $V_f/t$. Referring the terminal currents to the bus side gives the primitive matrix
-
-$$
-\begin{bmatrix}
-I_f\\ I_t
 \end{bmatrix}
-=
-\underbrace{
-\begin{bmatrix}
-\dfrac{y+\mathrm{j}b_c/2}{|t|^2} & -\dfrac{y}{t^*}\\[8pt]
--\dfrac{y}{t} & y+\mathrm{j}b_c/2
-\end{bmatrix}}_{
-\begin{bmatrix}
-Y_{ff} & Y_{ft}\\ Y_{tf} & Y_{tt}
-\end{bmatrix}}
+}_{\mathbf Y_{ft}^{\pi}}
 \begin{bmatrix}
 V_f\\ V_t
 \end{bmatrix}.
-$$ {#eq-ybus-tap-primitive}
+$$ {#eq-ybus-pi-primitive}
 
-Setting $t=1$ recovers the line model in @eq-ybus-pi-primitive. A real off-nominal ratio scales the from-side diagonal and both mutual terms, while retaining $Y_{ft}=Y_{tf}$. A nonzero phase shift generally makes those mutual terms unequal.
+::: {.callout-note}
+The diagonal entries of $\mathbf Y_{ft}^{\pi}$ are self-admittances. The off-diagonal entries are mutual admittances with the opposite sign. A fixed shunt at bus $i$, written $y_i^{\mathrm{sh}}$, is separate from line charging: it changes only the global diagonal entry $Y_{ii}$. Watch the data format: some files store charging once as a total $b_c$, while others already store the value at each end. Halving an already-halved value is a common mistake.
+:::
 
-The definition of tap direction and phase-shift sign is not universal. @Eq-ybus-tap-primitive follows a common power-flow convention used by MATPOWER-style branch models [@ybus_zimmerman2011]. If a data source defines $t$ on the opposite terminal or uses $V_f t$ instead of $V_f/t$, convert its data before using this stamp.
+## 3. Assembly at Once
 
-## 3. Assemble the global matrix
+Start with an $n\times n$ matrix of zeros. For every branch, compute the four entries in @eq-ybus-pi-primitive and add them to the matching positions in $\mathbf Y_{\mathrm{bus}}$. Then add each bus shunt to its diagonal. If two branches share the same pair of buses, their contributions must be **added**, not overwritten.
 
-Start with an $n\times n$ complex zero matrix. For every branch $f\rightarrow t$, calculate its four primitive entries from @eq-ybus-tap-primitive and **add** them to the corresponding bus entries:
+The same bookkeeping can be written in matrix form. Give every branch an arbitrary direction from one terminal to the other, and build a matrix $\mathbf A$ with one row per branch and one column per bus. In each row place $+1$ at the starting bus, $-1$ at the ending bus, and zeros elsewhere. Let the branch vector
 
 $$
-\begin{aligned}
-Y_{ff}^{\mathrm{bus}} &\mathrel{+}= Y_{ff}, &
-Y_{ft}^{\mathrm{bus}} &\mathrel{+}= Y_{ft},\\
-Y_{tf}^{\mathrm{bus}} &\mathrel{+}= Y_{tf}, &
-Y_{tt}^{\mathrm{bus}} &\mathrel{+}= Y_{tt}.
-\end{aligned}
-$$ {#eq-ybus-stamp}
+\mathbf y
+=
+\begin{bmatrix}
+y_1\\ y_2\\ \vdots\\ y_m
+\end{bmatrix}
+$$ {#eq-ybus-branch-admittance-vector}
 
-Finally, add every bus shunt to its diagonal entry. The `+=` operation in @eq-ybus-stamp is essential because several branches---including parallel circuits---may touch the same matrix entry.
+hold the **series** admittance of each of the $m$ branches, in the same order as the rows of $\mathbf A$, with $y_\ell=1/z_\ell$ for branch $\ell$. Let
 
-| Model component | Entries changed |
-|---|---|
-| Series branch $f$--$t$ | $(f,f)$, $(f,t)$, $(t,f)$, $(t,t)$ |
-| Line charging | Diagonals $(f,f)$ and $(t,t)$ |
-| Fixed shunt at bus $i$ | Diagonal $(i,i)$ |
-| Parallel branch | Adds to entries already stamped |
+$$
+\mathbf y^{\mathrm{sh}}
+=
+\begin{bmatrix}
+y_1^{\mathrm{sh}}\\ y_2^{\mathrm{sh}}\\ \vdots\\ y_n^{\mathrm{sh}}
+\end{bmatrix}
+$$ {#eq-ybus-shunt-admittance-vector}
 
-: Local contributions to the Y-bus matrix {#tbl-ybus-stamps}
-
-For ordinary series branches with unit taps, no charging, and incidence matrix $\mathbf A$, the same assembly can be written compactly as
+hold the fixed shunt at each of the $n$ buses (use zero when a bus has no shunt). Then [@ybus_glover2017]
 
 $$
 \mathbf Y_{\mathrm{bus}}
@@ -156,186 +94,116 @@ $$
 +\operatorname{diag}(\mathbf y^{\mathrm{sh}}).
 $$ {#eq-ybus-incidence}
 
-Here each row of $\mathbf A$ contains one $+1$ and one $-1$. @Eq-ybus-incidence exposes the weighted graph-Laplacian structure, but @eq-ybus-stamp is the more general recipe when taps and phase shifters are present. Standard power-system texts develop both the primitive-network and singular-transformation viewpoints [@ybus_glover2017].
+The product $\mathbf A^{\mathsf T}\operatorname{diag}(\mathbf y)\mathbf A$ does the series-branch additions all at once; the second term adds fixed bus shunts. Line charging from @eq-ybus-pi-primitive is not included there: for each branch, still add $\mathrm{j}b_c/2$ to both terminal diagonals. Building branch by branch with the full $\pi$ primitive already does that automatically.
 
-## 4. Structural properties---and their conditions
+## 4. What the Y-bus tells
 
-Properties often attributed to $\mathbf Y_{\mathrm{bus}}$ are not unconditional.
+The bus-admittance matrix is a compact description of the **network graph and its branch data** together:
 
-| Property | When it holds | Why it matters |
-|---|---|---|
-| Sparse | Each bus connects to only a small fraction of all buses | Sparse storage and factorisation scale to large networks |
-| Complex symmetric, $\mathbf Y=\mathbf Y^{\mathsf T}$ | Reciprocal branches with no phase-shifting taps | Only one triangular part need be formed in some workflows |
-| Hermitian, $\mathbf Y=\mathbf Y^{\mathsf H}$ | Generally **not** true for AC branch admittances | Do not select a Hermitian solver merely because the topology is reciprocal |
-| Zero row sums | Series-only branches, unit taps, and no shunts or charging | The uniform-voltage vector lies in the nullspace |
-| Nonsingular | Depends on connectivity, grounding/shunts, taps, and the retained buses | Never assume invertibility from the network size alone |
+- **Connectivity.** For $i\ne k$, a nonzero $Y_{ik}$ means at least one in-service branch joins buses $i$ and $k$. A zero pattern (apart from rare exact cancellations) matches the single-line topology.
+- **Series parameters.** The off-diagonal entry is $Y_{ik}=-y_{ik}$ with series admittance $y_{ik}=1/z_{ik}$, so the numerical value carries the series impedance of that line (or the parallel combination of several lines).
+- **Shunt parameters.** Fixed bus shunts $y_i^{\mathrm{sh}}$ and line charging $\mathrm{j}b_c/2$ appear only on the diagonals. The diagonal $Y_{ii}$ is the sum of all series admittances connected to bus $i$, plus every shunt and charging term at that bus.
 
-: Conditional structural properties of the Y-bus matrix {#tbl-ybus-properties}
+Useful structural consequences follow:
 
-The sparsity pattern encodes adjacency: for $i\ne k$, a nonzero $Y_{ik}$ usually means that at least one in-service branch directly connects buses $i$ and $k$. The numerical values encode electrical parameters, taps, and phase shifts. A zero mutual entry can nevertheless result from exact cancellation between parallel elements, so topology should still be retained explicitly.
+- The matrix is **sparse**, because each bus connects to only a few others.
+- For ordinary reciprocal branches it is **complex-symmetric**, $\mathbf Y=\mathbf Y^{\mathsf T}$, so $Y_{ik}=Y_{ki}$.
+- It is usually **not Hermitian**: taking the conjugate transpose flips the sign of every susceptance.
+- The sum of row $i$ is the total admittance from bus $i$ to ground. Series branches cancel in that sum; fixed shunts and line charging do not. The rows therefore sum to zero only when there is no path to ground.
+- Without a path to ground (no shunts and no charging), $\mathbf Y_{\mathrm{bus}}$ is singular. A disconnected island is singular as well.
 
-::: {.callout-warning}
-A symmetric Y-bus matrix is not usually Hermitian. Transposition leaves the complex admittances unchanged; conjugate transposition changes the sign of every susceptance. Confusing these two properties can lead to an invalid linear-solver choice.
-:::
+## 5. Three-bus example
 
-## 5. Worked three-bus example
-
-Use the same series-impedance three-bus network as the [Newton--Raphson power-flow](newton-raphson-power-flow.qmd) and [power-flow versus state-estimation](power-flow-versus-state-estimation.qmd) tutorials. The per-unit branch impedances are
+Use the same three-bus topology and series impedances as the [Newton--Raphson power-flow](newton-raphson-power-flow.qmd) tutorial, and add nonzero line charging so the branch model is the full $\pi$ stamp of @eq-ybus-pi-primitive:
 
 $$
-z_{12}=0.02+\mathrm{j}0.06,
-\qquad
-z_{13}=0.08+\mathrm{j}0.24,
-\qquad
-z_{23}=0.06+\mathrm{j}0.18.
-$$ {#eq-ybus-three-bus-impedances}
+\begin{aligned}
+z_{12}&=0.02+\mathrm{j}0.06,&
+b_{c,12}&=0.060,\\
+z_{13}&=0.08+\mathrm{j}0.24,&
+b_{c,13}&=0.025,\\
+z_{23}&=0.06+\mathrm{j}0.18,&
+b_{c,23}&=0.040.
+\end{aligned}
+$$ {#eq-ybus-three-bus-data}
 
-@fig-ybus-three-bus-single-line shows the meshed topology. For this worked example the branches are series-only: no line charging, no fixed bus shunts, and unit taps. Sections 2.2--2.3 still apply when those features are present; omitting them here keeps the stamp identical to the shared power-flow case.
+Each $z_{ik}$ is still the **series** impedance only; $y_{ik}=1/z_{ik}$. Each $b_{c,ik}$ is the branch's **total** charging susceptance, split as $\mathrm{j}b_{c,ik}/2$ at each end. There are no fixed bus shunts.
 
-![IEC-style single-line diagram of the three-bus network. Generator G1 is at bus 1, generator G2 at bus 2, and a load at bus 3. Branch labels give the per-unit series impedances.](figures/generated/three-bus-power-flow-single-line.svg){#fig-ybus-three-bus-single-line fig-align="center" width="100%"}
+![IEC-style single-line diagram of the three-bus network. Generator G1 is at bus 1, generator G2 at bus 2, and a load at bus 3. Branch labels show the per-unit series impedances used here; the charging values $b_{c,ik}$ are listed in @eq-ybus-three-bus-data.](figures/generated/three-bus-power-flow-single-line.svg){#fig-ybus-three-bus-single-line fig-align="center" width="100%"}
 
-| From | To | $z=r+\mathrm{j}x$ | $b_c$ | $t$ |
-|---:|---:|---:|---:|---:|
-| 1 | 2 | $0.02+\mathrm{j}0.06$ | $0$ | $1$ |
-| 1 | 3 | $0.08+\mathrm{j}0.24$ | $0$ | $1$ |
-| 2 | 3 | $0.06+\mathrm{j}0.18$ | $0$ | $1$ |
-
-: Three-bus series-only branch data {#tbl-ybus-three-bus-data}
-
-Stamping the three series primitives gives
+Adding the three $\pi$-branch contributions produces
 
 $$
 \mathbf Y_{\mathrm{bus}}=
 \begin{bmatrix}
- 6.25000-\mathrm{j}18.75000 & -5.00000+\mathrm{j}15.00000 & -1.25000+\mathrm{j}3.75000\\
--5.00000+\mathrm{j}15.00000 &  6.66667-\mathrm{j}20.00000 & -1.66667+\mathrm{j}5.00000\\
--1.25000+\mathrm{j}3.75000 & -1.66667+\mathrm{j}5.00000 &  2.91667-\mathrm{j}8.75000
+ 6.25000-\mathrm{j}18.70750 & -5.00000+\mathrm{j}15.00000 & -1.25000+\mathrm{j}3.75000\\
+-5.00000+\mathrm{j}15.00000 &  6.66667-\mathrm{j}19.95000 & -1.66667+\mathrm{j}5.00000\\
+-1.25000+\mathrm{j}3.75000 & -1.66667+\mathrm{j}5.00000 &  2.91667-\mathrm{j}8.71750
 \end{bmatrix}.
 $$ {#eq-ybus-three-bus-matrix}
 
-Because every branch is reciprocal with a unit tap, $\mathbf Y_{\mathrm{bus}}$ is complex-symmetric: $Y_{ik}=Y_{ki}$. A nonzero phase-shifting tap would break that equality, as in @eq-ybus-tap-primitive.
+Charging appears only on the diagonals: bus $i$ receives $\mathrm{j}b_{c,ik}/2$ from each incident branch $i$--$k$. Off-diagonal entries stay $-y_{ik}$. Reciprocal branches still give complex symmetry, $Y_{ik}=Y_{ki}$, not the Hermitian property $Y_{ik}=Y_{ki}^*$.
 
-### 5.1 Reproduce the stamp in Python
+The sum of row $i$, $\sum_k Y_{ik}$, is the total admittance from bus $i$ to ground: series branches cancel in that sum, while charging does not. With charging present, the rows therefore do not sum to zero.
 
-The following NumPy functions keep the primitive calculation separate from the global assembly. Bus identifiers in the example data are one-based to match @tbl-ybus-three-bus-data.
+The Python cell below builds @eq-ybus-three-bus-matrix in two ways and checks that they agree: first by adding each $\pi$ primitive branch by branch, then all at once with the incidence form of @eq-ybus-incidence plus charging on the diagonals. It also reports a **row-sum residual**, $\max_i\bigl|\sum_k Y_{ik}\bigr|$, to confirm that those ground paths were assembled as intended—nonzero here, equal to the largest bus ground-admittance magnitude from line charging.
 
 ```{python}
 #| label: lst-ybus-assembly
-#| lst-cap: "Primitive branch model and dense Y-bus assembly"
-#| code-summary: "Show the branch model and Y-bus assembly"
+#| lst-cap: "Assemble Y-bus branch by branch and all at once"
+#| code-summary: "Compare branch-wise and incidence-matrix assembly"
 
 import numpy as np
 
-
-def branch_admittance(
-    impedance: complex,
-    charging_susceptance: float = 0.0,
-    tap: complex = 1.0 + 0.0j,
-) -> np.ndarray:
-    """Return the 2-by-2 from/to primitive admittance matrix."""
-    if impedance == 0:
-        raise ValueError("branch impedance must be nonzero")
-    if tap == 0:
-        raise ValueError("transformer tap must be nonzero")
-
-    series = 1.0 / impedance
-    charging = 0.5j * charging_susceptance
-
-    return np.array(
-        [
-            [(series + charging) / abs(tap) ** 2, -series / tap.conjugate()],
-            [-series / tap, series + charging],
-        ],
-        dtype=complex,
-    )
-
-
-def build_y_bus(
-    n_bus: int,
-    branches: list[dict],
-    bus_shunts: np.ndarray | None = None,
-) -> np.ndarray:
-    """Assemble a dense Y-bus matrix from one-based branch records."""
-    y_bus = np.zeros((n_bus, n_bus), dtype=complex)
-
-    for branch in branches:
-        f = branch["from_bus"] - 1
-        t = branch["to_bus"] - 1
-        if not (0 <= f < n_bus and 0 <= t < n_bus) or f == t:
-            raise ValueError("branch terminals must be distinct valid buses")
-
-        primitive = branch_admittance(
-            branch["impedance"],
-            branch.get("charging_susceptance", 0.0),
-            branch.get("tap", 1.0 + 0.0j),
-        )
-
-        y_bus[f, f] += primitive[0, 0]
-        y_bus[f, t] += primitive[0, 1]
-        y_bus[t, f] += primitive[1, 0]
-        y_bus[t, t] += primitive[1, 1]
-
-    if bus_shunts is not None:
-        shunts = np.asarray(bus_shunts, dtype=complex)
-        if shunts.shape != (n_bus,):
-            raise ValueError("bus_shunts must have one entry per bus")
-        y_bus += np.diag(shunts)
-
-    return y_bus
-```
-
-```{python}
-#| label: lst-ybus-three-bus
-#| lst-cap: "Three-bus test data and assembled matrix"
-
+n_bus = 3
 branches = [
-    {
-        "from_bus": 1,
-        "to_bus": 2,
-        "impedance": 0.02 + 0.06j,
-    },
-    {
-        "from_bus": 1,
-        "to_bus": 3,
-        "impedance": 0.08 + 0.24j,
-    },
-    {
-        "from_bus": 2,
-        "to_bus": 3,
-        "impedance": 0.06 + 0.18j,
-    },
+    # from_bus, to_bus, series impedance, total charging susceptance b_c
+    (1, 2, 0.02 + 0.06j, 0.060),
+    (1, 3, 0.08 + 0.24j, 0.025),
+    (2, 3, 0.06 + 0.18j, 0.040),
 ]
 
-y_bus = build_y_bus(3, branches)
+# --- Branch-by-branch assembly with the pi primitive ---
+y_bus_branchwise = np.zeros((n_bus, n_bus), dtype=complex)
+for from_bus, to_bus, impedance, charging in branches:
+    f, t = from_bus - 1, to_bus - 1
+    y = 1.0 / impedance
+    half_charging = 0.5j * charging
+    y_bus_branchwise[f, f] += y + half_charging
+    y_bus_branchwise[t, t] += y + half_charging
+    y_bus_branchwise[f, t] -= y
+    y_bus_branchwise[t, f] -= y
+
+# --- Assembly at once: A.T @ diag(y) @ A plus charging on the diagonals ---
+n_branch = len(branches)
+incidence = np.zeros((n_branch, n_bus), dtype=float)
+series_admittances = np.zeros(n_branch, dtype=complex)
+charging_on_buses = np.zeros(n_bus, dtype=complex)
+
+for branch_index, (from_bus, to_bus, impedance, charging) in enumerate(branches):
+    f, t = from_bus - 1, to_bus - 1
+    incidence[branch_index, f] = 1.0
+    incidence[branch_index, t] = -1.0
+    series_admittances[branch_index] = 1.0 / impedance
+    charging_on_buses[f] += 0.5j * charging
+    charging_on_buses[t] += 0.5j * charging
+
+y_bus_at_once = (
+    incidence.T @ np.diag(series_admittances) @ incidence
+    + np.diag(charging_on_buses)
+)
 
 np.set_printoptions(precision=5, suppress=True)
-print(y_bus)
-```
+print("branch-by-branch Y-bus:")
+print(y_bus_branchwise)
+print("\nassembly-at-once Y-bus:")
+print(y_bus_at_once)
+print(
+    "\nmax |branchwise - at-once|:",
+    f"{np.max(np.abs(y_bus_branchwise - y_bus_at_once)):.3e}",
+)
 
-The output agrees with @eq-ybus-three-bus-matrix. For a large case, the same stamp should target a sparse matrix builder rather than a dense NumPy array.
-
-## 6. Verify currents and power injections
-
-Matrix entries are easy to mis-index, especially around transformer taps. A stronger test than visually checking the matrix is to compare two independently organised current calculations:
-
-1. calculate $\mathbf I=\mathbf Y_{\mathrm{bus}}\mathbf V$; and
-2. calculate every branch's two terminal currents, accumulate them at the buses, and add bus-shunt currents.
-
-For illustration, take
-
-$$
-\mathbf V=
-\begin{bmatrix}
-1.04\\
-1.01e^{-\mathrm{j}3^\circ}\\
-0.98e^{-\mathrm{j}7^\circ}
-\end{bmatrix}.
-$$ {#eq-ybus-example-voltage}
-
-```{python}
-#| label: lst-ybus-current-check
-#| lst-cap: "Current reconstruction and bus power injections"
-
+y_bus = y_bus_at_once
 voltage = np.array(
     [
         1.04,
@@ -343,64 +211,37 @@ voltage = np.array(
         0.98 * np.exp(-1j * np.deg2rad(7.0)),
     ]
 )
+current = y_bus @ voltage
+power = voltage * current.conjugate()
 
-matrix_current = y_bus @ voltage
-assembled_current = np.zeros(3, dtype=complex)
-
-for branch in branches:
-    terminals = np.array([branch["from_bus"] - 1, branch["to_bus"] - 1])
-    primitive = branch_admittance(
-        branch["impedance"],
-        branch.get("charging_susceptance", 0.0),
-        branch.get("tap", 1.0 + 0.0j),
-    )
-    assembled_current[terminals] += primitive @ voltage[terminals]
-
-current_error = np.max(np.abs(matrix_current - assembled_current))
-
-power_injection = voltage * matrix_current.conjugate()
-
-print(f"maximum current reconstruction error: {current_error:.3e}")
-for bus, power in enumerate(power_injection, start=1):
-    print(f"bus {bus}: P = {power.real:+.5f}, Q = {power.imag:+.5f} p.u.")
-print(f"total active injection: {power_injection.real.sum():.5f} p.u.")
+print(f"\nrow-sum residual (max |ground admittance|): {np.max(np.abs(y_bus.sum(axis=1))):.5f}")
+for bus, injection in enumerate(power, start=1):
+    print(f"bus {bus}: P = {injection.real:+.5f}, Q = {injection.imag:+.5f} p.u.")
+print(f"total active injection (= resistive loss): {power.real.sum():.5f} p.u.")
 ```
 
-The bus power calculation uses
+Both assemblies match @eq-ybus-three-bus-matrix. Once the voltages are known, the bus current and complex power follow from
 
 $$
 \mathbf S
 =\mathbf V\odot\left(\mathbf Y_{\mathrm{bus}}\mathbf V\right)^*,
 $$ {#eq-ybus-power-injection}
 
-where $\odot$ denotes elementwise multiplication. The small positive total active injection in this passive example is the network's resistive loss.
+where $\odot$ means elementwise multiplication. The printed bus $P$ and $Q$ values are those injections for the chosen voltages. The printed **total active injection** is exactly the network **resistive loss**:
 
-@Eq-ybus-power-injection is the bridge from network assembly to nonlinear power-flow equations. The [Newton--Raphson power-flow tutorial](newton-raphson-power-flow.qmd) develops that next step on this same three-bus network. Keep the primitive branch matrices as well as $\mathbf Y_{\mathrm{bus}}$ when individual terminal currents or branch power flows are required.
+$$
+\sum_i P_i
+=\sum_{\text{branches}}\lvert I_{\mathrm{series}}\rvert^2\,r
+>0
+$$
 
-## 7. Practical checks
+in this passive example (about $0.05$ p.u.). Ideal line charging exchanges reactive power only and does not change $\sum_i P_i$. 
 
-Before trusting an assembled matrix, check the following:
+## 6. Takeaways
 
-1. **Base consistency.** Convert every impedance, charging value, and shunt to the same per-unit base before stamping.
-2. **Terminal convention.** Confirm which side owns each tap and whether the source defines $t$, $1/t$, $+\phi$, or $-\phi$.
-3. **Accumulation.** Ensure parallel branches add to existing entries rather than overwrite them.
-4. **Expected structure.** Test symmetry only for a case whose taps and models should produce symmetry.
-5. **Row sums under a controlled model.** For unit-tap, series-only branches without shunts, $\mathbf Y_{\mathrm{bus}}\mathbf 1$ should be zero to numerical precision.
-6. **Independent current reconstruction.** Compare matrix currents with accumulated primitive-branch currents at a random complex voltage vector.
-7. **Power balance.** For passive series elements and lossless ideal transformers, the total active injection should equal nonnegative resistive losses, within roundoff.
-
-::: {.callout-tip}
-Create tiny automated cases that isolate one feature at a time: one line, one shunt, one magnitude tap, one phase shift, and two parallel circuits. These tests localise convention errors far more effectively than debugging a large production network.
-:::
-
-## 8. Takeaways
-
-- The Y-bus matrix is assembled from local two-terminal admittance models.
-- Lines, charging shunts, fixed bus shunts, and complex taps each have a precise stamp.
-- Sparsity follows from network locality, while symmetry, zero row sums, and invertibility require additional assumptions.
-- A phase-shifting tap can make $Y_{ft}$ and $Y_{tf}$ unequal without violating the model.
-- Reconstructing currents from primitive branches is a powerful end-to-end validation of the assembled matrix.
-- Once $\mathbf Y_{\mathrm{bus}}$ is correct, bus currents and complex-power injections follow directly from the voltage phasors.
+- $\mathbf Y_{\mathrm{bus}}$ encodes which buses are connected and the series and shunt admittances on those connections.
+- Sparsity comes from the topology. Symmetry, zero row sums, and invertibility depends.
+- With a correct Y-bus and known voltages, bus currents and complex-power injections are trivial to calculate.
 
 ## References {.unnumbered}
 
