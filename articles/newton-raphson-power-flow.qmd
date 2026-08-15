@@ -4,7 +4,7 @@ subtitle: "From network equations to an iterative algorithm"
 description: "Derive the AC power-flow equations, implement Newton's method in Python, and inspect its convergence."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
-date-modified: "2026-08-14"
+date-modified: "2026-08-15"
 categories: [Power flow, Network analysis, Numerical methods, Python]
 reading-time: 26
 jupyter: python3
@@ -12,7 +12,7 @@ execute:
   echo: true
   warning: false
 draft: false
-proofread: false
+proofread: true
 ---
 
 ## What you will learn
@@ -22,8 +22,8 @@ After working through this tutorial, you should be able to:
 - define an AC power-flow calculation in terms of its inputs and outputs;
 - write the nonlinear active- and reactive-power balance equations;
 - identify the state variables and specified quantities for each bus type;
-- explain the structure of the Newton--Raphson Jacobian; and
-- implement the core iteration with appropriate convergence checks.
+- explain the structure of the Newton-Raphson Jacobian; and
+- implement a power-flow calculation with Python.
 
 ## Prerequisites
 
@@ -32,7 +32,7 @@ After working through this tutorial, you should be able to:
 - [Per-unit tutorial](per-unit-values.qmd): practical network-model normalisation.
 - [Y-bus tutorial](y-bus-matrix.qmd): admittance stamping and $\mathbf I=\mathbf Y_{\mathrm{bus}}\mathbf V$.
 - Partial derivatives and linear systems.
-- Python, NumPy, and Power Grid Model.
+- Python, NumPy, Power Grid Model, and pandapower.
 
 ## 1. What is a power-flow calculation?
 
@@ -322,6 +322,7 @@ This tutorial follows Grainger and Stevenson’s convention: positive $P_i$ and 
 
 ## 5. Newton--Raphson Iteration
 
+### One Dimension Example
 Let's first see an example in one dimension, where the geometry of Newton-Raphson could be shown. Suppose the scalar nonlinear map $g(x)$ must equal a specification $s^{\mathrm{spec}}$, and define the root function $F(x)=g(x)-s^{\mathrm{spec}}$. The desired solution $x^\star$ is a root satisfying $F(x^\star)=0$. At each estimate, Newton's method replaces the curve locally by its tangent; where that tangent crosses zero becomes the next estimate. @fig-newton-raphson-one-dimensional illustrates three such updates for $F(x)=e^x-3$, starting from $x^{(0)}=0$ and approaching the marked root $x^\star=\ln 3$.
 
 ![Three one-dimensional Newton--Raphson updates. Each tangent intersects the zero-mismatch line at the next estimate, and the iterates approach the marked root.](figures/generated/newton-raphson-one-dimensional.svg){#fig-newton-raphson-one-dimensional fig-align="center" width="88%"}
@@ -342,6 +343,8 @@ $$
 =-\frac{F(x^{(k)})}{F'(x^{(k)})}
 =\frac{s^{\mathrm{spec}}-g(x^{(k)})}{g'(x^{(k)})}.
 $$ {#eq-scalar-newton-correction}
+
+### Multi-dimensional Newton-Raphson
 
 The multidimensional power-flow step applies the same construction to all retained equations at once. At iteration $k$, linearise the calculated-injection map around the current state:
 
@@ -514,7 +517,7 @@ $$ {#eq-jacobian-diagonal}
 
 Consider a three-bus system with the following specifications. Positive $P$ and $Q$ denote injection into the network, so the PQ-bus load appears with negative signs.
 
-@fig-three-bus-power-flow-single-line shows the meshed topology, bus roles, and series impedances used in the worked example. It uses IEC-style generator, busbar, and load symbols.
+@fig-three-bus-power-flow-single-line shows the meshed topology, bus roles, and series impedances used in the worked example. It uses IEC-style generator, busbar, and load symbols [@iec60617].
 
 ![IEC-style single-line diagram of the three-bus power-flow example. Generator G1 establishes the slack-bus voltage at bus 1, generator G2 controls the voltage at PV bus 2, and a downward load symbol is connected at PQ bus 3. All three bus pairs are connected by lines labelled with their per-unit series impedances.](figures/generated/three-bus-power-flow-single-line.svg){#fig-three-bus-power-flow-single-line fig-align="center" width="100%"}
 
@@ -526,7 +529,24 @@ Consider a three-bus system with the following specifications. Positive $P$ and 
 
 : Three-bus power-flow specification {#tbl-nr-three-bus}
 
-The unknown state is $\mathbf x=[\theta_2,\theta_3,|V_3|]^{\mathsf T}$. At every iteration, this example therefore solves the explicit linear system
+Using the same ordering as @eq-newton-state-vector on the buses in @tbl-nr-three-bus, bus 2 is the only PV bus and bus 3 is the only PQ bus. Every PV bus contributes one unknown angle and every PQ bus contributes one unknown angle and one unknown voltage magnitude, while the slack-bus voltage is specified and therefore omitted. The unknown state is therefore
+
+$$
+\mathbf x=
+\begin{bmatrix}
+\theta_{\mathrm{PV}}\\
+\theta_{\mathrm{PQ}}\\
+|V|_{\mathrm{PQ}}
+\end{bmatrix}
+=
+\begin{bmatrix}
+\theta_2\\
+\theta_3\\
+|V_3|
+\end{bmatrix}.
+$$ {#eq-three-bus-state-vector}
+
+Recall that each Newton iteration solves @eq-newton-system for the unknown correction $\Delta\mathbf x^{(k)}$. Specialised to @eq-three-bus-state-vector, this example therefore solves the explicit linear system
 
 $$
 \begin{bmatrix}
@@ -553,38 +573,28 @@ Q_3^{\mathrm{spec}}-Q_3^{(k)}
 \end{bmatrix}.
 $$ {#eq-three-bus-newton-system}
 
-There is no $Q_2$ row because bus 2 is a PV bus, and there is no $|V_2|$ correction because its voltage magnitude is specified. The first cell stamps a series-only Y-bus matrix and defines the retained calculated injections in the row order of @eq-three-bus-newton-system.
-
-::: {.callout-tip}
-### Recalculate the example locally
-
-The published tutorial is a static page, so its Python cells do not execute in the browser. To change the inputs and recalculate both solutions, first install [Quarto](https://quarto.org/docs/get-started/) and [`uv`](https://docs.astral.sh/uv/), and then run
-
-```sh
-git clone https://github.com/Plusero/powersys-foundation.git
-cd powersys-foundation
-uv sync --frozen
-uv run quarto preview articles/newton-raphson-power-flow.qmd
-```
-
-Edit the block marked `USER INPUTS` below and save the file. Quarto will execute the three Python cells in order and refresh the results in the browser. For a one-time calculation without the live preview, replace the last command with `uv run quarto render articles/newton-raphson-power-flow.qmd`.
-:::
+Recall that a PV bus omits its $Q_i$ residual row and $|V_i|$ correction column together (@tbl-bus-types): there is no $Q_2$ row because bus 2 is a PV bus, and there is no $|V_2|$ correction because its voltage magnitude is specified. The first cell stamps a series-only Y-bus from the branch list and builds $\mathbf x$, $\mathbf g(\mathbf x)$, and $\mathbf s^{\mathrm{spec}}$ from slack, PV, and PQ index arrays in the order of @eq-newton-state-vector. The arrays below encode @tbl-nr-three-bus; editing them adapts the same functions to another network.
 
 ```{python}
 #| label: lst-nr-three-bus-model
-#| code-summary: "Build the three-bus network and retained injection functions"
+#| code-summary: "Build the network model and retained injection maps"
 
 import numpy as np
 
 np.set_printoptions(precision=6, suppress=True)
 
-# USER INPUTS: change these values and rerun the tutorial.
-slack_voltage_pu = 1.04
-slack_angle_rad = 0.0
-pv_active_injection_pu = 0.50
-pv_voltage_pu = 1.01
-pq_active_injection_pu = -0.60
-pq_reactive_injection_pu = -0.25
+# USER INPUTS (0-based bus indices). Edit these lists to change the network.
+slack = np.array([0])
+pv = np.array([1])
+pq = np.array([2])
+non_slack = np.concatenate((pv, pq))
+
+slack_angle_rad = np.array([0.0])
+slack_voltage_pu = np.array([1.04])
+pv_voltage_pu = np.array([1.01])
+pv_active_pu = np.array([0.50])
+pq_active_pu = np.array([-0.60])
+pq_reactive_pu = np.array([-0.25])
 initial_pq_voltage_pu = 1.0
 
 lines = [
@@ -593,7 +603,10 @@ lines = [
     (1, 2, 0.06 + 0.18j),
 ]
 
-y_bus = np.zeros((3, 3), dtype=complex)
+bus_count = max(max(from_bus, to_bus) for from_bus, to_bus, _ in lines) + 1
+assert slack.size == 1, "this tutorial uses a single slack bus"
+
+y_bus = np.zeros((bus_count, bus_count), dtype=complex)
 for from_bus, to_bus, impedance in lines:
     admittance = 1.0 / impedance
     y_bus[from_bus, from_bus] += admittance
@@ -603,9 +616,17 @@ for from_bus, to_bus, impedance in lines:
 
 
 def voltage_from_state(state: np.ndarray) -> np.ndarray:
-    """Map [theta_2, theta_3, |V_3|] to complex bus voltages."""
-    angles = np.array([slack_angle_rad, state[0], state[1]])
-    magnitudes = np.array([slack_voltage_pu, pv_voltage_pu, state[2]])
+    """Map [theta_PV, theta_PQ, |V|_PQ] to complex bus voltages."""
+    n_pv = pv.size
+    n_pq = pq.size
+    angles = np.empty(bus_count)
+    magnitudes = np.empty(bus_count)
+    angles[slack] = slack_angle_rad
+    magnitudes[slack] = slack_voltage_pu
+    angles[pv] = state[:n_pv]
+    angles[pq] = state[n_pv : n_pv + n_pq]
+    magnitudes[pv] = pv_voltage_pu
+    magnitudes[pq] = state[n_pv + n_pq :]
     return magnitudes * np.exp(1j * angles)
 
 
@@ -616,34 +637,28 @@ def bus_power(state: np.ndarray) -> np.ndarray:
 
 
 def retained_injections(state: np.ndarray) -> np.ndarray:
+    """Return [P_PV, P_PQ, Q_PQ] in the Newton residual order."""
     power = bus_power(state)
-    return np.array([power.real[1], power.real[2], power.imag[2]])
+    return np.concatenate((power.real[non_slack], power.imag[pq]))
 
 
-specified = np.array(
-    [
-        pv_active_injection_pu,
-        pq_active_injection_pu,
-        pq_reactive_injection_pu,
-    ]
-)
+specified = np.concatenate((pv_active_pu, pq_active_pu, pq_reactive_pu))
 ```
 
-The next cell evaluates @eq-jacobian-off-diagonal and @eq-jacobian-diagonal directly. The index arrays then select the reduced Jacobian implied by the bus types: buses 2 and 3 contribute $P$--$\theta$ equations, while only bus 3 contributes the $Q$--$|V|$ equation.
+The next cell evaluates @eq-jacobian-off-diagonal and @eq-jacobian-diagonal for every bus pair, then reduces the Jacobian with the same `non_slack` and `pq` index arrays used above.
 
 ```{python}
 #| label: lst-nr-three-bus-solve
-#| code-summary: "Assemble the analytical Jacobian and solve the three-bus power flow"
+#| code-summary: "Assemble the reduced Jacobian and solve the power flow"
 
 def power_flow_jacobian(state: np.ndarray) -> np.ndarray:
-    """Return the reduced analytical Jacobian for [P2, P3, Q3]."""
+    """Return the reduced analytical Jacobian for [P_non-slack, Q_PQ]."""
     voltage = voltage_from_state(state)
     magnitude = np.abs(voltage)
     angle = np.angle(voltage)
     power = bus_power(state)
     conductance = y_bus.real
     susceptance = y_bus.imag
-    bus_count = voltage.size
 
     d_p_d_angle = np.empty((bus_count, bus_count))
     d_p_d_magnitude = np.empty((bus_count, bus_count))
@@ -682,8 +697,6 @@ def power_flow_jacobian(state: np.ndarray) -> np.ndarray:
             d_q_d_angle[row, column] = -magnitude_product * (g * cosine + b * sine)
             d_q_d_magnitude[row, column] = magnitude[row] * (g * sine - b * cosine)
 
-    non_slack = np.array([1, 2])
-    pq = np.array([2])
     h_block = d_p_d_angle[np.ix_(non_slack, non_slack)]
     n_block = d_p_d_magnitude[np.ix_(non_slack, pq)]
     m_block = d_q_d_angle[np.ix_(pq, non_slack)]
@@ -691,11 +704,19 @@ def power_flow_jacobian(state: np.ndarray) -> np.ndarray:
     return np.block([[h_block, n_block], [m_block, l_block]])
 
 
-state = np.array([slack_angle_rad, slack_angle_rad, initial_pq_voltage_pu])
+# Flat start: unknown angles at the slack angle, PQ magnitudes at 1 p.u.
+state = np.concatenate(
+    (
+        np.full(pv.size, slack_angle_rad[0]),
+        np.full(pq.size, slack_angle_rad[0]),
+        np.full(pq.size, initial_pq_voltage_pu),
+    )
+)
 tolerance = 1e-10
+max_iterations = 8
 
 print("iteration  maximum residual")
-for iteration in range(12):
+for iteration in range(max_iterations):
     residual = specified - retained_injections(state)
     maximum_residual = np.linalg.norm(residual, ord=np.inf)
     print(f"{iteration:9d}  {maximum_residual:16.3e}")
@@ -721,11 +742,10 @@ for bus, (phasor, injection) in enumerate(zip(voltage, power), start=1):
     )
 ```
 
-The iteration starts from the flat profile, drives the retained residual below the tolerance, and leaves the slack-bus and PV-bus reactive injections as calculated outputs. This is the numerical counterpart of the bus-type bookkeeping in @tbl-bus-types.
 
 ### Cross-check with Power Grid Model
 
-We can now solve the same physical network with the [`PowerGridModel.calculate_power_flow`](https://power-grid-model.readthedocs.io/en/stable/examples/Power%20Flow%20Example.html#one-time-power-flow-calculation) function and compare the result with our implementation. Power Grid Model accepts physical SI quantities, so choose coherent bases
+[Power Grid Model](https://github.com/PowerGridModel/power-grid-model) is an open-source library for steady-state distribution-network analysis, with a C++ calculation core and Python bindings for power flow, state estimation, and short-circuit studies [@powergridmodel]. We can now solve the same physical network with its [`PowerGridModel.calculate_power_flow`](https://power-grid-model.readthedocs.io/en/stable/examples/Power%20Flow%20Example.html#one-time-power-flow-calculation) function and compare the result with our implementation. Power Grid Model accepts physical SI quantities, so choose coherent bases
 
 $$
 S_{\mathrm{base}}=100\ \mathrm{MVA},
@@ -784,8 +804,8 @@ pgm_source = initialize_array(DatasetType.input, ComponentType.source, 1)
 pgm_source[AttributeType.id] = [101]
 pgm_source[AttributeType.node] = [1]
 pgm_source[AttributeType.status] = [1]
-pgm_source[AttributeType.u_ref] = [slack_voltage_pu]
-pgm_source[AttributeType.u_ref_angle] = [slack_angle_rad]
+pgm_source[AttributeType.u_ref] = slack_voltage_pu
+pgm_source[AttributeType.u_ref_angle] = slack_angle_rad
 pgm_source[AttributeType.sk] = [1e50]
 pgm_source[AttributeType.rx_ratio] = [0.1]
 
@@ -794,7 +814,7 @@ pgm_generator[AttributeType.id] = [102]
 pgm_generator[AttributeType.node] = [2]
 pgm_generator[AttributeType.status] = [1]
 pgm_generator[AttributeType.type] = [LoadGenType.const_power]
-pgm_generator[AttributeType.p_specified] = [pv_active_injection_pu * s_base]
+pgm_generator[AttributeType.p_specified] = pv_active_pu * s_base
 pgm_generator[AttributeType.q_specified] = [0.0]
 
 pgm_regulator = initialize_array(
@@ -803,15 +823,15 @@ pgm_regulator = initialize_array(
 pgm_regulator[AttributeType.id] = [103]
 pgm_regulator[AttributeType.regulated_object] = [102]
 pgm_regulator[AttributeType.status] = [1]
-pgm_regulator[AttributeType.u_ref] = [pv_voltage_pu]
+pgm_regulator[AttributeType.u_ref] = pv_voltage_pu
 
 pgm_load = initialize_array(DatasetType.input, ComponentType.sym_load, 1)
 pgm_load[AttributeType.id] = [104]
 pgm_load[AttributeType.node] = [3]
 pgm_load[AttributeType.status] = [1]
 pgm_load[AttributeType.type] = [LoadGenType.const_power]
-pgm_load[AttributeType.p_specified] = [-pq_active_injection_pu * s_base]
-pgm_load[AttributeType.q_specified] = [-pq_reactive_injection_pu * s_base]
+pgm_load[AttributeType.p_specified] = -pq_active_pu * s_base
+pgm_load[AttributeType.q_specified] = -pq_reactive_pu * s_base
 
 pgm_input = {
     ComponentType.node: pgm_node,
@@ -870,21 +890,158 @@ maximum_difference = max(
     np.max(np.abs(manual_voltage_angle - pgm_voltage_angle)),
     np.max(np.abs(manual_injection - pgm_injection)),
 )
+comparison_tolerance = 1e-10
 print(f"\nmaximum difference = {maximum_difference:.3e} p.u. or rad")
+if maximum_difference < comparison_tolerance:
+    print(
+        "manual and Power Grid Model solutions agree within "
+        f"{comparison_tolerance:.0e} "
+        "(voltages and all bus injections, including slack P/Q and PV Q)."
+    )
+else:
+    print(
+        "manual and Power Grid Model solutions differ by more than "
+        f"{comparison_tolerance:.0e}."
+    )
 
 np.testing.assert_allclose(
-    pgm_voltage_magnitude, manual_voltage_magnitude, atol=1e-10, rtol=0.0
+    pgm_voltage_magnitude, manual_voltage_magnitude, atol=comparison_tolerance, rtol=0.0
 )
 np.testing.assert_allclose(
-    pgm_voltage_angle, manual_voltage_angle, atol=1e-10, rtol=0.0
+    pgm_voltage_angle, manual_voltage_angle, atol=comparison_tolerance, rtol=0.0
 )
-np.testing.assert_allclose(pgm_injection, manual_injection, atol=1e-10, rtol=0.0)
+np.testing.assert_allclose(
+    pgm_injection, manual_injection, atol=comparison_tolerance, rtol=0.0
+)
 ```
 
-The two solutions agree to floating-point precision. This verifies the solved voltages as well as the calculated slack-bus injection and PV-bus reactive injection; comparing only the specified $P_2$, $P_3$, and $Q_3$ values would be a much weaker test.
+Comparing the full bus voltages and injections is a stronger check than testing only the specified $P_2$, $P_3$, and $Q_3$ values.
+
+### Cross-check with pandapower
+
+The same network can also be solved with pandapower's Newton--Raphson power flow [`runpp`](https://pandapower.readthedocs.io/en/v3.5.4/powerflow/ac.html) [@pandapower2026acpowerflow]. Reuse the bases already chosen for Power Grid Model. Series branches are entered as [`impedance`](https://pandapower.readthedocs.io/en/v3.5.4/elements/impedance.html) elements in per unit on $S_{\mathrm{base}}$, so the conversion to ohms is unnecessary here.
+
+::: {.callout-note}
+### Matching the bus models
+
+Pandapower models the slack bus with [`ext_grid`](https://pandapower.readthedocs.io/en/v3.5.4/elements/ext_grid.html) and the PV bus with [`gen`](https://pandapower.readthedocs.io/en/v3.5.4/elements/gen.html). The PQ bus is a [`load`](https://pandapower.readthedocs.io/en/v3.5.4/elements/load.html) whose positive $P$ and $Q$ are consumed powers, so they equal the negatives of our injection specifications. Pandapower's bus result table reports power demand; converting with $-S_{\mathrm{bus}}/S_{\mathrm{base}}$ recovers the injection convention used in this tutorial.
+:::
+
+```{python}
+#| label: lst-nr-three-bus-pandapower
+#| code-summary: "Solve the same network with pandapower and compare results"
+
+import pandapower as pp
+
+s_base_mva = s_base / 1e6
+u_base_kv = u_base / 1e3
+
+pp_net = pp.create_empty_network(sn_mva=s_base_mva)
+pp_buses = [
+    pp.create_bus(pp_net, vn_kv=u_base_kv, name=f"bus {bus + 1}")
+    for bus in range(bus_count)
+]
+
+pp.create_ext_grid(
+    pp_net,
+    bus=pp_buses[int(slack[0])],
+    vm_pu=float(slack_voltage_pu[0]),
+    va_degree=float(np.rad2deg(slack_angle_rad[0])),
+)
+pp.create_gen(
+    pp_net,
+    bus=pp_buses[int(pv[0])],
+    p_mw=float(pv_active_pu[0] * s_base_mva),
+    vm_pu=float(pv_voltage_pu[0]),
+)
+pp.create_load(
+    pp_net,
+    bus=pp_buses[int(pq[0])],
+    p_mw=float(-pq_active_pu[0] * s_base_mva),
+    q_mvar=float(-pq_reactive_pu[0] * s_base_mva),
+)
+
+for from_bus, to_bus, impedance_pu in lines:
+    pp.create_impedance(
+        pp_net,
+        from_bus=pp_buses[from_bus],
+        to_bus=pp_buses[to_bus],
+        rft_pu=float(impedance_pu.real),
+        xft_pu=float(impedance_pu.imag),
+        sn_mva=s_base_mva,
+    )
+
+pp.runpp(
+    pp_net,
+    algorithm="nr",
+    calculate_voltage_angles=True,
+    init="flat",
+    tolerance_mva=1e-10,
+    max_iteration=20,
+    numba=False,
+)
+
+pp_voltage_magnitude = pp_net.res_bus.vm_pu.to_numpy()
+pp_voltage_angle = np.deg2rad(pp_net.res_bus.va_degree.to_numpy())
+pp_injection = (
+    -pp_net.res_bus.p_mw.to_numpy() - 1j * pp_net.res_bus.q_mvar.to_numpy()
+) / s_base_mva
+
+print("bus  |V| manual  |V| pp     theta manual  theta pp")
+for bus in range(bus_count):
+    print(
+        f"{bus + 1:3d}  {manual_voltage_magnitude[bus]:10.6f}  "
+        f"{pp_voltage_magnitude[bus]:8.6f}  "
+        f"{np.rad2deg(manual_voltage_angle[bus]):+12.6f}  "
+        f"{np.rad2deg(pp_voltage_angle[bus]):+9.6f}"
+    )
+
+print("\nbus  P manual   P pp       Q manual   Q pp")
+for bus in range(bus_count):
+    print(
+        f"{bus + 1:3d}  {manual_injection[bus].real:+9.6f}  "
+        f"{pp_injection[bus].real:+9.6f}  "
+        f"{manual_injection[bus].imag:+9.6f}  "
+        f"{pp_injection[bus].imag:+9.6f}"
+    )
+
+maximum_difference_pp = max(
+    np.max(np.abs(manual_voltage_magnitude - pp_voltage_magnitude)),
+    np.max(np.abs(manual_voltage_angle - pp_voltage_angle)),
+    np.max(np.abs(manual_injection - pp_injection)),
+)
+comparison_tolerance_pp = 1e-10
+print(f"\nmaximum difference = {maximum_difference_pp:.3e} p.u. or rad")
+if maximum_difference_pp < comparison_tolerance_pp:
+    print(
+        "manual and pandapower solutions agree within "
+        f"{comparison_tolerance_pp:.0e} "
+        "(voltages and all bus injections, including slack P/Q and PV Q)."
+    )
+else:
+    print(
+        "manual and pandapower solutions differ by more than "
+        f"{comparison_tolerance_pp:.0e}."
+    )
+
+np.testing.assert_allclose(
+    pp_voltage_magnitude, manual_voltage_magnitude, atol=comparison_tolerance_pp, rtol=0.0
+)
+np.testing.assert_allclose(
+    pp_voltage_angle, manual_voltage_angle, atol=comparison_tolerance_pp, rtol=0.0
+)
+np.testing.assert_allclose(
+    pp_injection, manual_injection, atol=comparison_tolerance_pp, rtol=0.0
+)
+```
 
 ::: {.callout-tip}
-Change the PQ load, the initial voltage, or a line impedance and rerun the tutorial. Watching the residual history and solved voltages change is a quick way to develop intuition about loading, initialisation, and network strength. The table and single-line diagram describe the original case and do not change when the code inputs are edited.
+Try changing the Python inputs above—for example a load, the flat-start voltage, or a line impedance—and rerun the tutorial. The Newton iteration, residual history, and solved voltages will update. Because the Power Grid Model and pandapower cells reuse the same `lines` list and specification arrays, those impedance and injection changes are also reflected in the cross-checks.
+
+Two things stay fixed unless you edit them by hand:
+
+- the table and single-line diagram still show the published three-bus example; and
+- the Power Grid Model and pandapower cells still assume this three-bus layout (one slack, one PV, one PQ, three lines), so they are not a general cross-check for an arbitrary new topology.
 :::
 
 ## 7. Practical checks
@@ -893,11 +1050,10 @@ Before trusting a solution, verify that:
 
 1. the maximum absolute residual component is below the chosen tolerance;
 2. generator reactive-power limits have been enforced consistently;
-3. voltage magnitudes and angle differences are physically plausible;
+3. voltage magnitudes and angle differences are physically possible;
 4. total generation minus total load equals calculated network losses; and
 5. branch flows respect the same sign and per-unit conventions as the bus model.
 
-The Newton--Raphson formulation remains a foundation for modern network analysis because it is accurate, interpretable, and readily extended to constrained and sparse formulations [@grainger1994].
 
 ## References {.unnumbered}
 

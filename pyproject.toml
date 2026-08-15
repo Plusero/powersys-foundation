@@ -7,6 +7,7 @@ dependencies = [
   "jupyter>=1.1,<2",
   "matplotlib>=3.11.1",
   "numpy>=2.0,<3",
+  "pandapower>=3.5,<4",
   "power-grid-model>=1.13.116,<2",
   "schemdraw>=0.23,<0.24",
   "scienceplots>=2.2.2",
