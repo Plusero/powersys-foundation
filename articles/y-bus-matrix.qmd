@@ -4,7 +4,7 @@ subtitle: "From branch models to a network equation"
 description: "Build the bus-admittance matrix from lines, shunts, and off-nominal transformers, then verify the result in Python."
 author: "Power Systems Foundation contributors"
 date: "2026-08-09"
-date-modified: "2026-08-09"
+date-modified: "2026-08-15"
 categories: [Network analysis, Power flow, Python]
 reading-time: 18
 jupyter: python3
@@ -180,28 +180,40 @@ A symmetric Y-bus matrix is not usually Hermitian. Transposition leaves the comp
 
 ## 5. Worked three-bus example
 
-Consider the per-unit branch data below. The tap is located at the listed from bus, and each $b_c$ is the total line-charging susceptance.
-
-| From | To | $z=r+\mathrm{j}x$ | $b_c$ | $t=\tau e^{\mathrm{j}\phi}$ |
-|---:|---:|---:|---:|---:|
-| 1 | 2 | $0.02+\mathrm{j}0.06$ | $0.030$ | $1.05e^{\mathrm{j}5^\circ}$ |
-| 1 | 3 | $0.08+\mathrm{j}0.24$ | $0.025$ | $1$ |
-| 2 | 3 | $0.06+\mathrm{j}0.18$ | $0.020$ | $1$ |
-
-: Three-bus branch data {#tbl-ybus-three-bus-data}
-
-Bus 3 also has the fixed shunt $y_3^{\mathrm{sh}}=\mathrm{j}0.010$. Stamping the three primitives and then the bus shunt gives
+Use the same series-impedance three-bus network as the [Newton--Raphson power-flow](newton-raphson-power-flow.qmd) and [power-flow versus state-estimation](power-flow-versus-state-estimation.qmd) tutorials. The per-unit branch impedances are
 
 $$
-\mathbf Y_{\mathrm{bus}}\approx
+z_{12}=0.02+\mathrm{j}0.06,
+\qquad
+z_{13}=0.08+\mathrm{j}0.24,
+\qquad
+z_{23}=0.06+\mathrm{j}0.18.
+$$ {#eq-ybus-three-bus-impedances}
+
+@fig-ybus-three-bus-single-line shows the meshed topology. For this worked example the branches are series-only: no line charging, no fixed bus shunts, and unit taps. Sections 2.2--2.3 still apply when those features are present; omitting them here keeps the stamp identical to the shared power-flow case.
+
+![IEC-style single-line diagram of the three-bus network. Generator G1 is at bus 1, generator G2 at bus 2, and a load at bus 3. Branch labels give the per-unit series impedances.](figures/generated/three-bus-power-flow-single-line.svg){#fig-ybus-three-bus-single-line fig-align="center" width="100%"}
+
+| From | To | $z=r+\mathrm{j}x$ | $b_c$ | $t$ |
+|---:|---:|---:|---:|---:|
+| 1 | 2 | $0.02+\mathrm{j}0.06$ | $0$ | $1$ |
+| 1 | 3 | $0.08+\mathrm{j}0.24$ | $0$ | $1$ |
+| 2 | 3 | $0.06+\mathrm{j}0.18$ | $0$ | $1$ |
+
+: Three-bus series-only branch data {#tbl-ybus-three-bus-data}
+
+Stamping the three series primitives gives
+
+$$
+\mathbf Y_{\mathrm{bus}}=
 \begin{bmatrix}
- 5.78515-\mathrm{j}17.32934 & -5.98887+\mathrm{j}13.81633 & -1.25000+\mathrm{j}3.75000\\
--3.49870+\mathrm{j}14.64638 &  6.66667-\mathrm{j}19.97500 & -1.66667+\mathrm{j}5.00000\\
--1.25000+\mathrm{j}3.75000 & -1.66667+\mathrm{j}5.00000 &  2.91667-\mathrm{j}8.71750
+ 6.25000-\mathrm{j}18.75000 & -5.00000+\mathrm{j}15.00000 & -1.25000+\mathrm{j}3.75000\\
+-5.00000+\mathrm{j}15.00000 &  6.66667-\mathrm{j}20.00000 & -1.66667+\mathrm{j}5.00000\\
+-1.25000+\mathrm{j}3.75000 & -1.66667+\mathrm{j}5.00000 &  2.91667-\mathrm{j}8.75000
 \end{bmatrix}.
 $$ {#eq-ybus-three-bus-matrix}
 
-Notice that $Y_{12}\ne Y_{21}$. This is the expected consequence of the $5^\circ$ phase-shifting tap, not an assembly mistake.
+Because every branch is reciprocal with a unit tap, $\mathbf Y_{\mathrm{bus}}$ is complex-symmetric: $Y_{ik}=Y_{ki}$. A nonzero phase-shifting tap would break that equality, as in @eq-ybus-tap-primitive.
 
 ### 5.1 Reproduce the stamp in Python
 
@@ -281,25 +293,20 @@ branches = [
         "from_bus": 1,
         "to_bus": 2,
         "impedance": 0.02 + 0.06j,
-        "charging_susceptance": 0.030,
-        "tap": 1.05 * np.exp(1j * np.deg2rad(5.0)),
     },
     {
         "from_bus": 1,
         "to_bus": 3,
         "impedance": 0.08 + 0.24j,
-        "charging_susceptance": 0.025,
     },
     {
         "from_bus": 2,
         "to_bus": 3,
         "impedance": 0.06 + 0.18j,
-        "charging_susceptance": 0.020,
     },
 ]
 
-bus_shunts = np.array([0.0j, 0.0j, 0.010j])
-y_bus = build_y_bus(3, branches, bus_shunts)
+y_bus = build_y_bus(3, branches)
 
 np.set_printoptions(precision=5, suppress=True)
 print(y_bus)
@@ -349,7 +356,6 @@ for branch in branches:
     )
     assembled_current[terminals] += primitive @ voltage[terminals]
 
-assembled_current += bus_shunts * voltage
 current_error = np.max(np.abs(matrix_current - assembled_current))
 
 power_injection = voltage * matrix_current.conjugate()
@@ -367,9 +373,9 @@ $$
 =\mathbf V\odot\left(\mathbf Y_{\mathrm{bus}}\mathbf V\right)^*,
 $$ {#eq-ybus-power-injection}
 
-where $\odot$ denotes elementwise multiplication. The small positive total active injection in this passive example is the network's resistive loss. Reactive totals also include the effects of line charging and the fixed shunt.
+where $\odot$ denotes elementwise multiplication. The small positive total active injection in this passive example is the network's resistive loss.
 
-@Eq-ybus-power-injection is the bridge from network assembly to nonlinear power-flow equations. The [Newton--Raphson power-flow tutorial](newton-raphson-power-flow.qmd) develops that next step. Keep the primitive branch matrices as well as $\mathbf Y_{\mathrm{bus}}$ when individual terminal currents or branch power flows are required.
+@Eq-ybus-power-injection is the bridge from network assembly to nonlinear power-flow equations. The [Newton--Raphson power-flow tutorial](newton-raphson-power-flow.qmd) develops that next step on this same three-bus network. Keep the primitive branch matrices as well as $\mathbf Y_{\mathrm{bus}}$ when individual terminal currents or branch power flows are required.
 
 ## 7. Practical checks
 
