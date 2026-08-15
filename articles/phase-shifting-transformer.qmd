@@ -1,0 +1,20 @@
+---
+title: "Phase-Shifting Transformers"
+subtitle: "Placeholder"
+description: "Placeholder tutorial on phase-shifting transformers."
+author: "Power Systems Foundation contributors"
+date: "2026-08-15"
+date-modified: "2026-08-15"
+categories: [Transformers, Network analysis, Power flow, Python]
+reading-time: 1
+jupyter: python3
+execute:
+  echo: true
+  warning: false
+draft: true
+proofread: false
+---
+
+::: {.callout-note}
+This tutorial is a placeholder. Content will be added later.
+:::
