@@ -17,7 +17,7 @@ proofread: false
 
 ## What you will learn
 
-After working through this tutorial, you should be able to:
+After this tutorial, you should be able to:
 
 - generate a known reference state with power flow (PF);
 - convert that state into ideal measurements and add controlled noise;
@@ -32,9 +32,9 @@ The workflow has four explicit steps:
 3. **Run State Estimation with the generated measurements.**
 4. **Compare state estimates with ground truth values (from PF).**
 
-This is a controlled **synthetic verification** workflow. It answers “does the estimator recover a known state under the tested assumptions?” It does not by itself prove that the network model, uncertainty model, or field data are correct.
+This controlled **synthetic verification** workflow answers “does the estimator recover a known state under the tested assumptions?” It does not by itself prove that the network model, uncertainty model, or field data are correct.
 
-To keep every calculation visible, the worked example uses a three-bus DC model. It assumes a balanced lossless network, fixed voltage magnitudes of $1$ p.u., small angle differences, and bus 1 as the reference. Active powers are in per unit and angles are in radians. See [Power Flow Calculation and State Estimation](power-flow-versus-state-estimation.qmd) for the distinction between the two problems and [Weighted Least-Squares State Estimation](weighted-least-squares-state-estimation.qmd) for the general AC formulation.
+To keep every calculation visible, the worked example uses a three-bus DC model: a balanced lossless network, fixed voltage magnitudes of $1$ p.u., small angle differences, and bus 1 as the reference, with active powers in per unit and angles in radians. See [Power Flow Calculation and State Estimation](power-flow-versus-state-estimation.qmd) for the distinction between the two problems and [Weighted Least-Squares State Estimation](weighted-least-squares-state-estimation.qmd) for the general AC formulation.
 
 ## 1. Run Power Flow (PF), use the values as ground truth values
 
@@ -59,7 +59,7 @@ $$
 \begin{bmatrix}-0.26\\-0.64\end{bmatrix}}_{\mathbf p_{\mathrm{spec}}}.
 $$ {#eq-seval-pf-system}
 
-The PF solution is designated $\mathbf x^{\mathrm{true}}$. “True” here means the numerical reference for this experiment, not an assertion that the model perfectly represents a physical grid.
+The PF solution is designated $\mathbf x^{\mathrm{true}}$; “true” means the numerical reference for this experiment, not that the model perfectly represents a physical grid.
 
 ```{python}
 #| label: lst-seval-run-pf
@@ -95,11 +95,11 @@ print("true line flows [P12, P13, P23] p.u. =", true_flows)
 print("maximum PF mismatch =", np.max(np.abs(pf_mismatch)))
 ```
 
-The mismatch check is essential. A failed or loosely converged PF result is not a defensible reference. For nonlinear AC studies, also record bus types, active limits, reactive-limit switching, solver tolerances, iteration count, and the exact topology and parameter version used to create the case [@grainger1994].
+The mismatch check is essential: a failed or loosely converged PF result is not a defensible reference. For nonlinear AC studies, also record bus types, active limits, reactive-limit switching, solver tolerances, iteration count, and the exact topology and parameter version used [@grainger1994].
 
 ## 2. Generate ideal measurements from the ground truth, then add noise
 
-Noise should be added to **ideal measurement values**, not indiscriminately to every state or PF input. First evaluate each intended meter function at $\mathbf x^{\mathrm{true}}$:
+Add noise to **ideal measurement values**, not indiscriminately to every state or PF input. First evaluate each intended meter function at $\mathbf x^{\mathrm{true}}$:
 
 $$
 \mathbf z^{\mathrm{ideal}}=\mathbf h(\mathbf x^{\mathrm{true}}).
@@ -116,7 +116,7 @@ $$
 \operatorname{cov}(\mathbf e)=\mathbf R.
 $$ {#eq-seval-noisy-measurements}
 
-The example measures $P_{12}$, $P_{13}$, $P_{23}$, $P_2$, and $P_3$. Its DC measurement function is linear, $\mathbf h(\mathbf x)=\mathbf H\mathbf x$. The fixed standardised errors below define one documented, deterministic trial.
+The example measures $P_{12}$, $P_{13}$, $P_{23}$, $P_2$, and $P_3$; its DC measurement function is linear, $\mathbf h(\mathbf x)=\mathbf H\mathbf x$. The fixed standardised errors below define one documented, deterministic trial.
 
 ```{python}
 #| label: lst-seval-add-noise
@@ -146,9 +146,9 @@ for name, ideal, error, measured in zip(
     print(f"{name:15s} {ideal: .6f} {error: .6f} {measured: .6f}")
 ```
 
-Keep $\mathbf x^{\mathrm{true}}$ outside the estimator interface. The estimator should receive only the network model, measurement definitions, $\mathbf z$, $\mathbf R$, its initial state, and numerical settings. Otherwise the test can accidentally leak the answer into the algorithm.
+Keep $\mathbf x^{\mathrm{true}}$ outside the estimator interface: the estimator should receive only the network model, measurement definitions, $\mathbf z$, $\mathbf R$, its initial state, and numerical settings, or the test can leak the answer into the algorithm.
 
-The covariance must match the simulated error model. Independent errors give $\mathbf R=\operatorname{diag}(\sigma_i^2)$. Correlated channel errors require a non-diagonal covariance or an explicit common-error construction. Rounded meters, limits, dropouts, and gross errors are not well represented by simply increasing Gaussian variance [@abur2004stateestimation].
+The covariance must match the simulated error model: independent errors give $\mathbf R=\operatorname{diag}(\sigma_i^2)$, while correlated channel errors require a non-diagonal covariance or an explicit common-error construction. Rounded meters, limits, dropouts, and gross errors are not well represented by simply increasing Gaussian variance [@abur2004stateestimation].
 
 ## 3. Run State Estimation with the generated measurements
 
@@ -201,7 +201,7 @@ print(
 )
 ```
 
-For nonlinear AC SE, this step becomes iterative: evaluate $\mathbf h(\mathbf x_k)$ and its Jacobian, solve for a correction, update the state, and apply explicit convergence and iteration-limit checks. The initial state, stopping rule, and any damping must be fixed as part of the experiment rather than tuned after seeing the answer [@monticelli1999stateestimation].
+For nonlinear AC SE, this step becomes iterative: evaluate $\mathbf h(\mathbf x_k)$ and its Jacobian, solve for a correction, update the state, and apply explicit convergence and iteration-limit checks. The initial state, stopping rule, and any damping must be fixed as part of the experiment, not tuned after seeing the answer [@monticelli1999stateestimation].
 
 ## 4. Compare state estimates with ground truth values (from PF)
 
@@ -220,7 +220,7 @@ $$
 \sum_i(\widehat\theta_i-\theta_i^{\mathrm{true}})^2}.
 $$ {#eq-seval-angle-rmse}
 
-Before comparing AC voltage angles, express the truth and estimate with the same reference and wrap each angular difference into a common interval such as $(-\pi,\pi]$. An AC study should normally report voltage-magnitude error separately; mixing radians and per-unit magnitudes into one unscaled norm hides their meanings.
+Before comparing AC voltage angles, express truth and estimate with the same reference and wrap each angular difference into a common interval such as $(-\pi,\pi]$. An AC study should normally report voltage-magnitude error separately: mixing radians and per-unit magnitudes into one unscaled norm hides their meanings.
 
 ```{python}
 #| label: lst-seval-compare-truth
@@ -244,7 +244,7 @@ print("angle RMSE [deg] =", np.rad2deg(angle_rmse))
 print("weighted residual RMS =", weighted_residual_rms)
 ```
 
-State error and residual answer different questions. The state error measures accuracy against the hidden synthetic truth. The residual measures consistency between the estimate and the measurements; a small residual does not guarantee a small state error when the model is biased or weakly observable.
+State error and residual answer different questions: the state error measures accuracy against the hidden synthetic truth, while the residual measures consistency between the estimate and the measurements. A small residual does not guarantee a small state error when the model is biased or weakly observable.
 
 Define acceptance criteria before running the experiment. Useful checks include:
 
@@ -257,9 +257,9 @@ Define acceptance criteria before running the experiment. Useful checks include:
 
 ### Monte Carlo testing
 
-One noise realisation can be unusually easy or difficult. Monte Carlo testing repeats steps 2--4 for many independent, seeded realisations while holding the PF case and experimental settings fixed. Report the seed policy, trial count, failures, sample bias, RMSE, quantiles, and confidence intervals---not only the best run.
+One noise realisation can be unusually easy or difficult, so Monte Carlo testing repeats steps 2--4 over many independent, seeded realisations with the PF case and experimental settings held fixed. Report the seed policy, trial count, failures, sample bias, RMSE, quantiles, and confidence intervals---not only the best run.
 
-The linear example can evaluate all trials in one least-squares solve. A fixed seed makes this aggregate experiment reproducible while still sampling Gaussian errors.
+The linear example evaluates all trials in one least-squares solve; a fixed seed keeps the aggregate experiment reproducible while still sampling Gaussian errors.
 
 ```{python}
 #| label: lst-seval-monte-carlo
@@ -287,7 +287,7 @@ print("Monte Carlo RMSE [rad] =", empirical_rmse)
 print("WLS-predicted standard deviation [rad] =", predicted_standard_deviation)
 ```
 
-Under the correctly specified linear-Gaussian model, the empirical bias should approach zero and the RMSE should approach the WLS-predicted standard deviation as the number of trials grows. A deterministic tolerance should account for finite-sample variability; exact equality is neither expected nor a sensible test.
+Under the correctly specified linear-Gaussian model, the empirical bias should approach zero and the RMSE the WLS-predicted standard deviation as the trial count grows. Tolerances should account for finite-sample variability; exact equality is neither expected nor a sensible test.
 
 ### Stress testing
 
@@ -297,10 +297,10 @@ Monte Carlo noise tests random accuracy under one assumed model. Stress tests de
 - **Measurement availability:** remove meters, communication groups, or an entire substation and recheck observability after every removal.
 - **Bad data:** inject isolated outliers, interacting outliers, drifts, stuck values, and timing errors; measure both detection and false-alarm rates.
 - **Covariance mismatch:** misstate variances, add correlated errors, and test mixed-quality pseudo-measurements.
-- **Model mismatch:** perturb line parameters, transformer taps, shunts, and topology status. Do not always generate and estimate with the exact same model.
+- **Model mismatch:** perturb line parameters, transformer taps, shunts, and topology status; do not always generate and estimate with the same model.
 - **Numerical conditions:** vary the initial state, scaling, stopping tolerance, and maximum iterations; retain every non-converged trial in the reported failure rate.
 
-Separating these campaigns makes failures interpretable. If noise-only Monte Carlo tests pass but topology-error tests fail, the evidence points toward robustness to model mismatch rather than a basic WLS implementation error.
+Separate campaigns make failures interpretable: if noise-only Monte Carlo tests pass but topology-error tests fail, the evidence points toward robustness to model mismatch rather than a basic WLS implementation error.
 
 ### What this workflow establishes
 
@@ -312,7 +312,7 @@ A strong synthetic verification demonstrates reproducibility, correctness on kno
 - Generate ideal meter values through the measurement functions, then add errors with a documented covariance and seed policy.
 - Keep the hidden truth out of the estimator inputs.
 - Compare state error, residual behaviour, convergence, observability, and runtime against predeclared criteria.
-- Use repeated Monte Carlo trials for statistical claims and separate stress campaigns for bad data, missing measurements, model mismatch, and difficult operating points.
+- Use Monte Carlo trials for statistical claims and separate stress campaigns for bad data, missing measurements, model mismatch, and difficult operating points.
 
 ## References {.unnumbered}
 

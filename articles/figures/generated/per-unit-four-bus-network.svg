@@ -1,0 +1,68 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="500" viewBox="0 0 1280 500" role="img" aria-labelledby="per-unit-four-bus-network-title per-unit-four-bus-network-description">
+  <title id="per-unit-four-bus-network-title">Four-bus network spanning three per-unit voltage zones</title>
+  <desc id="per-unit-four-bus-network-description">Radial single-line diagram. Generator G at bus 1 connects through step-up transformer T1 to bus 2, a 230 kV line with a charging capacitance at each end runs to bus 3, and step-down transformer T2 feeds the load at bus 4. Dashed boundaries through both transformers separate the generator, transmission, and distribution zones, whose voltage bases are 13.2 kV, 230 kV, and 69 kV on a 100 MVA system base.</desc>
+  <rect x="0" y="0" width="1280" height="500" fill="white" />
+  <polyline points="317,300 317,470" fill="none" stroke="#43515a" stroke-width="1.5" stroke-linejoin="miter" stroke-dasharray="8 6" />
+  <polyline points="931,300 931,470" fill="none" stroke="#43515a" stroke-width="1.5" stroke-linejoin="miter" stroke-dasharray="8 6" />
+  <polyline points="140,260 200,260" fill="none" stroke="#111111" stroke-width="1.5" stroke-linejoin="miter" />
+  <polyline points="200,205 200,315" fill="none" stroke="#111111" stroke-width="3" stroke-linejoin="miter" />
+  <polyline points="200,260 272,260" fill="none" stroke="#111111" stroke-width="1.5" stroke-linejoin="miter" />
+  <polyline points="362,260 470,260" fill="none" stroke="#111111" stroke-width="1.5" stroke-linejoin="miter" />
+  <polyline points="470,205 470,315" fill="none" stroke="#111111" stroke-width="3" stroke-linejoin="miter" />
+  <polyline points="470,260 840,260" fill="none" stroke="#111111" stroke-width="1.5" stroke-linejoin="miter" />
+  <polyline points="840,205 840,315" fill="none" stroke="#111111" stroke-width="3" stroke-linejoin="miter" />
+  <polyline points="840,260 886,260" fill="none" stroke="#111111" stroke-width="1.5" stroke-linejoin="miter" />
+  <polyline points="976,260 1080,260" fill="none" stroke="#111111" stroke-width="1.5" stroke-linejoin="miter" />
+  <polyline points="1080,205 1080,315" fill="none" stroke="#111111" stroke-width="3" stroke-linejoin="miter" />
+  <polyline points="1080,260 1160,260 1160,330" fill="none" stroke="#111111" stroke-width="1.5" stroke-linejoin="miter" />
+  <polyline points="540,260 540,326" fill="none" stroke="#111111" stroke-width="1.5" stroke-linejoin="miter" />
+  <polyline points="522,326 558,326" fill="none" stroke="#111111" stroke-width="2.5" stroke-linejoin="miter" />
+  <polyline points="522,338 558,338" fill="none" stroke="#111111" stroke-width="2.5" stroke-linejoin="miter" />
+  <polyline points="540,338 540,352" fill="none" stroke="#111111" stroke-width="1.5" stroke-linejoin="miter" />
+  <polyline points="522,352 558,352" fill="none" stroke="#111111" stroke-width="1.5" stroke-linejoin="miter" />
+  <polyline points="529,360 551,360" fill="none" stroke="#111111" stroke-width="1.5" stroke-linejoin="miter" />
+  <polyline points="536,368 544,368" fill="none" stroke="#111111" stroke-width="1.5" stroke-linejoin="miter" />
+  <polyline points="770,260 770,326" fill="none" stroke="#111111" stroke-width="1.5" stroke-linejoin="miter" />
+  <polyline points="752,326 788,326" fill="none" stroke="#111111" stroke-width="2.5" stroke-linejoin="miter" />
+  <polyline points="752,338 788,338" fill="none" stroke="#111111" stroke-width="2.5" stroke-linejoin="miter" />
+  <polyline points="770,338 770,352" fill="none" stroke="#111111" stroke-width="1.5" stroke-linejoin="miter" />
+  <polyline points="752,352 788,352" fill="none" stroke="#111111" stroke-width="1.5" stroke-linejoin="miter" />
+  <polyline points="759,360 781,360" fill="none" stroke="#111111" stroke-width="1.5" stroke-linejoin="miter" />
+  <polyline points="766,368 774,368" fill="none" stroke="#111111" stroke-width="1.5" stroke-linejoin="miter" />
+  <circle cx="336" cy="260" r="26" fill="none" stroke="#111111" stroke-width="1.5" />
+  <circle cx="298" cy="260" r="26" fill="none" stroke="#111111" stroke-width="1.5" />
+  <circle cx="912" cy="260" r="26" fill="none" stroke="#111111" stroke-width="1.5" />
+  <circle cx="950" cy="260" r="26" fill="none" stroke="#111111" stroke-width="1.5" />
+  <circle cx="110" cy="260" r="30" fill="white" stroke="#111111" stroke-width="1.5" />
+  <text x="110" y="269" font-family="Times New Roman" font-size="24" font-weight="bold" text-anchor="middle" fill="#111111">G</text>
+  <polygon points="1144,330 1176,330 1160,358" fill="#111111" />
+  <text x="640" y="64" font-family="Times New Roman" font-size="20" font-weight="bold" text-anchor="middle" fill="#111111">System base: 100 MVA</text>
+  <text x="110" y="120" font-family="Times New Roman" font-size="20" font-weight="bold" text-anchor="middle" fill="#111111">Generator G</text>
+  <text x="110" y="146" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="middle" fill="#43515a">90 MVA, 13.8 kV</text>
+  <text x="110" y="170" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="middle" fill="#43515a">x″ = j0.18 p.u.</text>
+  <text x="317" y="120" font-family="Times New Roman" font-size="20" font-weight="bold" text-anchor="middle" fill="#111111">T1</text>
+  <text x="317" y="146" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="middle" fill="#43515a">125 MVA, 13.2/230 kV</text>
+  <text x="317" y="170" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="middle" fill="#43515a">x = j0.10 p.u.</text>
+  <text x="655" y="120" font-family="Times New Roman" font-size="20" font-weight="bold" text-anchor="middle" fill="#111111">230 kV line</text>
+  <text x="655" y="146" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="middle" fill="#43515a">z = 15 + j80 Ω</text>
+  <text x="655" y="170" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="middle" fill="#43515a">bc = 422 µS total</text>
+  <text x="931" y="120" font-family="Times New Roman" font-size="20" font-weight="bold" text-anchor="middle" fill="#111111">T2</text>
+  <text x="931" y="146" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="middle" fill="#43515a">75 MVA, 230/69 kV</text>
+  <text x="931" y="170" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="middle" fill="#43515a">x = j0.08 p.u.</text>
+  <text x="200" y="196" font-family="Times New Roman" font-size="20" font-weight="bold" text-anchor="middle" fill="#111111">Bus 1</text>
+  <text x="470" y="196" font-family="Times New Roman" font-size="20" font-weight="bold" text-anchor="middle" fill="#111111">Bus 2</text>
+  <text x="840" y="196" font-family="Times New Roman" font-size="20" font-weight="bold" text-anchor="middle" fill="#111111">Bus 3</text>
+  <text x="1080" y="196" font-family="Times New Roman" font-size="20" font-weight="bold" text-anchor="middle" fill="#111111">Bus 4</text>
+  <text x="566" y="338" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="start" fill="#43515a">bc/2</text>
+  <text x="796" y="338" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="start" fill="#43515a">bc/2</text>
+  <text x="1140" y="300" font-family="Times New Roman" font-size="20" font-weight="bold" text-anchor="end" fill="#111111">Load</text>
+  <text x="1140" y="326" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="end" fill="#43515a">60 + j25 MVA</text>
+  <text x="1140" y="350" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="end" fill="#43515a">at 66 kV</text>
+  <text x="230" y="420" font-family="Times New Roman" font-size="20" font-weight="bold" text-anchor="middle" fill="#111111">Generator zone</text>
+  <text x="230" y="446" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="middle" fill="#43515a">VB = 13.2 kV</text>
+  <text x="624" y="420" font-family="Times New Roman" font-size="20" font-weight="bold" text-anchor="middle" fill="#111111">Transmission zone</text>
+  <text x="624" y="446" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="middle" fill="#43515a">VB = 230 kV</text>
+  <text x="1060" y="420" font-family="Times New Roman" font-size="20" font-weight="bold" text-anchor="middle" fill="#111111">Distribution zone</text>
+  <text x="1060" y="446" font-family="Times New Roman" font-size="18" font-weight="normal" text-anchor="middle" fill="#43515a">VB = 69 kV</text>
+</svg>

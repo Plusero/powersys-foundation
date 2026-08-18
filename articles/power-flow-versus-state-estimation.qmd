@@ -17,7 +17,7 @@ proofread: false
 
 ## What you will learn
 
-After working through this tutorial, you should be able to:
+After this tutorial, you should be able to:
 
 - state the different questions answered by power flow (PF) and state estimation (SE);
 - distinguish their specified inputs, equations, and outputs;
@@ -25,7 +25,7 @@ After working through this tutorial, you should be able to:
 - distinguish PF solvability from SE observability; and
 - reproduce both calculations on the same small network.
 
-The [Newton--Raphson power-flow tutorial](newton-raphson-power-flow.qmd) and the [weighted least-squares state-estimation tutorial](weighted-least-squares-state-estimation.qmd) derive the two methods in detail. Here the emphasis is their relationship---and the boundary between them.
+The [Newton--Raphson power-flow tutorial](newton-raphson-power-flow.qmd) and the [weighted least-squares state-estimation tutorial](weighted-least-squares-state-estimation.qmd) derive the two methods in detail; here the emphasis is their relationship and the boundary between them.
 
 ## 1. The short answer
 
@@ -33,7 +33,7 @@ The [Newton--Raphson power-flow tutorial](newton-raphson-power-flow.qmd) and the
 
 **State estimation:** given a network model and a redundant set of noisy measurements, what voltage (grid state variables) are most likely to produce measurements?
 
-In @tbl-pfse-comparison, we compare the two methods from various perspectives.
+@tbl-pfse-comparison compares the two methods.
 
 
 | Aspect | Power flow calculation | State estimation |
@@ -50,12 +50,12 @@ In @tbl-pfse-comparison, we compare the two methods from various perspectives.
 : Power flow and state estimation comparison {#tbl-pfse-comparison}
 
 ::: {.callout-important}
-SE is not simply “power flow with measured injections.” An estimator may include injection measurements, but it can also combine branch flows, voltage magnitudes, currents, and phasors. It seeks a state that best fits all retained evidence rather than enforcing every measured quantity as an exact balance specification.
+SE is not simply “power flow with measured injections.” An estimator can combine injection measurements with branch flows, voltage magnitudes, currents, and phasors, seeking a state that best fits all retained evidence rather than enforcing every measured quantity as an exact balance specification.
 :::
 
 ## 2. Power flow: enforce a specified operating case
 
-Let $\mathbf v$ denote the unknown voltage-state vector, containing the unfixed voltage angles and magnitudes. Let $\mathbf s_{\mathrm{spec}}$ collect the specified operating-case quantities, such as scheduled injections and controlled voltage magnitudes. PF solves
+Let $\mathbf v$ denote the unknown voltage-state vector of unfixed voltage angles and magnitudes, and let $\mathbf s_{\mathrm{spec}}$ collect the specified operating-case quantities such as scheduled injections and controlled voltage magnitudes. PF solves
 
 $$
 \mathbf g(\mathbf v,\mathbf s_{\mathrm{spec}})=\mathbf0.
@@ -71,7 +71,7 @@ $$
 =\left.\frac{\partial\mathbf g}{\partial\mathbf v}\right|_{\mathbf v_k}.
 $$ {#eq-pfse-pf-newton}
 
-A converged solution is a state consistent with the chosen network model and specifications. It is a **model-based operating point**, not proof that a physical system actually occupied that state. Forecast errors, an incorrect topology, or inaccurate parameters can all make a numerically converged case differ from reality.
+A converged solution is a **model-based operating point** consistent with the chosen network model and specifications---not proof that a physical system actually occupied that state. Forecast errors, an incorrect topology, or inaccurate parameters can all make a converged case differ from reality.
 
 The local mathematical question is whether the retained PF Jacobian is nonsingular and adequately conditioned. The [power-flow Jacobian tutorial](power-flow-jacobian-invertibility.qmd) explains why reference choices, operating stress, and voltage-collapse boundaries matter.
 
@@ -104,13 +104,13 @@ $$
 =\left.\frac{\partial\mathbf h}{\partial\mathbf v}\right|_{\mathbf v_k}
 $$ {#eq-pfse-measurement-jacobian}
 
-maps a state correction to changes in all predicted measurements. The WLS step uses the $n\times n$ gain matrix $\mathbf H_k^{\mathsf T}\mathbf R^{-1}\mathbf H_k$. Unlike the PF Jacobian, $\mathbf H_k$ is normally rectangular because measurement redundancy is valuable.
+maps a state correction to changes in all predicted measurements. The WLS step uses the $n\times n$ gain matrix $\mathbf H_k^{\mathsf T}\mathbf R^{-1}\mathbf H_k$. Unlike the PF Jacobian, $\mathbf H_k$ is normally rectangular because redundancy is valuable.
 
 After fixing the voltage-angle reference, local observability requires $\mathbf H_k$ to have full column rank. Redundancy then leaves post-fit residuals that can reveal inconsistency. Full rank alone does not guarantee accurate estimates: covariance errors, bad data, parameter errors, and poor conditioning still matter [@monticelli1999stateestimation].
 
 ## 4. The same three-bus network, two calculations
 
-Consider the balanced three-bus AC network in @fig-pfse-three-bus-ac. The lines retain both resistance and reactance, and the calculations use complex voltages, active and reactive power, voltage-magnitude variation, and transmission losses. The series impedances are
+Consider the balanced three-bus AC network in @fig-pfse-three-bus-ac. The lines retain both resistance and reactance, so the calculations involve complex voltages, active and reactive power, voltage-magnitude variation, and transmission losses. The series impedances are
 
 $$
 z_{12}=0.02+\mathrm j0.06,
@@ -175,7 +175,7 @@ The slack-bus powers and $Q_2$ are outputs of PF rather than additional specific
 
 ### 4.2 SE calculation
 
-The SE calculation uses the same admittance matrix but a different state and different inputs. Only the angle reference $\theta_1=0$ is fixed. The estimator state is
+SE uses the same admittance matrix but a different state and different inputs: only the angle reference $\theta_1=0$ is fixed. The estimator state is
 
 $$
 \mathbf x_{\mathrm{SE}}
@@ -211,7 +211,7 @@ $$
 \mathbf z_{\mathrm{SE}}=\mathbf z_{\mathrm{ideal}}+\mathbf e.
 $$ {#eq-pfse-ac-synthetic-measurements}
 
-The fixed errors in the code emulate imperfect meters while keeping every render reproducible. They are not applied to the PF specifications: they are added only after PF has produced the reference voltages and all measurement functions have been evaluated. Nonlinear WLS then repeatedly evaluates $\mathbf h$ and its $11\times5$ Jacobian.
+The fixed errors in the code emulate imperfect meters while keeping every render reproducible. They are added only after PF has produced the reference voltages and the measurement functions have been evaluated---never to the PF specifications. Nonlinear WLS then repeatedly evaluates $\mathbf h$ and its $11\times5$ Jacobian.
 
 ```{python}
 #| label: lst-pfse-side-by-side
@@ -386,12 +386,12 @@ for name, ideal, measured, predicted, residual in zip(
     )
 ```
 
-The PF residual confirms that its three retained specifications are satisfied to numerical tolerance. Its solved voltage phasors then determine every ideal value in the measurement table. The SE state is close but not identical to that PF reference because no voltage state can reproduce all 11 perturbed values exactly. WLS accepts residuals and distributes them according to the stated standard deviations.
+The PF residual confirms that its three retained specifications are satisfied to numerical tolerance, and its solved voltage phasors determine every ideal value in the measurement table. The SE state is close but not identical to that PF reference because no voltage state can reproduce all 11 perturbed values exactly; WLS accepts residuals and distributes them according to the stated standard deviations.
 
-This example also shows why similar outputs do not imply identical tasks. PF uses three exact operating-case **specifications** to calculate the reference voltages. SE uses 11 uncertain **observations** derived from those voltages to estimate five state variables.
+Similar outputs do not imply identical tasks: PF uses three exact operating-case **specifications** to calculate the reference voltages, while SE uses 11 uncertain **observations** derived from those voltages to estimate five state variables.
 
 ::: {.callout-note}
-This is the full nonlinear AC solution of the stated balanced, positive-sequence, series-impedance model; it is not a DC approximation. A more detailed network model can additionally include transformer taps, shunts, line charging, phase connections, and unbalance without changing the PF--SE distinction.
+This is the full nonlinear AC solution of the stated balanced, positive-sequence, series-impedance model, not a DC approximation. A more detailed model can add transformer taps, shunts, line charging, phase connections, and unbalance without changing the PF--SE distinction.
 :::
 
 ## 5. How the methods work together

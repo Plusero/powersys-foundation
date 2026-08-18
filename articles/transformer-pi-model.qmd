@@ -17,7 +17,7 @@ proofread: false
 
 ## What you will learn
 
-After working through this tutorial, you should be able to:
+After this tutorial, you should be able to:
 
 - explain what the series and shunt branches of a transformer equivalent circuit represent;
 - derive per-unit series impedance and magnetising admittance from nameplate test data;
@@ -35,7 +35,7 @@ After working through this tutorial, you should be able to:
 
 ## 1. Why replace a transformer with a circuit model?
 
-An ideal transformer changes voltage and current without loss. A real transformer also has winding resistance, leakage flux, core loss, and a magnetising current. A steady-state network model represents those effects with a few lumped impedances and admittances [@grainger1994].
+An ideal transformer changes voltage and current without loss; a real one also has winding resistance, leakage flux, core loss, and a magnetising current. A steady-state network model represents these effects with a few lumped impedances and admittances [@grainger1994].
 
 For balanced positive-sequence power flow, the direct $\pi$ model used in pandapower can be pictured as
 
@@ -49,10 +49,10 @@ HV bus -- ideal ratio n:1 --o------ z ------o-- LV bus
 
 The two complex parameters have different jobs:
 
-- $\underline z=r+\mathrm{j}x$ is the **total series leakage impedance**. Its resistance represents winding copper loss and its reactance represents leakage flux.
-- $\underline y=g-\mathrm{j}b$ is the **total magnetising admittance**. Its conductance represents iron loss and its negative susceptance represents the inductive magnetising current.
+- $\underline z=r+\mathrm{j}x$ is the **total series leakage impedance**: resistance for winding copper loss, reactance for leakage flux.
+- $\underline y=g-\mathrm{j}b$ is the **total magnetising admittance**: conductance for iron loss, negative susceptance for the inductive magnetising current.
 
-The ideal complex ratio $\underline n$ accounts for rated voltages, an off-nominal tap, and possibly a phase shift. Referring all electrical quantities to compatible per-unit voltage bases usually removes the nominal turns ratio; only the off-nominal part remains.
+The ideal complex ratio $\underline n$ accounts for rated voltages, an off-nominal tap, and possibly a phase shift. Referring all quantities to compatible per-unit voltage bases usually removes the nominal turns ratio, leaving only the off-nominal part.
 
 ::: {.callout-important}
 This is a balanced, sinusoidal steady-state model. It does not by itself describe winding connections, neutral grounding, zero-sequence paths, saturation, inrush, harmonics, or fast electromagnetic transients.
@@ -60,7 +60,7 @@ This is a balanced, sinusoidal steady-state model. It does not by itself describ
 
 ## 2. What the transformer tests tell us
 
-Transformer data sheets commonly provide the rated apparent power $S_r$, rated high- and low-voltage magnitudes, relative short-circuit voltage $v_k$, its resistive component $v_{kr}$, iron loss $P_{fe}$, and no-load current $i_0$. The pandapower transformer element uses these quantities directly [@pandapower2026transformer].
+Data sheets commonly provide the rated apparent power $S_r$, rated high- and low-voltage magnitudes, relative short-circuit voltage $v_k$, its resistive component $v_{kr}$, iron loss $P_{fe}$, and no-load current $i_0$ — the quantities the pandapower transformer element uses directly [@pandapower2026transformer].
 
 ### 2.1 Short-circuit test: the series branch
 
@@ -74,13 +74,13 @@ r_k=\frac{v_{kr}}{100},
 x_k=\sqrt{z_k^2-r_k^2},
 $$ {#eq-trafo-series-own-base}
 
-and therefore
+so
 
 $$
 \underline z_k=r_k+\mathrm{j}x_k.
 $$ {#eq-trafo-series-complex}
 
-At rated current, the resistive percentage can also be obtained from the three-phase copper loss:
+The resistive percentage also follows from the three-phase copper loss at rated current:
 
 $$
 v_{kr}=100\frac{P_{cu}}{S_r}.
@@ -132,7 +132,7 @@ $$
 \left(\frac{V_B}{V_r}\right)^2.
 $$ {#eq-trafo-y-base-conversion}
 
-When the bus voltage bases equal the transformer rated voltages, only the power-base factors remain. The [per-unit tutorial](per-unit-values.qmd) derives these conversions and explains why the same per-unit impedance is then seen from either winding.
+When the bus voltage bases equal the transformer rated voltages, only the power-base factors remain. The [per-unit tutorial](per-unit-values.qmd) derives these conversions and shows why the same per-unit impedance is then seen from either winding.
 
 ## 3. The ideal ratio and phase shift
 
@@ -187,9 +187,9 @@ $$
 \end{bmatrix}.
 $$ {#eq-trafo-pi-stamp}
 
-This four-entry matrix can be added directly to the corresponding HV/LV entries of the bus-admittance matrix. It is the transformer-specific version of the off-nominal branch stamp developed in the [Y-bus tutorial](y-bus-matrix.qmd).
+This four-entry matrix adds directly to the corresponding HV/LV entries of the bus-admittance matrix; it is the transformer-specific version of the off-nominal branch stamp from the [Y-bus tutorial](y-bus-matrix.qmd).
 
-Several useful checks follow immediately:
+Useful checks:
 
 - $\underline n=1$ removes all tap factors;
 - $\underline y=0$ leaves a series transformer model;
@@ -197,7 +197,7 @@ Several useful checks follow immediately:
 - a nonzero phase shift generally gives $Y_{hl}\ne Y_{lh}$, so the stamped Y-bus need not be symmetric.
 
 ::: {.callout-note}
-The factor $1/|\underline n|^2$ applies to the complete internal HV-side self-admittance because both voltage and current are referred through the ideal transformer. Omitting that factor breaks power conservation.
+The factor $1/|\underline n|^2$ applies to the complete internal HV-side self-admittance because both voltage and current are referred through the ideal transformer; omitting it breaks power conservation.
 :::
 
 ## 5. Why the physical model is T-shaped
@@ -212,11 +212,11 @@ HV -- ideal n:1 -- z_h --o-- z_l -- LV
                          reference
 ```
 
-Here $\underline z_h$ and $\underline z_l$ represent leakage impedance assigned to the two windings, and the full magnetising admittance lies at their internal junction. With an equal split, $\underline z_h=\underline z_l=\underline z/2$.
+Here $\underline z_h$ and $\underline z_l$ are the leakage impedances assigned to the two windings, with the full magnetising admittance at their internal junction; an equal split gives $\underline z_h=\underline z_l=\underline z/2$.
 
-Pandapower can split leakage resistance and reactance independently through `leakage_resistance_ratio_hv` and `leakage_reactance_ratio_hv`, both of which default to $0.5$. Thus an unequal allocation can have $\underline z_h=\alpha_r r+\mathrm{j}\alpha_x x$ and $\underline z_l=(1-\alpha_r)r+\mathrm{j}(1-\alpha_x)x$ rather than one shared complex split fraction [@pandapower2026transformer].
+Pandapower splits leakage resistance and reactance independently through `leakage_resistance_ratio_hv` and `leakage_reactance_ratio_hv`, both defaulting to $0.5$, so an unequal allocation can have $\underline z_h=\alpha_r r+\mathrm{j}\alpha_x x$ and $\underline z_l=(1-\alpha_r)r+\mathrm{j}(1-\alpha_x)x$ rather than one shared complex split fraction [@pandapower2026transformer].
 
-Pandapower 3.5.4 exposes both `trafo_model="t"` and `trafo_model="pi"`. Its default power-flow choice is the T model, which its balanced-AC power-flow documentation describes as more accurate; the direct $\pi$ option is provided for compatibility with software that uses that convention [@pandapower2026transformer; @pandapower2026acpowerflow]. The two options use the same input-derived $\underline z$ and $\underline y$, but place them differently:
+Pandapower 3.5.4 exposes both `trafo_model="t"` and `trafo_model="pi"`. The default power-flow choice is the T model, which its balanced-AC power-flow documentation describes as more accurate; the direct $\pi$ option exists for compatibility with software using that convention [@pandapower2026transformer; @pandapower2026acpowerflow]. Both options use the same input-derived $\underline z$ and $\underline y$, but place them differently:
 
 | Model option | Series placement | Magnetising placement | Interpretation |
 |---|---|---|---|
@@ -371,7 +371,7 @@ print("  y_hv  =", y_hv_t_equivalent)
 print(f"relative series-parameter difference = {abs(z_t_equivalent / z_direct - 1):.3e}")
 ```
 
-The difference is small for these realistic no-load parameters, but it is nonzero. Calling the circuits equivalent without changing their parameters would therefore be incorrect.
+The difference is small for these realistic no-load parameters but nonzero, so calling the circuits equivalent without changing their parameters would be incorrect.
 
 ### 6.1 Stamp the transformer and verify power
 
@@ -440,7 +440,7 @@ assert np.allclose(terminal_power.sum(), branch_power)
 assert terminal_power.real.sum() > 0.0
 ```
 
-The two terminal powers can individually have either sign because power enters one winding and leaves the other. Their sum is the transformer's absorbed complex power. Its positive real part contains series copper loss and shunt iron loss. The independent branch calculation verifies both the tap scaling and current directions.
+Each terminal power can have either sign because power enters one winding and leaves the other; their sum is the transformer's absorbed complex power, whose positive real part contains series copper loss and shunt iron loss. The independent branch calculation verifies both tap scaling and current directions.
 
 ## 7. Practical modelling choices
 
@@ -448,14 +448,14 @@ The two terminal powers can individually have either sign because power enters o
 
 - reproducing or validating a program whose transformer branch is defined in that form;
 - constructing a two-bus Y-bus stamp from already converted $\pi$ parameters; or
-- making a controlled approximation when the neglected $\underline z\,\underline y$ corrections are demonstrably immaterial.
+- approximating deliberately when the neglected $\underline z\,\underline y$ corrections are demonstrably immaterial.
 
 ### When more detail is needed
 
 - Use the T model when the physical placement of the magnetising branch or leakage split matters.
-- Use sequence-aware transformer models for unbalanced load flow and fault studies; the vector group and grounding determine zero-sequence transfer.
+- Use sequence-aware models for unbalanced load flow and fault studies; vector group and grounding determine zero-sequence transfer.
 - Use saturation and time-domain models for energisation, inrush, ferroresonance, harmonics, or fast transients.
-- Represent tap-dependent impedance and phase-shifting logic explicitly when those effects are present in the source data.
+- Represent tap-dependent impedance and phase-shifting logic explicitly when present in the source data.
 
 ::: {.callout-warning}
 A positive-sequence $\pi$ stamp cannot infer a zero-sequence path from $v_k$, $v_{kr}$, $P_{fe}$, and $i_0$. Winding connection, neutral grounding, and zero-sequence test data are additional inputs.
@@ -473,12 +473,12 @@ A positive-sequence $\pi$ stamp cannot infer a zero-sequence path from $v_k$, $v
 
 ## 9. Takeaways
 
-- The series branch comes from the short-circuit test; the magnetising branch comes from the open-circuit test.
+- The series branch comes from the short-circuit test; the magnetising branch from the open-circuit test.
 - Pandapower's direct $\pi$ option uses total $\underline z$ in series and splits total $\underline y$ equally between the ends.
 - A complex off-nominal ratio changes all four entries of the two-terminal admittance stamp.
 - The physical T model and the direct $\pi$ approximation are generally close, not identical.
-- A star--delta transformation produces an exact terminal-equivalent $\pi$ model, including asymmetric end shunts when leakage is unevenly distributed.
-- Terminal-power reconstruction is a compact numerical check of ratio, sign, and admittance conventions.
+- A star--delta transformation gives an exact terminal-equivalent $\pi$ model, with asymmetric end shunts when leakage is unevenly distributed.
+- Terminal-power reconstruction compactly checks ratio, sign, and admittance conventions.
 
 ## References {.unnumbered}
 

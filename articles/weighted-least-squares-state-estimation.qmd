@@ -17,7 +17,7 @@ proofread: false
 
 ## What you will learn
 
-After working through this tutorial, you should be able to:
+After this tutorial, you should be able to:
 
 - formulate the nonlinear measurement model used in power-system state estimation;
 - explain how measurement uncertainty determines the WLS weights;
@@ -28,7 +28,7 @@ After working through this tutorial, you should be able to:
 
 ## 1. From telemetry to a network state
 
-A power-flow calculation starts with specified bus injections and solves for a state that satisfies the network equations. A state estimator starts instead with an **overdetermined, noisy, and sometimes inconsistent** collection of measurements. Its job is to find the state that best reconciles those measurements with the network model.
+A power-flow calculation solves the network equations from specified bus injections. A state estimator instead starts from an **overdetermined, noisy, and sometimes inconsistent** set of measurements and finds the state that best reconciles them with the network model.
 
 For a conventional AC estimator, the state commonly contains all bus-voltage magnitudes and all non-reference voltage angles,
 
@@ -41,7 +41,7 @@ $$
 \end{bmatrix}.
 $$ {#eq-wls-ac-state}
 
-The measurement vector may combine active- and reactive-power injections, branch flows, voltage magnitudes, and synchronised phasor measurements. Given the network topology and parameters, the measurement model is
+The measurement vector may combine active- and reactive-power injections, branch flows, voltage magnitudes, and synchronised phasor measurements. Given the topology and parameters, the measurement model is
 
 $$
 \mathbf{z}=\mathbf{h}(\mathbf{x})+\mathbf{e},
@@ -51,9 +51,9 @@ $$
 \mathbb{E}[\mathbf{e}\mathbf{e}^{\mathsf T}]=\mathbf{R}.
 $$ {#eq-wls-measurement-model}
 
-Here, $\mathbf{h}(\mathbf{x})$ maps a candidate voltage state to predicted measurements, $\mathbf{e}$ represents measurement error, and $\mathbf{R}$ is its covariance matrix. The [Y-bus tutorial](y-bus-matrix.qmd) develops the network model from which the power-injection and power-flow functions are built; the same nonlinear equations are then derived in the [Newton--Raphson power-flow tutorial](newton-raphson-power-flow.qmd).
+Here, $\mathbf{h}(\mathbf{x})$ maps a candidate voltage state to predicted measurements, $\mathbf{e}$ is measurement error, and $\mathbf{R}$ its covariance matrix. The [Y-bus tutorial](y-bus-matrix.qmd) develops the network model behind the power-injection and power-flow functions; the [Newton--Raphson power-flow tutorial](newton-raphson-power-flow.qmd) derives the same nonlinear equations.
 
-State estimation is therefore not merely a power flow with more inputs. Redundancy and an explicit uncertainty model allow it to smooth ordinary measurement noise and to support data-quality diagnostics. This measurement-to-state viewpoint has been central to power-system static estimation since its foundational formulation [@schweppe1970staticstateestimationpart1] and remains the basis of modern treatments [@abur2004stateestimation; @monticelli1999stateestimation].
+State estimation is therefore not merely a power flow with more inputs: redundancy and an explicit uncertainty model let it smooth ordinary measurement noise and support data-quality diagnostics. This viewpoint has been central to static estimation since its foundational formulation [@schweppe1970staticstateestimationpart1] and underpins modern treatments [@abur2004stateestimation; @monticelli1999stateestimation].
 
 ## 2. Covariance and weights
 
@@ -74,13 +74,13 @@ $$
 \frac{1}{\sigma_m^2}\right).
 $$ {#eq-wls-diagonal-weights}
 
-A measurement with a smaller standard deviation $\sigma_i$ incurs a larger penalty for the same numerical residual. Doubling its assumed standard deviation reduces its weight by a factor of four. Its influence on the estimated state also depends on its sensitivity to that state. These statements only have a statistical meaning when the uncertainty values and their units are credible.
+A smaller standard deviation $\sigma_i$ incurs a larger penalty for the same residual; doubling the assumed standard deviation cuts the weight by a factor of four. Influence on the estimated state also depends on sensitivity to that state, and these statements only have statistical meaning when the uncertainty values and units are credible.
 
 ::: {.callout-important}
-Each measurement, prediction, and standard deviation must use matching units; raw weights for different units are not directly comparable. A consistent unit conversion changes the residual and its standard deviation together, leaving its contribution to the objective unchanged. Per-unit conversion is usually helpful, but it does not replace a defensible covariance model. Pseudo-measurements, correlated meter errors, and near-zero-variance equality constraints require deliberate treatment rather than arbitrary large weights.
+Each measurement, prediction, and standard deviation must use matching units; raw weights across different units are not comparable. A consistent unit conversion changes the residual and its standard deviation together, leaving the objective unchanged. Per-unit conversion helps but does not replace a defensible covariance model. Pseudo-measurements, correlated meter errors, and near-zero-variance equality constraints require deliberate treatment rather than arbitrary large weights.
 :::
 
-When $\mathbf{R}$ is not diagonal, its off-diagonal entries describe correlated errors. Whitening with a factorisation $\mathbf{R}=\mathbf{C}\mathbf{C}^{\mathsf T}$ transforms the residual according to
+A non-diagonal $\mathbf{R}$ describes correlated errors; whitening with a factorisation $\mathbf{R}=\mathbf{C}\mathbf{C}^{\mathsf T}$ transforms the residual to
 
 $$
 \widetilde{\mathbf{r}}
@@ -100,7 +100,7 @@ J(\mathbf{x})
 =\left\|\mathbf{C}^{-1}\mathbf{r}(\mathbf{x})\right\|_2^2.
 $$ {#eq-wls-objective}
 
-Under a correct model with zero-mean Gaussian measurement errors, minimising @eq-wls-objective is also maximum-likelihood estimation. The Gaussian assumption is useful for interpreting tests and confidence measures, but the minimisation problem itself can be written without it.
+Under a correct model with zero-mean Gaussian measurement errors, minimising @eq-wls-objective is also maximum-likelihood estimation; the Gaussian assumption aids interpretation of tests and confidence measures, but the minimisation itself does not require it.
 
 ### Linear case
 
@@ -149,13 +149,13 @@ $$
 \mathbf{x}_{k+1}=\mathbf{x}_k+\Delta\mathbf{x}_k.
 $$ {#eq-wls-state-update}
 
-This resembles a Newton power-flow step, but the matrices have different roles: a state estimator linearises measurement functions and projects an overdetermined residual, whereas power flow solves a square set of balance equations. The physical sensitivities behind [weak $P$--$V$ and $Q$--$\theta$ coupling](pv-qtheta-weak-coupling.qmd) can also motivate decoupled estimator approximations. Damping or a line search can improve robustness when the initial state is poor.
+This resembles a Newton power-flow step, but the matrices have different roles: a state estimator linearises measurement functions and projects an overdetermined residual, whereas power flow solves a square set of balance equations. The physical sensitivities behind [weak $P$--$V$ and $Q$--$\theta$ coupling](pv-qtheta-weak-coupling.qmd) can also motivate decoupled estimator approximations, and damping or a line search improves robustness from a poor initial state.
 
 ## 4. Observability and the angle reference
 
-Two distinct questions must be answered before solving @eq-wls-gauss-newton-step.
+Two questions must be answered before solving @eq-wls-gauss-newton-step.
 
-First, the network needs an angular reference. Conventional power injections and flows depend on angle **differences**, so adding the same constant to every bus angle leaves those measurements unchanged. Fixing one bus angle removes this gauge freedom; it does not add physical information to the measurement set.
+First, the network needs an angular reference: conventional power injections and flows depend on angle **differences**, so adding the same constant to every bus angle leaves those measurements unchanged. Fixing one bus angle removes this gauge freedom without adding physical information to the measurement set.
 
 Second, the retained state must be observable from the available measurements. In the linear case this requires
 
@@ -163,9 +163,9 @@ $$
 \operatorname{rank}(\mathbf{H})=n,
 $$ {#eq-wls-rank-condition}
 
-where $n$ is the number of state variables after fixing the reference. For nonlinear AC estimation, full column rank of the local Jacobian is the corresponding local condition. A nonsingular gain matrix is therefore a consequence of both a well-defined reference and sufficient independent measurement information, not a diagnostic to assume in advance.
+where $n$ is the number of state variables after fixing the reference; for nonlinear AC estimation, full column rank of the local Jacobian is the corresponding local condition. A nonsingular gain matrix is thus a consequence of a well-defined reference and sufficient independent measurement information, not a diagnostic to assume in advance.
 
-Structural observability asks whether the measurement placement can determine the state for generic parameter values. Numerical observability additionally asks whether the resulting matrices are sufficiently well conditioned at the operating point. The distinction matters: a matrix can be full rank in exact arithmetic and still be unsafe to solve in floating-point arithmetic [@monticelli1999stateestimation]. The [power-flow Jacobian invertibility tutorial](power-flow-jacobian-invertibility.qmd) develops the related regularity question for a square power-flow map; WLS observability instead concerns the column rank of a generally rectangular measurement Jacobian.
+Structural observability asks whether the measurement placement can determine the state for generic parameter values; numerical observability additionally asks whether the resulting matrices are sufficiently well conditioned at the operating point. A matrix can be full rank in exact arithmetic and still be unsafe to solve in floating-point arithmetic [@monticelli1999stateestimation]. The [power-flow Jacobian invertibility tutorial](power-flow-jacobian-invertibility.qmd) develops the related regularity question for a square power-flow map; WLS observability instead concerns the column rank of a generally rectangular measurement Jacobian.
 
 ## 5. Reproducible three-bus example
 
@@ -198,7 +198,7 @@ $$
 +\mathbf{e}.
 $$ {#eq-wls-example-model}
 
-The next cell creates deterministic synthetic measurements around a known state. Fixed perturbations keep the rendered example exactly reproducible.
+The next cell creates deterministic synthetic measurements around a known state; fixed perturbations keep the rendered example exactly reproducible.
 
 ```{python}
 #| label: lst-wls-build-example
@@ -234,7 +234,7 @@ print(H)
 print("\nmeasurements z =", z)
 ```
 
-Whitening is preferable to directly solving the normal equations because forming $\mathbf{H}^{\mathsf T}\mathbf{W}\mathbf{H}$ squares the condition number. NumPy's least-squares solver can instead operate on $\widetilde{\mathbf{H}}=\mathbf{C}^{-1}\mathbf{H}$ and $\widetilde{\mathbf{z}}=\mathbf{C}^{-1}\mathbf{z}$.
+Whitening is preferable to directly solving the normal equations because forming $\mathbf{H}^{\mathsf T}\mathbf{W}\mathbf{H}$ squares the condition number; NumPy's least-squares solver can instead operate on $\widetilde{\mathbf{H}}=\mathbf{C}^{-1}\mathbf{H}$ and $\widetilde{\mathbf{z}}=\mathbf{C}^{-1}\mathbf{z}$.
 
 ```{python}
 #| label: lst-wls-estimate-state
@@ -261,7 +261,7 @@ print(f"weighted-Jacobian condition number = {np.linalg.cond(H_white):.3f}")
 
 ### Power-system interpretation
 
-The estimated angles are approximately $-0.05052$ and $-0.07977$ rad, or $-2.89^\circ$ and $-4.57^\circ$. Both buses lag the reference, and bus 3 lags bus 2, so @eq-wls-dc-flow predicts positive transfers from bus 1 toward buses 2 and 3 and from bus 2 toward bus 3 under the chosen sign convention. The estimate is close to the synthetic truth $[-0.05,-0.08]^{\mathsf T}$ rad, but it does not pass through every measurement. That is the expected behaviour: WLS balances incompatible telemetry according to its uncertainty.
+The estimated angles are approximately $-0.05052$ and $-0.07977$ rad, or $-2.89^\circ$ and $-4.57^\circ$. Both buses lag the reference, and bus 3 lags bus 2, so @eq-wls-dc-flow predicts positive transfers from bus 1 toward buses 2 and 3 and from bus 2 toward bus 3 under the chosen sign convention. The estimate is close to the synthetic truth $[-0.05,-0.08]^{\mathsf T}$ rad but does not pass through every measurement---the expected behaviour, since WLS balances incompatible telemetry according to its uncertainty.
 
 ## 6. Residual diagnostics
 
@@ -328,9 +328,9 @@ print(f"\nJ(x_hat) = {objective:.3f}")
 print("95% chi-square reference for 3 degrees of freedom = 7.815")
 ```
 
-No normalised residual is especially large, and the objective lies below the displayed $95\%$ reference value. For this clean synthetic snapshot, the measurements are mutually plausible under the assumed covariance model.
+No normalised residual is especially large, and the objective lies below the displayed $95\%$ reference value: for this clean synthetic snapshot, the measurements are mutually plausible under the assumed covariance model.
 
-That conclusion is conditional. A chi-square test indicates global inconsistency, not its cause. A large statistic may result from a gross meter error, incorrect breaker status, a wrong line parameter, an unmodelled control action, correlated errors, or underestimated variances. Conversely, leverage points and interacting bad measurements can remain difficult to detect. Normalised-residual screening is useful, but it is not proof that accepted data are correct [@abur2004stateestimation].
+That conclusion is conditional: a chi-square test indicates global inconsistency, not its cause. A large statistic may result from a gross meter error, incorrect breaker status, a wrong line parameter, an unmodelled control action, correlated errors, or underestimated variances, while leverage points and interacting bad measurements can remain difficult to detect. Normalised-residual screening is useful, but it is not proof that accepted data are correct [@abur2004stateestimation].
 
 ::: {.callout-warning}
 Do not remove measurements repeatedly until a statistical test passes without checking topology, parameters, units, timestamps, and sign conventions. Deleting valid telemetry can destroy observability while concealing the actual modelling error.
@@ -340,16 +340,16 @@ Do not remove measurements repeatedly until a statistical test passes without ch
 
 Before trusting a WLS result, verify all of the following:
 
-1. **Reference:** exactly one independent angle reference has been imposed for each connected observable island.
+1. **Reference:** exactly one independent angle reference per connected observable island.
 2. **Observability:** the measurement Jacobian has full numerical column rank after constraints and references are handled.
 3. **Scaling:** measurements, Jacobian columns, and standard deviations use consistent per-unit and angle conventions.
-4. **Linear solve:** QR, SVD, or an appropriate sparse factorisation is used when normal equations are poorly conditioned. The [recursive LU tutorial](recursive-lu-decomposition.qmd) explains the factorisation idea, while production estimators require pivoting and sparse methods.
+4. **Linear solve:** QR, SVD, or an appropriate sparse factorisation when normal equations are poorly conditioned; the [recursive LU tutorial](recursive-lu-decomposition.qmd) explains the factorisation idea, while production estimators require pivoting and sparse methods.
 5. **Convergence:** both the state step and the weighted gradient or objective behaviour are checked; a small step alone can also indicate stagnation.
 6. **Residuals:** the global objective, largest normalised residuals, and high-leverage measurements are reviewed together.
 7. **Model consistency:** topology, tap positions, shunts, line parameters, measurement directions, and timestamps match the snapshot.
 8. **Plausibility:** estimated voltages, branch flows, injections, and uncertainty measures satisfy engineering expectations and operational limits.
 
-The diagonal of $\mathbf{G}^{-1}$ is often reported as an approximate state-uncertainty measure. It is only as credible as the linearisation, covariance, topology, and error assumptions behind it. For large sparse problems, selected solves or factor-based methods are preferred to constructing a dense inverse.
+The diagonal of $\mathbf{G}^{-1}$ is often reported as an approximate state-uncertainty measure; it is only as credible as the linearisation, covariance, topology, and error assumptions behind it. For large sparse problems, selected solves or factor-based methods are preferred to constructing a dense inverse.
 
 ## 8. Takeaways
 

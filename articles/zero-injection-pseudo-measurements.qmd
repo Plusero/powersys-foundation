@@ -17,7 +17,7 @@ proofread: false
 
 ## What you will learn
 
-After working through this tutorial, you should be able to:
+After this tutorial, you should be able to:
 
 - define a zero-injection bus and distinguish zero injection from zero branch flow;
 - explain why the term *virtual measurement* is often more precise than *pseudo-measurement*;
@@ -43,12 +43,12 @@ Q_i(\mathbf x)=0
 }
 $$ {#eq-zipm-zero-power}
 
-Typically, no generator or load is connected at that bus; it is a junction through which power can pass. The zero is inferred from the network model, equipment inventory, and switch statuses rather than read from a physical meter. Adding it to a state estimator supplies exact or near-exact balance information at no metering cost [@abur2004stateestimation].
+Typically, no generator or load is connected at that bus; it is a junction through which power passes. The zero is inferred from the network model, equipment inventory, and switch statuses rather than read from a meter, so it supplies exact or near-exact balance information at no metering cost [@abur2004stateestimation].
 
-Zero injection does **not** mean that the bus voltage, incident currents, or individual branch flows are zero. It means that their signed net balance is zero. For example, $40$ MW can enter on one branch and leave on another while the bus injection remains zero.
+Zero injection does **not** mean that the bus voltage, incident currents, or individual branch flows are zero — only that their signed net balance is zero: $40$ MW can enter on one branch and leave on another while the bus injection remains zero.
 
 ::: {.callout-note}
-Terminology is not fully uniform. An uncertain load estimate derived from historical profiles is usually called a **pseudo-measurement**. A zero derived from a known physical or topological condition is often called a **virtual measurement** because it is treated as error-free. “Zero-injection pseudo-measurement” is still widely understood, but the assumed uncertainty matters more than the label [@abur2004stateestimation].
+Terminology varies. An uncertain load estimate from historical profiles is usually called a **pseudo-measurement**; a zero derived from a known physical or topological condition is often called a **virtual measurement**, since it is treated as error-free. “Zero-injection pseudo-measurement” is widely understood, but the assumed uncertainty matters more than the label [@abur2004stateestimation].
 :::
 
 ## 2. What exactly is constrained?
@@ -93,9 +93,9 @@ Q_i(\mathbf x)
 =\mathbf0.
 $$ {#eq-zipm-ac-constraint}
 
-Equivalently, since $\underline S_i=\underline V_i\underline I_i^*$ and a normal operating voltage is nonzero, zero complex-power injection implies zero net current injection. A rectangular current-injection formulation can exploit that relationship directly.
+Equivalently, since $\underline S_i=\underline V_i\underline I_i^*$ and a normal operating voltage is nonzero, zero complex-power injection implies zero net current injection, which a rectangular current-injection formulation can exploit directly.
 
-The phrase “no connected load or generation” is only a screening rule. Before declaring the bus to be zero injection, the network model must account for bus shunts, station service, auxiliary supplies, grounded devices, switched equipment, and any aggregation hidden behind the bus.
+The phrase “no connected load or generation” is only a screening rule: before declaring a bus zero injection, the network model must account for bus shunts, station service, auxiliary supplies, grounded devices, switched equipment, and any aggregation hidden behind the bus.
 
 ## 3. Why zero-injection information helps
 
@@ -114,13 +114,13 @@ Physical meters are limited and noisy. A reliable zero-injection relation can:
 - reduce state uncertainty and improve consistency among neighbouring flows; and
 - help observability analysis and measurement-placement design.
 
-In a full AC model, one zero-injection bus can contribute active- and reactive-power relations. They are useful only to the extent that their Jacobian rows add independent information. Several zero injections can be mutually dependent, and they do not automatically make an entire network observable [@abur2004stateestimation; @monticelli1999stateestimation].
+In a full AC model, one zero-injection bus can contribute active- and reactive-power relations, useful only insofar as their Jacobian rows add independent information. Several zero injections can be mutually dependent and do not automatically make an entire network observable [@abur2004stateestimation; @monticelli1999stateestimation].
 
 ## 4. Two ways to include the zero
 
 ### 4.1 Treat it as a high-confidence virtual measurement
 
-The simplest implementation appends two measurement values,
+The simplest implementation appends two measurements,
 
 $$
 z_{P_i}=0,
@@ -138,16 +138,16 @@ J_0(\mathbf x)
 \frac{Q_i(\mathbf x)^2}{\sigma_{Q_i,0}^2}.
 $$ {#eq-zipm-penalty}
 
-This **penalty formulation** is convenient because the ordinary WLS machinery needs little modification. As the standard deviations shrink, violations become increasingly expensive. Under the usual regularity assumptions, a converged local solution approaches the corresponding equality-constrained solution.
+This **penalty formulation** needs little modification of the ordinary WLS machinery. As the standard deviations shrink, violations become increasingly expensive and, under the usual regularity assumptions, a converged local solution approaches the equality-constrained solution.
 
-The limit cannot be implemented by setting the standard deviation to exactly zero: $\mathbf R^{-1}$ would be undefined. Choosing an extremely small positive value produces a large disparity of weights. The resulting gain matrix
+Setting the standard deviation to exactly zero is impossible, since $\mathbf R^{-1}$ would be undefined, and an extremely small positive value produces a large disparity of weights. The resulting gain matrix
 
 $$
 \mathbf G_{\mathrm{gain}}
 =\mathbf H^{\mathsf T}\mathbf W\mathbf H
 $$ {#eq-zipm-gain}
 
-can become severely ill-conditioned, degrading numerical accuracy or convergence. This is the central weakness of pretending that an exact equality is merely a meter with an enormous weight [@guo2013zeroinjection].
+can become severely ill-conditioned, degrading numerical accuracy or convergence — the central weakness of treating an exact equality as merely a meter with an enormous weight [@guo2013zeroinjection].
 
 ### 4.2 Enforce it as an equality constraint
 
@@ -195,7 +195,7 @@ $$
 \end{bmatrix}.
 $$ {#eq-zipm-kkt}
 
-The multipliers $\boldsymbol\lambda_k$ enforce the constraints without inventing tiny variances. The augmented matrix is symmetric but indefinite, so it needs a solver designed for that structure. Other valid implementations eliminate dependent variables or use null-space, orthogonal-transformation, or specialised modified-Newton methods. Equality handling avoids the high-weight ill-conditioning, but it is not computationally free [@guo2013zeroinjection].
+The multipliers $\boldsymbol\lambda_k$ enforce the constraints without tiny variances. The augmented matrix is symmetric but indefinite and needs a solver designed for that structure; alternatives eliminate dependent variables or use null-space, orthogonal-transformation, or specialised modified-Newton methods. Equality handling avoids the high-weight ill-conditioning but is not computationally free [@guo2013zeroinjection].
 
 ## 5. Three-bus example
 
@@ -236,7 +236,7 @@ c(\mathbf x)
 =0.
 $$ {#eq-zipm-example-constraint}
 
-The true synthetic state $[-0.04,-0.09]^{\mathsf T}$ rad satisfies this equality. The code first estimates the state without the zero, then adds virtual measurements with progressively smaller standard deviations, and finally solves the exact constrained problem.
+The true synthetic state $[-0.04,-0.09]^{\mathsf T}$ rad satisfies this equality. The code estimates the state without the zero, adds virtual measurements with progressively smaller standard deviations, then solves the exact constrained problem.
 
 ```{python}
 #| label: lst-zipm-penalty-versus-constraint
@@ -324,17 +324,17 @@ print(
 )
 ```
 
-The ordinary WLS estimate leaves a small nonzero bus-2 injection because it reconciles only the four noisy physical measurements. Reducing the virtual-measurement standard deviation drives the mismatch toward zero and the estimate toward the equality-constrained result. At the same time, the condition number of the penalty gain matrix increases by many orders of magnitude.
+The ordinary WLS estimate leaves a small nonzero bus-2 injection because it reconciles only the four noisy physical measurements. Reducing the virtual-measurement standard deviation drives the mismatch toward zero and the estimate toward the equality-constrained result, while the condition number of the penalty gain matrix grows by many orders of magnitude.
 
-The exact KKT result satisfies the balance to round-off without choosing an artificial variance. The displayed condition number is deliberately reported only for the penalty gain matrix: the KKT matrix has different variable blocks and units, so its unscaled condition number is not directly comparable.
+The exact KKT result satisfies the balance to round-off without an artificial variance. The condition number is reported only for the penalty gain matrix: the KKT matrix has different variable blocks and units, so its unscaled condition number is not directly comparable.
 
 ::: {.callout-important}
-This DC example contributes one active-power constraint. A conventional AC estimator normally enforces both $P_i=0$ and $Q_i=0$. The example demonstrates numerical treatment, not the full AC observability contribution.
+This DC example contributes one active-power constraint, whereas a conventional AC estimator normally enforces both $P_i=0$ and $Q_i=0$; it demonstrates numerical treatment, not the full AC observability contribution.
 :::
 
 ## 6. When “exactly zero” is wrong
 
-An equality constraint is powerful because the estimator is not allowed to disagree with it. That is also its risk. A supposed zero-injection bus may actually contain:
+An equality constraint is powerful because the estimator is not allowed to disagree with it — which is also its risk. A supposed zero-injection bus may actually contain:
 
 - an unrecorded load, generator, storage unit, or station-service supply;
 - a shunt or switched device omitted from the model;
@@ -342,7 +342,7 @@ An equality constraint is powerful because the estimator is not allowed to disag
 - a phase-specific connection hidden by a balanced positive-sequence model; or
 - measurements and topology from different timestamps.
 
-If any of these applies, forcing $\mathbf c(\mathbf x)=0$ can bias neighbouring states and residuals or impair convergence. A high-weight virtual measurement has the same problem in approximate form. Equality-constrained methods improve accuracy only when the equality information is reliable; erroneous zero injections require topology validation or robust constraint handling rather than still larger weights [@pires2014erroneouszeroinjections].
+If any of these applies, forcing $\mathbf c(\mathbf x)=0$ can bias neighbouring states and residuals or impair convergence; a high-weight virtual measurement has the same problem in approximate form. Equality-constrained methods improve accuracy only when the equality information is reliable; erroneous zero injections require topology validation or robust constraint handling rather than still larger weights [@pires2014erroneouszeroinjections].
 
 ## 7. Practical checklist
 
@@ -353,14 +353,14 @@ Before using a zero injection in an estimator:
 3. **Choose the semantics.** Use a low-weight pseudo-measurement for an uncertain forecast; reserve an exact constraint for genuinely deterministic information.
 4. **Check independence.** Verify that the added constraint contributes useful rank rather than duplicating other balances.
 5. **Use a suitable solver.** Avoid arbitrary near-zero variances when an equality-constrained implementation is available.
-6. **Monitor model validity.** Investigate persistent neighbouring residuals or implausible multipliers as possible evidence that the “zero” is wrong.
+6. **Monitor model validity.** Treat persistent neighbouring residuals or implausible multipliers as possible evidence that the “zero” is wrong.
 
 ## 8. Takeaways
 
 - A zero-injection bus has zero **net** active and reactive injection, not zero voltage or zero branch flow.
 - The information comes from topology and equipment status, so *virtual measurement* often describes it better than *pseudo-measurement*.
 - Appending a zero with a small variance is easy but only approximates an equality and can make the WLS gain matrix ill-conditioned.
-- Equality-constrained WLS enforces the zero directly and avoids artificial weights, while requiring an appropriate constrained solver.
+- Equality-constrained WLS enforces the zero directly and avoids artificial weights, but requires an appropriate constrained solver.
 - A false zero is a model error with potentially wide influence; validate the bus classification before treating it as exact.
 
 ## References {.unnumbered}

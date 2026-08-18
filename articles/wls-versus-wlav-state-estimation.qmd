@@ -17,12 +17,12 @@ proofread: false
 
 ## What you will learn
 
-After working through this tutorial, you should be able to:
+After this tutorial, you should be able to:
 
 - formulate WLS and WLAV from the same standardised measurement residuals;
 - relate their objectives to Gaussian and Laplace error models;
 - explain why WLS has historically fit real-time sparse state-estimation software well;
-- describe the outlier robustness offered by WLAV and its limitation at leverage measurements;
+- describe WLAV's outlier robustness and its limitation at leverage measurements;
 - interpret reproducible clean-noise and bad-data comparisons; and
 - choose an estimator based on the error model, measurement geometry, and operational requirements.
 
@@ -42,7 +42,7 @@ Weighted least squares (WLS) is more common in operational state estimation beca
 
 Weighted least absolute value (WLAV) is less sensitive to large **ordinary residual outliers** and can reject some bad measurements within the estimation itself [@kotiuga1982wlav]. Its traditional linear-programming implementations have been more involved and often more expensive, and its robustness can fail for **leverage measurements** unless the measurement geometry is treated explicitly [@celik1992robustwlav].
 
-The conclusion is not that WLS is universally better. WLS is a convenient default when the model, covariance, and bad-data pipeline are credible. WLAV or another robust estimator can be the better engineering choice under heavy-tailed errors, frequent gross corruption, or measurement models for which robust optimisation is computationally competitive.
+WLS is not universally better: it is a convenient default when the model, covariance, and bad-data pipeline are credible. WLAV or another robust estimator can be the better engineering choice under heavy-tailed errors, frequent gross corruption, or measurement models for which robust optimisation is computationally competitive.
 
 ## 2. Same residuals, different penalties
 
@@ -77,7 +77,7 @@ $$
 \sum_{i=1}^{m}|u_i(\mathbf x)|.
 $$ {#eq-wlswlav-wlav}
 
-Some literature writes generic weights $w_i$ in both objectives. The powers differ: if $\sigma_i$ is a Gaussian standard deviation, WLS uses $w_i=1/\sigma_i^2$ on the raw squared residual. When absolute residuals are standardised as in @eq-wlswlav-wlav, their multiplier is $1/\sigma_i$. Under a Laplace likelihood, that denominator is more precisely the Laplace scale parameter.
+Some literature writes generic weights $w_i$ in both objectives, but the powers differ: if $\sigma_i$ is a Gaussian standard deviation, WLS uses $w_i=1/\sigma_i^2$ on the raw squared residual, while absolute residuals standardised as in @eq-wlswlav-wlav carry the multiplier $1/\sigma_i$. Under a Laplace likelihood, that denominator is more precisely the Laplace scale parameter.
 
 | Property | WLS | WLAV |
 |---|---|---|
@@ -91,7 +91,7 @@ Some literature writes generic weights $w_i$ in both objectives. The powers diff
 
 : WLS and WLAV at a glance {#tbl-wlswlav-comparison}
 
-For correlated measurements, simply dividing by individual $\sigma_i$ is insufficient. WLS uses the full covariance matrix or a whitening factor. Robust $L_1$ modelling also needs a deliberate joint-error model; replacing every covariance problem by a diagonal WLAV weight does not make correlation disappear.
+For correlated measurements, dividing by individual $\sigma_i$ is insufficient: WLS uses the full covariance matrix or a whitening factor, and robust $L_1$ modelling likewise needs a deliberate joint-error model; a diagonal WLAV weight does not make correlation disappear.
 
 ## 3. Why the loss function changes robustness
 
@@ -107,9 +107,9 @@ $$
 \frac{\mathrm d}{\mathrm du}|u|=\operatorname{sign}(u),
 $$
 
-whose magnitude is constant. Once an ordinary residual is large, making it even larger does not increase its marginal pull on the estimate. This is the source of WLAV's resistance to **vertical outliers**.
+whose magnitude is constant: once an ordinary residual is large, making it larger does not increase its marginal pull on the estimate. This is the source of WLAV's resistance to **vertical outliers**.
 
-The argument is only half of robust regression. A measurement's influence also depends on the sensitivity row
+This argument is only half of robust regression: a measurement's influence also depends on the sensitivity row
 
 $$
 \mathbf H_i
@@ -117,10 +117,10 @@ $$
 \frac{\partial h_i}{\partial\mathbf x}.
 $$
 
-A bad measurement with unusual geometric influence can be a leverage point. The estimator may move the state so that this bad measurement has a small or zero residual, while many ordinary measurements absorb the discrepancy. The absolute-value loss cannot downweight an outlier that it fits exactly. Scaling and transformation methods were developed specifically to reduce this leverage vulnerability [@celik1992robustwlav].
+A bad measurement with unusual geometric influence can be a leverage point: the estimator may move the state so that it has a small or zero residual while many ordinary measurements absorb the discrepancy. The absolute-value loss cannot downweight an outlier that it fits exactly; scaling and transformation methods were developed to reduce this leverage vulnerability [@celik1992robustwlav].
 
 ::: {.callout-important}
-“WLAV automatically rejects bad data” is conditional, not absolute. It depends on redundancy, measurement placement, weights, the number and location of corruptions, and the network model. Critical measurements and leverage points require observability-aware treatment under either estimator.
+“WLAV automatically rejects bad data” is conditional, not absolute: it depends on redundancy, measurement placement, weights, the number and location of corruptions, and the network model. Critical measurements and leverage points require observability-aware treatment under either estimator.
 :::
 
 ## 4. Why WLS became the operational default
@@ -162,7 +162,7 @@ $$
 \end{aligned}
 $$ {#eq-wlswlav-linear-program}
 
-where $\mathbf D=\operatorname{diag}(\sigma_i)$. This introduces auxiliary variables and inequalities. Efficient specialised algorithms exist, but a nonlinear AC estimator must additionally handle nonlinear, nonconvex measurement functions and the nonsmooth objective. Historically, that has made the WLS path easier to meet strict real-time and maintainability requirements.
+where $\mathbf D=\operatorname{diag}(\sigma_i)$. This introduces auxiliary variables and inequalities. Efficient specialised algorithms exist, but a nonlinear AC estimator must additionally handle nonlinear, nonconvex measurement functions and the nonsmooth objective, which historically made the WLS path easier for strict real-time and maintainability requirements.
 
 ### 4.3 It comes with an established diagnostic ecosystem
 
@@ -178,7 +178,7 @@ These methods are imperfect---multiple interacting bad data, parameter errors, a
 
 ### 4.4 Existing systems can add robustness around WLS
 
-Operational practice need not choose between naive WLS and pure WLAV. A system may validate topology and timestamps, screen implausible telemetry, run WLS, apply robust residual analysis, and re-estimate. Huber or generalized-M estimators interpolate between quadratic and linear penalties. These options preserve parts of the WLS software path while reducing sensitivity to outliers.
+Operational practice need not choose between naive WLS and pure WLAV. A system may validate topology and timestamps, screen implausible telemetry, run WLS, apply robust residual analysis, and re-estimate; Huber or generalized-M estimators interpolate between quadratic and linear penalties. These options preserve parts of the WLS software path while reducing sensitivity to outliers.
 
 ## 5. Clean Gaussian noise versus one gross error
 
@@ -192,7 +192,7 @@ $$
 =\operatorname{median}(z_1,\ldots,z_9).
 $$ {#eq-wlswlav-location-estimates}
 
-The next reproducible simulation uses a fixed random seed. It compares clean Gaussian samples with the same samples after one measurement receives a $10\sigma$ gross error.
+The next simulation uses a fixed random seed and compares clean Gaussian samples with the same samples after one measurement receives a $10\sigma$ gross error.
 
 ```{python}
 #| label: lst-wlswlav-location-simulation
@@ -241,7 +241,7 @@ assert results["WLS, clean"] < results["WLAV, clean"]
 assert results["WLAV, one gross error"] < results["WLS, one gross error"]
 ```
 
-WLS has the smaller RMSE in the clean Gaussian experiment. After one gross error is introduced, its mean shifts every trial, while the median remains close to the centre of the other eight readings. This example cleanly exposes the statistical tradeoff.
+WLS has the smaller RMSE in the clean Gaussian experiment. After one gross error, its mean shifts every trial while the median stays close to the centre of the other eight readings, exposing the statistical tradeoff.
 
 It does not prove that every power-system WLAV estimate is robust: the scalar location model has no leverage geometry, nonlinear measurement functions, topology uncertainty, or observability boundary.
 
@@ -272,7 +272,7 @@ $$
 \mathbf x+\mathbf e.
 $$ {#eq-wlswlav-three-bus}
 
-The deterministic data are first kept clean and then corrupted by adding $0.25$ p.u. to $P_{12}$. For this two-state linear teaching problem, the WLAV solver enumerates intersections of pairs of independent measurement equations and selects the candidate with the smallest $L_1$ objective. That is a compact exact method for this generic tiny case, not an algorithm for production networks.
+The deterministic data are first kept clean and then corrupted by adding $0.25$ p.u. to $P_{12}$. For this two-state linear teaching problem, the WLAV solver enumerates intersections of pairs of independent measurement equations and selects the candidate with the smallest $L_1$ objective---a compact exact method for this generic tiny case, not an algorithm for production networks.
 
 ```{python}
 #| label: lst-wlswlav-three-bus
@@ -354,7 +354,7 @@ assert np.linalg.norm(estimates["one bad datum"][1] - x_true) < np.linalg.norm(
 
 For the clean fixed perturbations, both estimates are close and WLS happens to be closer to the synthetic truth. With the $P_{12}$ gross error, WLS moves substantially; WLAV leaves a large residual on the corrupt measurement and stays much closer to the true state.
 
-The WLAV solution also illustrates its sparse-residual character: at least two retained measurement equations are fitted exactly in this generic two-state example. Exact fit is useful for isolating some outliers, but it also explains the leverage caveat---a strategically influential bad measurement can become one of the equations fitted exactly.
+The WLAV solution also illustrates its sparse-residual character: at least two retained measurement equations are fitted exactly in this generic two-state example. Exact fit helps isolate some outliers but also explains the leverage caveat---a strategically influential bad measurement can become one of the equations fitted exactly.
 
 ## 7. Situations where WLAV is attractive
 

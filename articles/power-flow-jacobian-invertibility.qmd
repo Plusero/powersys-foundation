@@ -17,14 +17,14 @@ proofread: false
 
 ## What you will learn
 
-After working through this tutorial, you should be able to:
+After this tutorial, you should be able to:
 
 - distinguish the full network Jacobian from the reduced power-flow Jacobian;
-- explain why an angle reference is required before invertibility is possible;
+- explain why an angle reference is required for invertibility;
 - connect nonsingularity to local uniqueness through the inverse function theorem;
 - use a Schur complement to interpret angle and voltage singularities;
 - derive the singularity condition for a lossless two-bus system; and
-- diagnose near-singularity without relying on a determinant.
+- diagnose near-singularity without a determinant.
 
 This tutorial assumes familiarity with the [Newton--Raphson power-flow formulation](newton-raphson-power-flow.qmd).
 
@@ -40,7 +40,7 @@ $$
 \end{bmatrix},
 $$
 
-where $\boldsymbol{\theta}_{\neg\mathrm{ref}}$ contains all non-reference voltage angles and $\mathbf{v}_{\mathrm{PQ}}$ contains the voltage magnitudes at PQ buses. Define the retained calculated injections as
+where $\boldsymbol{\theta}_{\neg\mathrm{ref}}$ contains the non-reference voltage angles and $\mathbf{v}_{\mathrm{PQ}}$ the PQ-bus voltage magnitudes. Define the retained calculated injections as
 
 $$
 \mathbf{h}(\mathbf{x})=
@@ -77,11 +77,11 @@ $$
 \end{bmatrix}.
 $$ {#eq-jac-blocks}
 
-Changing the residual convention from calculated-minus-specified to specified-minus-calculated changes the sign of $\mathbf{J}$, but not whether it is invertible.
+Switching the residual convention to specified-minus-calculated changes the sign of $\mathbf{J}$, not whether it is invertible.
 
 ## 2. Why the angle reference matters
 
-Power injections depend on angle **differences**, not absolute angles. Adding the same constant $c$ to every bus angle leaves the injections unchanged:
+Power injections depend on angle **differences**, not absolute angles: adding a constant $c$ to every bus angle leaves them unchanged:
 
 $$
 \mathbf{h}(\boldsymbol{\theta}+c\mathbf{1},\mathbf{v})
@@ -99,25 +99,25 @@ $$
 =\mathbf{0}.
 $$ {#eq-jac-gauge-null}
 
-Therefore, the unreduced Jacobian is necessarily singular. Fixing one reference angle per connected electrical island removes this rotational freedom and makes the angle coordinates identifiable. In the usual power-flow formulation, the slack bus has a second role: it supplies the otherwise unspecified active- and reactive-power balance.
+The unreduced Jacobian is therefore singular. Fixing one reference angle per connected electrical island removes this rotational freedom and makes the angle coordinates identifiable. In the usual formulation, the slack bus also supplies the otherwise unspecified active- and reactive-power balance.
 
 ::: {.callout-important}
-If topology processing creates two islands but the model retains only one angle reference, the reduced Jacobian is still structurally singular. Every independently energised island needs its own reference.
+If topology processing creates two islands but only one angle reference is retained, the reduced Jacobian is still structurally singular: every independently energised island needs its own reference.
 :::
 
-Under the usual lossless, small-angle approximation, the $P$--$\theta$ block resembles a weighted graph Laplacian. Removing one reference row and column makes that Laplacian positive definite when the network is connected and all retained branch weights are positive. This explains why connectivity is a basic requirement for angle solvability, although it does not by itself guarantee nonsingularity of the complete nonlinear AC Jacobian.
+Under the usual lossless, small-angle approximation, the $P$--$\theta$ block resembles a weighted graph Laplacian; removing one reference row and column makes it positive definite for a connected network with positive retained branch weights. Connectivity is thus a basic requirement for angle solvability, though it does not by itself guarantee nonsingularity of the complete nonlinear AC Jacobian.
 
 ## 3. What invertibility means locally
 
 Suppose $\mathbf{x}^{\star}$ solves @eq-jac-residual and $\mathbf{J}(\mathbf{x}^{\star})$ is nonsingular. The inverse function theorem then guarantees that, for injections sufficiently close to $\mathbf{s}^{\star}$:
 
 - there is one solution close to $\mathbf{x}^{\star}$;
-- that nearby solution changes smoothly with the injections; and
+- it changes smoothly with the injections; and
 - a Newton correction is locally well defined.
 
-This is a **local** statement. A nonlinear power-flow problem may have several distinct solutions even though the Jacobian at each one is nonsingular.
+This is a **local** statement: a nonlinear power-flow problem may have several distinct solutions, each with a nonsingular Jacobian.
 
-Conversely, a singular Jacobian does not by itself prove that no solution exists. It means the inverse function theorem no longer guarantees a locally unique state as a function of the specified injections. In power systems, singularity commonly occurs at a fold or saddle-node bifurcation, where a high-voltage and a low-voltage solution coalesce [@ajjarapu1992; @vancutsem1998].
+Conversely, a singular Jacobian does not by itself prove that no solution exists; it means the inverse function theorem no longer guarantees a locally unique state as a function of the specified injections. In power systems, singularity commonly occurs at a fold or saddle-node bifurcation, where a high-voltage and a low-voltage solution coalesce [@ajjarapu1992; @vancutsem1998].
 
 The Newton step
 
@@ -147,19 +147,16 @@ $$
 =\mathbf{L}-\mathbf{M}\mathbf{H}^{-1}\mathbf{N}.
 $$ {#eq-jac-reduced-qv}
 
-It describes the incremental relationship between reactive power and PQ-bus voltage magnitude after the angle changes required to maintain active-power balance have been accounted for.
+It describes the incremental relationship between reactive power and PQ-bus voltage magnitude after the angle changes that maintain active-power balance.
 
-Because this factorisation assumes that $\mathbf H$ is nonsingular, @eq-jac-block-determinant gives an exact equivalence: $\mathbf J$ is nonsingular if and only if $\mathbf J_{Qv}^{\mathrm{red}}$ is nonsingular. It also separates this elimination into two requirements:
+Because this factorisation assumes $\mathbf H$ is nonsingular, @eq-jac-block-determinant gives an exact equivalence: $\mathbf J$ is nonsingular if and only if $\mathbf J_{Qv}^{\mathrm{red}}$ is nonsingular. The elimination requires that $\mathbf H$ permit the angle correction to be eliminated, and that $\mathbf J_{Qv}^{\mathrm{red}}$ then permit the voltage-magnitude correction to be solved.
 
-1. $\mathbf H$ must permit the angle correction to be eliminated; and
-2. after that angle response is accounted for, $\mathbf J_{Qv}^{\mathrm{red}}$ must permit the voltage-magnitude correction to be solved.
+If $\mathbf H$ is singular, this elimination is unavailable, but the full $\mathbf J$ is not necessarily singular: the cross blocks can still make it invertible. Test $\mathbf J$ directly, or use the complementary Schur complement $\mathbf H-\mathbf N\mathbf L^{-1}\mathbf M$ when $\mathbf L$ is nonsingular.
 
-If $\mathbf H$ is singular, this particular elimination is unavailable, but the full $\mathbf J$ is not necessarily singular: the cross blocks can still make the complete matrix invertible. Test $\mathbf J$ directly, or use the complementary Schur complement $\mathbf H-\mathbf N\mathbf L^{-1}\mathbf M$ when $\mathbf L$ is nonsingular.
-
-The weak-coupling assumptions discussed in [the coupling tutorial](pv-qtheta-weak-coupling.qmd) make $\mathbf{N}$ and $\mathbf{M}$ relatively small, so $\mathbf{J}_{Qv}^{\mathrm{red}}\approx\mathbf{L}$. Near stressed conditions, however, the cross-coupling terms can no longer be dismissed.
+The weak-coupling assumptions in [the coupling tutorial](pv-qtheta-weak-coupling.qmd) make $\mathbf{N}$ and $\mathbf{M}$ relatively small, so $\mathbf{J}_{Qv}^{\mathrm{red}}\approx\mathbf{L}$. Near stressed conditions, the cross-coupling terms can no longer be dismissed.
 
 ::: {.callout-note}
-The determinant identity is useful for analysis, but computing a determinant is a poor numerical singularity test. Its magnitude depends on dimension and scaling and can overflow or underflow even when a linear solve remains meaningful.
+The determinant identity is useful for analysis but a poor numerical singularity test: its magnitude depends on dimension and scaling and can overflow or underflow even when a linear solve remains meaningful.
 :::
 
 ## 5. A lossless two-bus example
@@ -196,7 +193,7 @@ $$
 2V\cos\theta=1.
 $$ {#eq-jac-two-bus-boundary}
 
-This analytic example shows that a connected network can still reach a power-flow singularity. Connectivity removes the trivial angle-reference singularity; it does not remove nonlinear loadability limits.
+A connected network can therefore still reach a power-flow singularity: connectivity removes the trivial angle-reference singularity, not nonlinear loadability limits.
 
 The following code approaches @eq-jac-two-bus-boundary at a fixed angle and reports the singular values.
 
@@ -234,11 +231,11 @@ for voltage in voltages:
     )
 ```
 
-The smallest singular value tends to zero while the condition number grows. Exact singularity is therefore the endpoint of a deterioration that a solver can detect earlier.
+The smallest singular value tends to zero while the condition number grows; exact singularity is the endpoint of a deterioration that a solver can detect earlier.
 
 ## 6. Sources of singularity or severe ill-conditioning
 
-It is helpful to separate model defects that create structural singularity from operating conditions that can drive a valid Jacobian toward severe ill-conditioning or singularity.
+Separate model defects that create structural singularity from operating conditions that drive a valid Jacobian toward severe ill-conditioning or singularity.
 
 ### Structural causes
 
@@ -248,7 +245,7 @@ It is helpful to separate model defects that create structural singularity from 
 - topology errors, disconnected zero-injection subnetworks, or unprocessed ideal elements; and
 - a measurement or control equation accidentally included as a dependent power-flow equation.
 
-These problems should be corrected in model construction.
+Correct these problems in model construction.
 
 ### Operating conditions
 
@@ -258,7 +255,7 @@ These problems should be corrected in model construction.
 - stressed corridors that amplify $P$--$V$ and $Q$--$\theta$ coupling; and
 - control limits that change the active equation set.
 
-These conditions are properties of the operating point and model, not merely failures of a linear solver.
+These are properties of the operating point and model, not merely linear-solver failures.
 
 ## 7. Better numerical diagnostics
 
@@ -271,9 +268,9 @@ $$
 =\frac{\sigma_{\max}}{\sigma_{\min}},
 $$ {#eq-jac-condition}
 
-or cheaper condition estimates derived from an LU or QR factorisation. Singular values give the cleanest geometric interpretation, but a full SVD is usually too expensive to compute at every iteration in a large network [@golub2013].
+or cheaper condition estimates derived from an LU or QR factorisation. Singular values give the cleanest geometric interpretation, but a full SVD is usually too expensive at every iteration in a large network [@golub2013].
 
-Scaling matters. Angles, per-unit voltage magnitudes, active-power mismatches, and reactive-power mismatches can have different characteristic sizes. A condition number for an unscaled Jacobian may describe unit choices as much as physical sensitivity.
+Scaling matters: angles, per-unit voltage magnitudes, active-power mismatches, and reactive-power mismatches can have different characteristic sizes, so a condition number for an unscaled Jacobian may describe unit choices as much as physical sensitivity.
 
 A robust implementation should also:
 
@@ -284,7 +281,7 @@ A robust implementation should also:
 5. re-form the equations consistently after a PV bus reaches a reactive limit; and
 6. use continuation power flow when tracing a solution curve through a fold [@ajjarapu1992].
 
-Line searches and trust regions can improve global convergence, but they do not make a truly singular Jacobian invertible. Continuation methods instead augment or re-parameterise the equations so the solution curve can be followed when injections are no longer a valid local parameter.
+Line searches and trust regions can improve global convergence but do not make a truly singular Jacobian invertible. Continuation methods instead augment or re-parameterise the equations so the solution curve can be followed when injections are no longer a valid local parameter.
 
 ## 8. Takeaways
 
